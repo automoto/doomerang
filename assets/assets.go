@@ -138,7 +138,7 @@ func LoadAssets() error {
 }
 
 func GetSheetByState(dir string, state string) *ebiten.Image {
-    path := fmt.Sprintf("assets/images/%s/%s.png", dir, state)
+    path := fmt.Sprintf("assets/images/spritesheets/%s/%s.png", dir, state)
     sprite, _, err := ebitenutil.NewImageFromFile(path)
     if err != nil {
         panic(err)

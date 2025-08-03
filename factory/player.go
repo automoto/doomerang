@@ -8,7 +8,7 @@ import (
     cfg "github.com/automoto/doomerang/config"
     dresolv "github.com/automoto/doomerang/resolv"
     "github.com/hajimehoshi/ebiten/v2"
-    "github.com/hajimehoshi/ebiten/v2/ebitenutil"
+    _ "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/solarlune/resolv"
     "github.com/yohamta/donburi"
     "github.com/yohamta/donburi/ecs"
@@ -41,6 +41,14 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
     obj.SetShape(resolv.NewRectangle(0, 0, playerWidth, playerHeight))
 
     // Load sprite sheets
+    animData := GeneratePlayerAnimations()
+    animData.CurrentAnimation = animData.Animations[cfg.Idle]
+    components.Animation.Set(player, animData)
+
+    return player
+}
+
+func GeneratePlayerAnimations() *components.AnimationData {
     crouchSprite := assets.GetSheetByState(playerDir, cfg.Crouch)
     dieSprite := assets.GetSheetByState(playerDir, cfg.Die)
     guardSprite := assets.GetSheetByState(playerDir, cfg.Guard)
@@ -115,8 +123,5 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
             cfg.WallSlide:   animations.NewAnimation(0, 5, 1, 5),
         },
     }
-    animData.CurrentAnimation = animData.Animations[cfg.Idle]
-    components.Animation.Set(player, animData)
-
-    return player
+    return animData
 }
