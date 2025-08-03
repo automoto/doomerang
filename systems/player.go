@@ -2,6 +2,7 @@ package systems
 
 import (
     "fmt"
+    cfg "github.com/automoto/doomerang/config"
     "image"
     "image/color"
     "math"
@@ -224,18 +225,19 @@ func resolvePlayerCollisions(player *components.PlayerData, playerObject *resolv
     }
 }
 
+// TODO: Need to do a better job updating this based on player state
 func updatePlayerAnimation(player *components.PlayerData, animData *components.AnimationData) {
     if player.OnGround == nil {
-        if animData.CurrentAnimation != animData.Animations["jump"] {
-            animData.SetAnimation("jump")
+        if animData.CurrentAnimation != animData.Animations[cfg.Jump] {
+            animData.SetAnimation(cfg.Jump)
         }
     } else if player.SpeedX != 0 {
-        if animData.CurrentAnimation != animData.Animations["run"] {
-            animData.SetAnimation("run")
+        if animData.CurrentAnimation != animData.Animations[cfg.Running] {
+            animData.SetAnimation(cfg.Running)
         }
     } else {
-        if animData.CurrentAnimation != animData.Animations["stand"] {
-            animData.SetAnimation("stand")
+        if animData.CurrentAnimation != animData.Animations[cfg.Idle] {
+            animData.SetAnimation(cfg.Idle)
         }
     }
 

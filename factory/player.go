@@ -106,7 +106,7 @@ func GeneratePlayerAnimations() *components.AnimationData {
             cfg.GuardImpact: animations.NewAnimation(0, 2, 1, 5),
             cfg.Hit:         animations.NewAnimation(0, 2, 1, 5),
             cfg.Idle:        animations.NewAnimation(0, 6, 1, 5),
-            cfg.Jump:        animations.NewAnimation(0, 2, 1, 5),
+            cfg.Jump:        animations.NewAnimation(0, 2, 1, 10),
             cfg.Kick01:      animations.NewAnimation(0, 8, 1, 5),
             cfg.Kick02:      animations.NewAnimation(0, 7, 1, 5),
             cfg.Kick03:      animations.NewAnimation(0, 8, 1, 5),
