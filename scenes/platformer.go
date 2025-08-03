@@ -1,12 +1,12 @@
 package scenes
 
 import (
+    factory2 "github.com/automoto/doomerang/systems/factory"
     "image/color"
     "sync"
 
     "github.com/automoto/doomerang/assets"
     "github.com/automoto/doomerang/components"
-    "github.com/automoto/doomerang/factory"
     "github.com/automoto/doomerang/layers"
     dresolv "github.com/automoto/doomerang/resolv"
     "github.com/automoto/doomerang/systems"
@@ -49,11 +49,11 @@ func (ps *PlatformerScene) configure() {
     ps.ecs = ecs
 
     // Create the level entity and load level data FIRST.
-    level := factory.CreateLevel(ps.ecs)
+    level := factory2.CreateLevel(ps.ecs)
     levelData := components.Level.Get(level)
 
     // Now create the space for collision detection using the level's dimensions.
-    spaceEntry := factory.CreateSpace(ps.ecs,
+    spaceEntry := factory2.CreateSpace(ps.ecs,
         levelData.CurrentLevel.Width,
         levelData.CurrentLevel.Height,
         16, 16,
@@ -61,7 +61,7 @@ func (ps *PlatformerScene) configure() {
     space := components.Space.Get(spaceEntry)
 
     // Create camera
-    factory.CreateCamera(ps.ecs)
+    factory2.CreateCamera(ps.ecs)
 
     // Create collision objects from the level
     for _, path := range levelData.CurrentLevel.Paths {
@@ -71,7 +71,7 @@ func (ps *PlatformerScene) configure() {
         height := path.Points[1].Y - path.Points[0].Y
 
         // Create a solid wall object
-        wall := factory.CreateWall(ps.ecs, resolv.NewObject(
+        wall := factory2.CreateWall(ps.ecs, resolv.NewObject(
             path.Points[0].X,
             path.Points[0].Y,
             width,
@@ -85,7 +85,7 @@ func (ps *PlatformerScene) configure() {
     }
 
     // Create the player at a safe starting position
-    player := factory.CreatePlayer(ps.ecs)
+    player := factory2.CreatePlayer(ps.ecs)
     playerObj := dresolv.GetObject(player)
 
     // Position the player at a safe starting point
