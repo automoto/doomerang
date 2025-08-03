@@ -269,16 +269,18 @@ func DrawPlayer(ecs *ecs.ECS, screen *ebiten.Image) {
 			// Create draw options.
 			op := &ebiten.DrawImageOptions{}
 
-			// Center the sprite on its anchor point.
-			op.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight)/2)
+			// Anchor the sprite at its bottom-center so that the feet line up with the
+			// bottom of the collision box.
+			op.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
 
 			// Flip the sprite if facing left.
 			if !player.FacingRight {
 				op.GeoM.Scale(-1, 1)
 			}
 
-			// Translate the sprite to the center of its collision object.
-			op.GeoM.Translate(o.X+o.W/2, o.Y+o.H/2)
+			// Move the sprite so that its bottom-center aligns with the bottom-center
+			// of the (smaller) collision box.
+			op.GeoM.Translate(o.X+o.W/2, o.Y+o.H)
 
 			// Apply the camera translation.
 			op.GeoM.Translate(float64(width)/2-camera.Position.X, float64(height)/2-camera.Position.Y)

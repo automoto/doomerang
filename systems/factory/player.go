@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	playerWidth  = 96
-	playerHeight = 84
+	playerFrameWidth      = 96
+	playerFrameHeight     = 84
+	playerCollisionWidth  = 16
+	playerCollisionHeight = 16
 )
 
 const (
@@ -32,13 +34,18 @@ func handleError(err error) {
 func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 	player := archetypes.Player.Spawn(ecs)
 
-	obj := resolv.NewObject(32, 128, playerWidth, playerHeight)
+	// Calculate spawn position so that the bottom of the collision box aligns
+	// with where the bottom of the full 96x84 sprite would have been previously.
+	spawnX := 32.0
+	spawnY := 128.0 + float64(playerFrameHeight-playerCollisionHeight)
+
+	obj := resolv.NewObject(spawnX, spawnY, playerCollisionWidth, playerCollisionHeight)
 	dresolv.SetObject(player, obj)
 	components.Player.SetValue(player, components.PlayerData{
 		FacingRight: true,
 	})
 
-	obj.SetShape(resolv.NewRectangle(0, 0, playerWidth, playerHeight))
+	obj.SetShape(resolv.NewRectangle(0, 0, playerCollisionWidth, playerCollisionHeight))
 
 	// Load sprite sheets
 	animData := GeneratePlayerAnimations()
@@ -97,8 +104,8 @@ func GeneratePlayerAnimations() *components.AnimationData {
 			cfg.WallSlide:   wallSlideSprite,
 		},
 		CurrentSheet: cfg.Idle,
-		FrameWidth:   96,
-		FrameHeight:  84,
+		FrameWidth:   playerFrameWidth,
+		FrameHeight:  playerFrameHeight,
 		Animations: map[string]*animations.Animation{
 			cfg.Crouch:      animations.NewAnimation(0, 5, 1, 5),
 			cfg.Die:         animations.NewAnimation(0, 8, 1, 5),
