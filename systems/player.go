@@ -130,130 +130,231 @@ func applyPlayerPhysics(player *components.PlayerData) {
 	}
 }
 
-func resolvePlayerCollisions(player *components.PlayerData, playerObject *resolv.Object) {
-	// Handle horizontal movement and collision
+// resolveHorizontalCollision handles player horizontal movement and wall collision
+func resolveHorizontalCollision(player *components.PlayerData, playerObject *resolv.Object) {
 	dx := player.SpeedX
-	if dx != 0 {
-		// Check if horizontal movement would cause a collision
-		if check := playerObject.Check(dx, 0, "solid"); check != nil {
-			// Debug output (only if DEBUG_COLLISION env var is set)
-			if os.Getenv("DEBUG_COLLISION") != "" {
-				fmt.Printf("Horizontal collision detected! dx=%.2f, player pos: (%.2f, %.2f)\n", dx, playerObject.X, playerObject.Y)
-				if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-					for i, solid := range solids {
-						fmt.Printf("  Solid %d: pos=(%.2f, %.2f), size=(%.2f, %.2f)\n", i, solid.X, solid.Y, solid.W, solid.H)
-					}
-				}
-			}
-
-			// Check if we're actually colliding with a wall (not just positioned next to ground)
-			shouldStop := false
-			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-				for _, solid := range solids {
-					// Check if this solid object is actually blocking horizontal movement
-					// by testing if the player's center would be inside the solid after movement
-					playerCenterY := playerObject.Y + playerObject.H/2
-					solidTop := solid.Y
-					solidBottom := solid.Y + solid.H
-
-					// Only stop if the player's vertical center would be within the solid's vertical bounds
-					if playerCenterY >= solidTop && playerCenterY <= solidBottom {
-						shouldStop = true
-						break
-					}
-				}
-			}
-
-			if shouldStop {
-				dx = 0
-				player.SpeedX = 0
-
-				// Set wall sliding only if player is in the air
-				if player.OnGround == nil {
-					if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-						player.WallSliding = solids[0]
-					}
-				}
-			}
-		}
+	if dx == 0 {
+		return
 	}
-	playerObject.X += dx
 
-	// Handle vertical movement and collision
+	check := playerObject.Check(dx, 0, "solid")
+	if check == nil {
+		playerObject.X += dx
+		return
+	}
+
+	// Debug collision detection if enabled
+	debugHorizontalCollision(dx, playerObject, check)
+
+	// Check if we're actually hitting a wall (not just positioned next to ground)
+	if shouldStopHorizontalMovement(playerObject, check) {
+		player.SpeedX = 0
+		setWallSlidingIfAirborne(player, check)
+		return // Don't move horizontally
+	}
+
+	playerObject.X += dx
+}
+
+// resolveVerticalCollision handles player vertical movement and ground/platform collision
+func resolveVerticalCollision(player *components.PlayerData, playerObject *resolv.Object) {
 	player.OnGround = nil
-	dy := player.SpeedY
-	dy = math.Max(math.Min(dy, 16), -16)
+	dy := clampVerticalSpeed(player.SpeedY)
 
 	checkDistance := dy
 	if dy >= 0 {
 		checkDistance++
 	}
 
-	if check := playerObject.Check(0, checkDistance, "solid", "platform", "ramp"); check != nil {
-		// Handle upward collision with solid objects
-		if dy < 0 {
-			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-				dy = check.ContactWithObject(solids[0]).Y()
-				player.SpeedY = 0
-			} else if len(check.Cells) > 0 && check.Cells[0].ContainsTags("solid") {
-				if slide := check.SlideAgainstCell(check.Cells[0], "solid"); slide != nil {
-					playerObject.X += slide.X()
-				}
-			}
-		} else {
-			// Handle downward collision - check in order of priority
-			// 1. Ramps first
-			if ramps := check.ObjectsByTags("ramp"); len(ramps) > 0 {
-				ramp := ramps[0]
-				if contactSet := playerObject.Shape.Intersection(dx, 8, ramp.Shape); dy >= 0 && contactSet != nil {
-					dy = contactSet.TopmostPoint()[1] - playerObject.Bottom() + 0.1
-					player.OnGround = ramp
-					player.SpeedY = 0
-				}
-			}
+	check := playerObject.Check(0, checkDistance, "solid", "platform", "ramp")
+	if check == nil {
+		playerObject.Y += dy
+		return
+	}
 
-			// 2. Platforms second (if no ramp collision)
-			if player.OnGround == nil {
-				if platforms := check.ObjectsByTags("platform"); len(platforms) > 0 {
-					platform := platforms[0]
-					if platform != player.IgnorePlatform && player.SpeedY >= 0 && playerObject.Bottom() < platform.Y+4 {
-						dy = check.ContactWithObject(platform).Y()
-						player.OnGround = platform
-						player.SpeedY = 0
-					}
-				}
-			}
+	if dy < 0 {
+		dy = handleUpwardCollision(player, playerObject, check)
+	} else {
+		dy = handleDownwardCollision(player, playerObject, check, dy)
+	}
 
-			// 3. Solid ground last (if no other collision)
-			if player.OnGround == nil {
-				if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-					solid := solids[0]
-					// Make sure we're falling down onto the solid object
-					if player.SpeedY >= 0 {
-						dy = check.ContactWithObject(solid).Y()
-						player.SpeedY = 0
-						player.OnGround = solid
-					}
-				}
-			}
+	playerObject.Y += dy
+}
 
-			// Clear wall sliding and ignore platform when on ground
-			if player.OnGround != nil {
-				player.WallSliding = nil
-				player.IgnorePlatform = nil
-			}
+// updateWallSliding checks if player should disengage from wall sliding
+func updateWallSliding(player *components.PlayerData, playerObject *resolv.Object) {
+	if player.WallSliding == nil {
+		return
+	}
+
+	wallDirection := 1.0
+	if !player.FacingRight {
+		wallDirection = -1.0
+	}
+
+	if check := playerObject.Check(wallDirection, 0, "solid"); check == nil {
+		player.WallSliding = nil
+	}
+}
+
+func resolvePlayerCollisions(player *components.PlayerData, playerObject *resolv.Object) {
+	resolveHorizontalCollision(player, playerObject)
+	resolveVerticalCollision(player, playerObject)
+	updateWallSliding(player, playerObject)
+}
+
+// Helper functions for collision resolution
+
+func debugHorizontalCollision(dx float64, playerObject *resolv.Object, check *resolv.Collision) {
+	if os.Getenv("DEBUG_COLLISION") == "" {
+		return
+	}
+
+	fmt.Printf("Horizontal collision detected! dx=%.2f, player pos: (%.2f, %.2f)\n",
+		dx, playerObject.X, playerObject.Y)
+
+	if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
+		for i, solid := range solids {
+			fmt.Printf("  Solid %d: pos=(%.2f, %.2f), size=(%.2f, %.2f)\n",
+				i, solid.X, solid.Y, solid.W, solid.H)
 		}
 	}
-	playerObject.Y += dy
+}
 
-	// Check for wall sliding disengage
-	wallNext := 1.0
-	if !player.FacingRight {
-		wallNext = -1
+func shouldStopHorizontalMovement(playerObject *resolv.Object, check *resolv.Collision) bool {
+	solids := check.ObjectsByTags("solid")
+	if len(solids) == 0 {
+		return false
 	}
 
-	if c := playerObject.Check(wallNext, 0, "solid"); player.WallSliding != nil && c == nil {
+	playerCenterY := playerObject.Y + playerObject.H/2
+
+	for _, solid := range solids {
+		// Only stop if player's center would be within solid's vertical bounds
+		if playerCenterY >= solid.Y && playerCenterY <= solid.Y+solid.H {
+			return true
+		}
+	}
+
+	return false
+}
+
+func setWallSlidingIfAirborne(player *components.PlayerData, check *resolv.Collision) {
+	if player.OnGround != nil {
+		return
+	}
+
+	if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
+		player.WallSliding = solids[0]
+	}
+}
+
+func clampVerticalSpeed(speedY float64) float64 {
+	return math.Max(math.Min(speedY, 16), -16)
+}
+
+func handleUpwardCollision(player *components.PlayerData, playerObject *resolv.Object, check *resolv.Collision) float64 {
+	if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
+		player.SpeedY = 0
+		return check.ContactWithObject(solids[0]).Y()
+	}
+
+	if len(check.Cells) > 0 && check.Cells[0].ContainsTags("solid") {
+		if slide := check.SlideAgainstCell(check.Cells[0], "solid"); slide != nil {
+			playerObject.X += slide.X()
+		}
+	}
+
+	return player.SpeedY
+}
+
+func handleDownwardCollision(player *components.PlayerData, playerObject *resolv.Object, check *resolv.Collision, dy float64) float64 {
+	// Try collision in priority order: ramps, platforms, solids
+	if newDy, handled := tryRampCollision(player, playerObject, check, dy); handled {
+		return newDy
+	}
+
+	if newDy, handled := tryPlatformCollision(player, playerObject, check); handled {
+		return newDy
+	}
+
+	if newDy, handled := trySolidCollision(player, check); handled {
+		return newDy
+	}
+
+	return dy
+}
+
+func tryRampCollision(player *components.PlayerData, playerObject *resolv.Object, check *resolv.Collision, dy float64) (float64, bool) {
+	ramps := check.ObjectsByTags("ramp")
+	if len(ramps) == 0 {
+		return dy, false
+	}
+
+	ramp := ramps[0]
+	contactSet := playerObject.Shape.Intersection(0, 8, ramp.Shape)
+
+	if dy >= 0 && contactSet != nil {
+		player.OnGround = ramp
+		player.SpeedY = 0
+		return contactSet.TopmostPoint()[1] - playerObject.Bottom() + 0.1, true
+	}
+
+	return dy, false
+}
+
+func tryPlatformCollision(player *components.PlayerData, playerObject *resolv.Object, check *resolv.Collision) (float64, bool) {
+	if player.OnGround != nil {
+		return 0, false // Already grounded from ramp
+	}
+
+	platforms := check.ObjectsByTags("platform")
+	if len(platforms) == 0 {
+		return 0, false
+	}
+
+	platform := platforms[0]
+
+	// Check platform collision conditions
+	if platform == player.IgnorePlatform ||
+		player.SpeedY < 0 ||
+		playerObject.Bottom() >= platform.Y+4 {
+		return 0, false
+	}
+
+	player.OnGround = platform
+	player.SpeedY = 0
+	return check.ContactWithObject(platform).Y(), true
+}
+
+func trySolidCollision(player *components.PlayerData, check *resolv.Collision) (float64, bool) {
+	if player.OnGround != nil {
+		clearGroundedState(player)
+		return 0, false // Already grounded
+	}
+
+	solids := check.ObjectsByTags("solid")
+	if len(solids) == 0 {
+		return 0, false
+	}
+
+	solid := solids[0]
+
+	// Only land on solid if falling down
+	if player.SpeedY >= 0 {
+		player.OnGround = solid
+		player.SpeedY = 0
+		clearGroundedState(player)
+		return check.ContactWithObject(solid).Y(), true
+	}
+
+	return 0, false
+}
+
+func clearGroundedState(player *components.PlayerData) {
+	if player.OnGround != nil {
 		player.WallSliding = nil
+		player.IgnorePlatform = nil
 	}
 }
 
