@@ -1,4 +1,4 @@
-package resolv
+package config
 
 import (
 	"github.com/automoto/doomerang/components"

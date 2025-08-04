@@ -10,7 +10,6 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 
 	"github.com/automoto/doomerang/components"
-	dresolv "github.com/automoto/doomerang/resolv"
 	"github.com/automoto/doomerang/tags"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -30,8 +29,20 @@ const (
 
 func UpdatePlayer(ecs *ecs.ECS) {
 	playerEntry, _ := components.Player.First(ecs.World)
+	if playerEntry == nil {
+		return
+	}
+
+	// If the player is in death sequence, only advance animation and return.
+	if playerEntry.HasComponent(components.Death) {
+		if anim := components.Animation.Get(playerEntry); anim != nil && anim.CurrentAnimation != nil {
+			anim.CurrentAnimation.Update()
+		}
+		return
+	}
+
 	player := components.Player.Get(playerEntry)
-	playerObject := dresolv.GetObject(playerEntry)
+	playerObject := cfg.GetObject(playerEntry)
 
 	handlePlayerInput(player, playerObject)
 	applyPlayerPhysics(player)
@@ -256,7 +267,7 @@ func DrawPlayer(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	tags.Player.Each(ecs.World, func(e *donburi.Entry) {
 		player := components.Player.Get(e)
-		o := dresolv.GetObject(e)
+		o := cfg.GetObject(e)
 		animData := components.Animation.Get(e)
 
 		if animData.CurrentAnimation != nil && animData.SpriteSheets[animData.CurrentSheet] != nil {

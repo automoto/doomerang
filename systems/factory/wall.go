@@ -2,7 +2,7 @@ package factory
 
 import (
 	"github.com/automoto/doomerang/archetypes"
-	dresolv "github.com/automoto/doomerang/resolv"
+	dresolv "github.com/automoto/doomerang/config"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"

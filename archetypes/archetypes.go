@@ -22,6 +22,7 @@ var (
 		tags.Player,
 		components.Player,
 		components.Object,
+		components.Health,
 		components.Animation,
 	)
 	Space = newArchetype(

@@ -1,14 +1,15 @@
 package scenes
 
 import (
-	factory2 "github.com/automoto/doomerang/systems/factory"
 	"image/color"
 	"sync"
+
+	dresolv "github.com/automoto/doomerang/config"
+	factory2 "github.com/automoto/doomerang/systems/factory"
 
 	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/components"
 	"github.com/automoto/doomerang/layers"
-	dresolv "github.com/automoto/doomerang/resolv"
 	"github.com/automoto/doomerang/systems"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/solarlune/resolv"
@@ -37,12 +38,15 @@ func (ps *PlatformerScene) configure() {
 	// Add systems
 	ecs.AddSystem(systems.UpdatePlayer)
 	ecs.AddSystem(systems.UpdateObjects)
+	ecs.AddSystem(systems.UpdateCombat)
+	ecs.AddSystem(systems.UpdateDeaths)
 	ecs.AddSystem(systems.UpdateSettings)
 	ecs.AddSystem(systems.UpdateCamera)
 
 	// Add renderers
 	ecs.AddRenderer(layers.Default, systems.DrawLevel)
 	ecs.AddRenderer(layers.Default, systems.DrawPlayer)
+	ecs.AddRenderer(layers.Default, systems.DrawHUD)
 	ecs.AddRenderer(layers.Default, systems.DrawDebug)
 	ecs.AddRenderer(layers.Default, systems.DrawHelp)
 

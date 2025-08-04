@@ -13,7 +13,10 @@ func UpdateCamera(ecs *ecs.ECS) {
 	cameraEntry, _ := components.Camera.First(ecs.World)
 	camera := components.Camera.Get(cameraEntry)
 
-	playerEntry, _ := tags.Player.First(ecs.World)
+	playerEntry, ok := tags.Player.First(ecs.World)
+	if !ok {
+		return // no player (could be dead), skip camera update
+	}
 	playerObject := components.Object.Get(playerEntry)
 
 	// Get level dimensions for camera bounds

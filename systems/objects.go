@@ -2,7 +2,7 @@ package systems
 
 import (
 	"github.com/automoto/doomerang/components"
-	dresolv "github.com/automoto/doomerang/resolv"
+	dresolv "github.com/automoto/doomerang/config"
 	"github.com/yohamta/donburi/ecs"
 )
 

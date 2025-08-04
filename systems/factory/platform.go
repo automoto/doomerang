@@ -3,7 +3,7 @@ package factory
 import (
 	"github.com/automoto/doomerang/archetypes"
 	"github.com/automoto/doomerang/components"
-	dresolv "github.com/automoto/doomerang/resolv"
+	dresolv "github.com/automoto/doomerang/config"
 	"github.com/solarlune/resolv"
 	"github.com/tanema/gween"
 	"github.com/tanema/gween/ease"

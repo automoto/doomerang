@@ -6,7 +6,6 @@ import (
 	"github.com/automoto/doomerang/assets/animations"
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
-	dresolv "github.com/automoto/doomerang/resolv"
 	"github.com/hajimehoshi/ebiten/v2"
 	_ "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/solarlune/resolv"
@@ -40,9 +39,13 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 	spawnY := 128.0 + float64(playerFrameHeight-playerCollisionHeight)
 
 	obj := resolv.NewObject(spawnX, spawnY, playerCollisionWidth, playerCollisionHeight)
-	dresolv.SetObject(player, obj)
+	cfg.SetObject(player, obj)
 	components.Player.SetValue(player, components.PlayerData{
 		FacingRight: true,
+	})
+	components.Health.SetValue(player, components.HealthData{
+		Current: 100,
+		Max:     100,
 	})
 
 	obj.SetShape(resolv.NewRectangle(0, 0, playerCollisionWidth, playerCollisionHeight))
