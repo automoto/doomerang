@@ -41,7 +41,10 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 	obj := resolv.NewObject(spawnX, spawnY, playerCollisionWidth, playerCollisionHeight)
 	cfg.SetObject(player, obj)
 	components.Player.SetValue(player, components.PlayerData{
-		FacingRight: true,
+		FacingRight:  true,
+		CurrentState: cfg.Idle,
+		StateTimer:   0,
+		ComboCounter: 0,
 	})
 	components.Health.SetValue(player, components.HealthData{
 		Current: 100,

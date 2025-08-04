@@ -12,6 +12,11 @@ type PlayerData struct {
 	WallSliding    *resolv.Object
 	FacingRight    bool
 	IgnorePlatform *resolv.Object
+
+	// New state management
+	CurrentState string // Current state (from config/states.go)
+	StateTimer   int    // Frame counter for state duration
+	ComboCounter int    // For tracking punch/kick sequences
 }
 
 var Player = donburi.NewComponentType[PlayerData]()

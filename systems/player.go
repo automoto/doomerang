@@ -47,43 +47,62 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	handlePlayerInput(player, playerObject)
 	applyPlayerPhysics(player)
 	resolvePlayerCollisions(player, playerObject)
-	updatePlayerAnimation(player, components.Animation.Get(playerEntry))
+	updatePlayerState(player, components.Animation.Get(playerEntry))
 }
 
-// TODO: update with new player states
 func handlePlayerInput(player *components.PlayerData, playerObject *resolv.Object) {
-	// Horizontal movement is only possible when not wall-sliding.
-	if player.WallSliding == nil {
-		if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.GamepadAxis(0, 0) > 0.1 {
-			player.SpeedX += playerAccel
-			player.FacingRight = true
+	// Only allow new actions if not in a locked state
+	if !isInLockedState(player.CurrentState) {
+		// Combat inputs
+		if inpututil.IsKeyJustPressed(ebiten.KeyZ) { // Punch
+			startPunchCombo(player)
 		}
-
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.GamepadAxis(0, 0) < -0.1 {
-			player.SpeedX -= playerAccel
-			player.FacingRight = false
+		if inpututil.IsKeyJustPressed(ebiten.KeyC) { // Kick
+			startKickCombo(player)
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyDown) && player.OnGround != nil { // Guard/Crouch
+			if player.CurrentState != cfg.Crouch {
+				player.CurrentState = cfg.Crouch
+				player.StateTimer = 0
+			}
 		}
 	}
 
-	// Check for jumping.
-	if inpututil.IsKeyJustPressed(ebiten.KeyX) || ebiten.IsGamepadButtonPressed(0, 0) || ebiten.IsGamepadButtonPressed(1, 0) {
-		isTryingToDrop := (ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.GamepadAxis(0, 1) > 0.1 || ebiten.GamepadAxis(1, 1) > 0.1)
-		canDropDown := player.OnGround != nil && player.OnGround.HasTags("platform")
+	// Movement inputs - only allow if not in attack state
+	if !isInAttackState(player.CurrentState) {
+		// Horizontal movement is only possible when not wall-sliding.
+		if player.WallSliding == nil {
+			if ebiten.IsKeyPressed(ebiten.KeyRight) {
+				player.SpeedX += playerAccel
+				player.FacingRight = true
+			}
 
-		if isTryingToDrop && canDropDown {
-			player.IgnorePlatform = player.OnGround
-		} else {
-			if player.OnGround != nil {
-				player.SpeedY = -playerJumpSpd
-			} else if player.WallSliding != nil {
-				// Wall-jumping
-				player.SpeedY = -playerJumpSpd
-				if player.WallSliding.X > playerObject.X {
-					player.SpeedX = -playerMaxSpeed
-				} else {
-					player.SpeedX = playerMaxSpeed
+			if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+				player.SpeedX -= playerAccel
+				player.FacingRight = false
+			}
+		}
+
+		// Check for jumping.
+		if inpututil.IsKeyJustPressed(ebiten.KeyX) || ebiten.IsGamepadButtonPressed(0, 0) || ebiten.IsGamepadButtonPressed(1, 0) {
+			isTryingToDrop := ebiten.IsKeyPressed(ebiten.KeyDown)
+			canDropDown := player.OnGround != nil && player.OnGround.HasTags("platform")
+
+			if isTryingToDrop && canDropDown {
+				player.IgnorePlatform = player.OnGround
+			} else {
+				if player.OnGround != nil {
+					player.SpeedY = -playerJumpSpd
+				} else if player.WallSliding != nil {
+					// Wall-jumping
+					player.SpeedY = -playerJumpSpd
+					if player.WallSliding.X > playerObject.X {
+						player.SpeedX = -playerMaxSpeed
+					} else {
+						player.SpeedX = playerMaxSpeed
+					}
+					player.WallSliding = nil
 				}
-				player.WallSliding = nil
 			}
 		}
 	}
@@ -176,7 +195,7 @@ func resolvePlayerCollisions(player *components.PlayerData, playerObject *resolv
 			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
 				dy = check.ContactWithObject(solids[0]).Y()
 				player.SpeedY = 0
-			} else if check.Cells != nil && len(check.Cells) > 0 && check.Cells[0].ContainsTags("solid") {
+			} else if len(check.Cells) > 0 && check.Cells[0].ContainsTags("solid") {
 				if slide := check.SlideAgainstCell(check.Cells[0], "solid"); slide != nil {
 					playerObject.X += slide.X()
 				}
@@ -238,25 +257,122 @@ func resolvePlayerCollisions(player *components.PlayerData, playerObject *resolv
 	}
 }
 
-// TODO: Need to do a better job updating this based on player state
-func updatePlayerAnimation(player *components.PlayerData, animData *components.AnimationData) {
-	if player.OnGround == nil {
-		if animData.CurrentAnimation != animData.Animations[cfg.Jump] {
-			animData.SetAnimation(cfg.Jump)
+func updatePlayerState(player *components.PlayerData, animData *components.AnimationData) {
+	player.StateTimer++
+
+	// Handle state transitions based on current state
+	switch player.CurrentState {
+	case cfg.Punch01:
+		if player.StateTimer > 30 { // 30 frames for punch1 animation
+			transitionToMovementState(player)
 		}
-	} else if player.SpeedX != 0 {
-		if animData.CurrentAnimation != animData.Animations[cfg.Running] {
-			animData.SetAnimation(cfg.Running)
+	case cfg.Punch02:
+		if player.StateTimer > 20 { // 20 frames for punch2 animation
+			transitionToMovementState(player)
 		}
-	} else {
-		if animData.CurrentAnimation != animData.Animations[cfg.Idle] {
-			animData.SetAnimation(cfg.Idle)
+	case cfg.Punch03:
+		if player.StateTimer > 35 { // 35 frames for punch3 animation
+			transitionToMovementState(player)
 		}
+	case cfg.Kick01:
+		if player.StateTimer > 45 { // 45 frames for kick1 animation
+			transitionToMovementState(player)
+		}
+	case cfg.Kick02:
+		if player.StateTimer > 40 { // 40 frames for kick2 animation
+			transitionToMovementState(player)
+		}
+	case cfg.Kick03:
+		if player.StateTimer > 45 { // 45 frames for kick3 animation
+			transitionToMovementState(player)
+		}
+	case cfg.Hit, cfg.Stunned:
+		if player.StateTimer > 30 { // 30 frames of hitstun
+			transitionToMovementState(player)
+		}
+	case cfg.Crouch:
+		if !ebiten.IsKeyPressed(ebiten.KeyDown) {
+			transitionToMovementState(player)
+		}
+	default:
+		// Handle movement states based on physics
+		transitionToMovementState(player)
+	}
+
+	// Update animation based on current state
+	if animData.CurrentAnimation != animData.Animations[player.CurrentState] {
+		animData.SetAnimation(player.CurrentState)
 	}
 
 	if animData.CurrentAnimation != nil {
 		animData.CurrentAnimation.Update()
 	}
+}
+
+// Helper functions for state management
+func isInLockedState(state string) bool {
+	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback
+}
+
+func isInAttackState(state string) bool {
+	return state == cfg.Punch01 || state == cfg.Punch02 || state == cfg.Punch03 ||
+		state == cfg.Kick01 || state == cfg.Kick02 || state == cfg.Kick03
+}
+
+func startPunchCombo(player *components.PlayerData) {
+	switch player.CurrentState {
+	case cfg.Punch01:
+		if player.StateTimer > 10 { // Allow combo after 10 frames
+			player.CurrentState = cfg.Punch02
+			player.ComboCounter++
+			player.StateTimer = 0
+		}
+	case cfg.Punch02:
+		if player.StateTimer > 8 { // Allow combo after 8 frames
+			player.CurrentState = cfg.Punch03
+			player.ComboCounter++
+			player.StateTimer = 0
+		}
+	default:
+		player.CurrentState = cfg.Punch01
+		player.ComboCounter = 1
+		player.StateTimer = 0
+	}
+}
+
+func startKickCombo(player *components.PlayerData) {
+	switch player.CurrentState {
+	case cfg.Kick01:
+		if player.StateTimer > 12 { // Allow combo after 12 frames
+			player.CurrentState = cfg.Kick02
+			player.ComboCounter++
+			player.StateTimer = 0
+		}
+	case cfg.Kick02:
+		if player.StateTimer > 10 { // Allow combo after 10 frames
+			player.CurrentState = cfg.Kick03
+			player.ComboCounter++
+			player.StateTimer = 0
+		}
+	default:
+		player.CurrentState = cfg.Kick01
+		player.ComboCounter = 1
+		player.StateTimer = 0
+	}
+}
+
+func transitionToMovementState(player *components.PlayerData) {
+	if player.WallSliding != nil {
+		player.CurrentState = cfg.WallSlide
+	} else if player.OnGround == nil {
+		player.CurrentState = cfg.Jump
+	} else if player.SpeedX != 0 {
+		player.CurrentState = cfg.Running
+	} else {
+		player.CurrentState = cfg.Idle
+	}
+	player.StateTimer = 0
+	player.ComboCounter = 0
 }
 
 func DrawPlayer(ecs *ecs.ECS, screen *ebiten.Image) {
