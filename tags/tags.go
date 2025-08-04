@@ -7,4 +7,6 @@ var (
 	Platform         = donburi.NewTag().SetName("Platform")
 	FloatingPlatform = donburi.NewTag().SetName("FloatingPlatform")
 	Wall             = donburi.NewTag().SetName("Wall")
+	Enemy            = donburi.NewTag().SetName("Enemy")
+	Hitbox           = donburi.NewTag().SetName("Hitbox")
 )

@@ -25,6 +25,18 @@ var (
 		components.Health,
 		components.Animation,
 	)
+	Enemy = newArchetype(
+		tags.Enemy,
+		components.Enemy,
+		components.Object,
+		components.Health,
+		components.Animation,
+	)
+	Hitbox = newArchetype(
+		tags.Hitbox,
+		components.Hitbox,
+		components.Object,
+	)
 	Space = newArchetype(
 		components.Space,
 	)

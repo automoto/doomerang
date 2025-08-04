@@ -37,8 +37,10 @@ func (ps *PlatformerScene) configure() {
 
 	// Add systems
 	ecs.AddSystem(systems.UpdatePlayer)
+	ecs.AddSystem(systems.UpdateEnemies)
 	ecs.AddSystem(systems.UpdateObjects)
 	ecs.AddSystem(systems.UpdateCombat)
+	ecs.AddSystem(systems.UpdateCombatHitboxes)
 	ecs.AddSystem(systems.UpdateDeaths)
 	ecs.AddSystem(systems.UpdateSettings)
 	ecs.AddSystem(systems.UpdateCamera)
@@ -46,6 +48,8 @@ func (ps *PlatformerScene) configure() {
 	// Add renderers
 	ecs.AddRenderer(layers.Default, systems.DrawLevel)
 	ecs.AddRenderer(layers.Default, systems.DrawPlayer)
+	ecs.AddRenderer(layers.Default, systems.DrawEnemies)
+	// ecs.AddRenderer(layers.Default, systems.DrawHitboxes) // Disabled - ugly debug rendering
 	ecs.AddRenderer(layers.Default, systems.DrawHUD)
 	ecs.AddRenderer(layers.Default, systems.DrawDebug)
 	ecs.AddRenderer(layers.Default, systems.DrawHelp)
@@ -117,4 +121,9 @@ func (ps *PlatformerScene) configure() {
 	}
 
 	space.Add(playerObj)
+
+	// Create test enemy
+	enemy := factory2.CreateTestEnemy(ps.ecs)
+	enemyObj := dresolv.GetObject(enemy)
+	space.Add(enemyObj)
 }
