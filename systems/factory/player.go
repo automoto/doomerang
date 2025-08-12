@@ -17,7 +17,7 @@ const (
 	playerFrameWidth      = 96
 	playerFrameHeight     = 84
 	playerCollisionWidth  = 16
-	playerCollisionHeight = 16
+	playerCollisionHeight = 40 // Fixed: matches actual character height
 )
 
 const (

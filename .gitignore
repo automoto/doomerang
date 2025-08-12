@@ -1,6 +1,5 @@
 # Binaries for programs and plugins
 *.exe
-*.exe~
 *.dll
 *.so
 *.dylib
@@ -8,132 +7,31 @@
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+# Output of the go generate command
+*.go
 
 # Dependency directories (remove the comment below to include it)
 vendor/
 
-# Go workspace file
-go.work
+# Go module cache
+# This is where Go stores downloaded modules.
+# It's usually located in your user's home directory,
+# but if you've configured GOPATH to be inside your project,
+# you might want to ignore it.
+# $GOPATH/pkg/mod/
 
 # Build output
 bin/
-dist/
-build/
+pkg/
 
-# IDE and editor files
-.vscode/
+# IDE specific files
 .idea/
-*.swp
-*.swo
-*~
+.vscode/
 
 # OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-logs/
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.cover
-
-# Temporary files
-tmp/
-temp/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Air live reload
-tmp/
-
-# Delve debugger
-__debug_bin
-
-# GoLand
-.idea/
-
-# VSCode
-.vscode/
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# Vim
-*.swp
-*.swo
-*~
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# macOS
-.AppleDouble
-.LSOverride
-Icon
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-# Windows
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.tmp
-*.temp
-Desktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-*.lnk
-
-# Linux
-*~
-.fuse_hidden*
-.directory
-.Trash-*
-.nfs*
-
-# Project specific
-# Add any project-specific files or directories here 
+# Roo rules and Cursor files
+.roo/
+.cursor/

@@ -102,13 +102,13 @@ func handlePatrolState(enemy *components.EnemyData, enemyObject, playerObject *r
 
 	// Patrol behavior - move back and forth
 	if enemy.FacingRight {
-		enemy.SpeedX = enemy.PatrolSpeed
+		enemy.SpeedX += enemy.PatrolSpeed * 1.7 // Apply acceleration (15% slower)
 		// Turn around if hit right boundary
 		if enemyObject.X >= enemy.PatrolRight {
 			enemy.FacingRight = false
 		}
 	} else {
-		enemy.SpeedX = -enemy.PatrolSpeed
+		enemy.SpeedX -= enemy.PatrolSpeed * 1.7 // Apply acceleration (15% slower)
 		// Turn around if hit left boundary
 		if enemyObject.X <= enemy.PatrolLeft {
 			enemy.FacingRight = true
@@ -121,7 +121,6 @@ func handleChaseState(enemy *components.EnemyData, enemyObject, playerObject *re
 	if distanceToPlayer <= enemy.AttackRange && enemy.AttackCooldown == 0 {
 		enemy.CurrentState = enemyStateAttack
 		enemy.StateTimer = 0
-		enemy.SpeedX = 0 // Stop moving when attacking
 		return
 	}
 
@@ -132,12 +131,12 @@ func handleChaseState(enemy *components.EnemyData, enemyObject, playerObject *re
 		return
 	}
 
-	// Chase player
+	// Chase player - apply acceleration like player input
 	if playerObject.X > enemyObject.X {
-		enemy.SpeedX = enemy.ChaseSpeed
+		enemy.SpeedX += enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing (15% slower)
 		enemy.FacingRight = true
 	} else {
-		enemy.SpeedX = -enemy.ChaseSpeed
+		enemy.SpeedX -= enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing (15% slower)
 		enemy.FacingRight = false
 	}
 }
@@ -154,8 +153,7 @@ func handleAttackState(enemy *components.EnemyData, enemyObject, playerObject *r
 		return
 	}
 
-	// Don't move during attack
-	enemy.SpeedX = 0
+	// Don't apply movement input during attack - let friction naturally slow down
 }
 
 func applyEnemyPhysics(enemy *components.EnemyData) {
@@ -183,12 +181,28 @@ func applyEnemyPhysics(enemy *components.EnemyData) {
 }
 
 func resolveEnemyCollisions(enemy *components.EnemyData, enemyObject *resolv.Object) {
-	// Horizontal collision - simplified (just stop on walls)
+	// Horizontal collision - only stop for actual walls, not ground
 	dx := enemy.SpeedX
 	if dx != 0 {
 		if check := enemyObject.Check(dx, 0, "solid"); check != nil {
-			enemy.SpeedX = 0
-			dx = 0
+			// Check if this is actually a wall blocking horizontal movement
+			shouldStop := false
+			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
+				for _, solid := range solids {
+					// Only stop if the solid object is actually blocking horizontal movement
+					// (enemy's center would be inside the solid's vertical bounds)
+					enemyCenterY := enemyObject.Y + enemyObject.H/2
+					if enemyCenterY >= solid.Y && enemyCenterY <= solid.Y+solid.H {
+						shouldStop = true
+						break
+					}
+				}
+			}
+
+			if shouldStop {
+				enemy.SpeedX = 0
+				dx = 0
+			}
 		}
 	}
 	enemyObject.X += dx

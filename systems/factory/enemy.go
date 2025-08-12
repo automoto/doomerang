@@ -13,7 +13,7 @@ const (
 	enemyFrameWidth      = 96
 	enemyFrameHeight     = 84
 	enemyCollisionWidth  = 16
-	enemyCollisionHeight = 16
+	enemyCollisionHeight = 40 // Fixed: matches actual character height
 )
 
 // AI state constants
@@ -36,19 +36,19 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 		FacingRight:    false, // Start facing left
 		CurrentState:   enemyStatePatrol,
 		StateTimer:     0,
-		PatrolLeft:     x - 64,  // Patrol 64 pixels left from spawn
-		PatrolRight:    x + 64,  // Patrol 64 pixels right from spawn
-		PatrolSpeed:    1.0,     // Slow patrol speed
-		ChaseSpeed:     2.5,     // Faster when chasing
-		AttackRange:    24.0,    // Attack when player within 24 pixels
-		ChaseRange:     80.0,    // Start chasing when player within 80 pixels
+		PatrolLeft:     x - 64, // Patrol 64 pixels left from spawn
+		PatrolRight:    x + 64, // Patrol 64 pixels right from spawn
+		PatrolSpeed:    1.0,    // Slow patrol speed
+		ChaseSpeed:     2.5,    // Faster when chasing
+		AttackRange:    24.0,   // Attack when player within 24 pixels
+		ChaseRange:     80.0,   // Start chasing when player within 80 pixels
 		AttackCooldown: 0,
 		InvulnFrames:   0,
 	})
 
 	// Set health (enemies have less health than player)
 	components.Health.SetValue(enemy, components.HealthData{
-		Current: 60,  // Less health than player (100)
+		Current: 60, // Less health than player (100)
 		Max:     60,
 	})
 

@@ -61,7 +61,7 @@ func createPlayerHitboxes(ecs *ecs.ECS) {
 				shouldCreateHitbox = true
 				attackType = "punch"
 			}
-		case cfg.Kick01, cfg.Kick02, cfg.Kick03:
+		case cfg.Kick01:
 			// Create hitbox at frame 15-20 of kick animation
 			if player.StateTimer >= 15 && player.StateTimer <= 20 {
 				shouldCreateHitbox = true

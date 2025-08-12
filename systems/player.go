@@ -57,9 +57,6 @@ func handlePlayerInput(player *components.PlayerData, playerObject *resolv.Objec
 		if inpututil.IsKeyJustPressed(ebiten.KeyZ) { // Punch
 			startPunchCombo(player)
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyC) { // Kick
-			startKickCombo(player)
-		}
 		if ebiten.IsKeyPressed(ebiten.KeyDown) && player.OnGround != nil { // Guard/Crouch
 			if player.CurrentState != cfg.Crouch {
 				player.CurrentState = cfg.Crouch
@@ -379,14 +376,6 @@ func updatePlayerState(player *components.PlayerData, animData *components.Anima
 		if player.StateTimer > 45 { // 45 frames for kick1 animation
 			transitionToMovementState(player)
 		}
-	case cfg.Kick02:
-		if player.StateTimer > 40 { // 40 frames for kick2 animation
-			transitionToMovementState(player)
-		}
-	case cfg.Kick03:
-		if player.StateTimer > 45 { // 45 frames for kick3 animation
-			transitionToMovementState(player)
-		}
 	case cfg.Hit, cfg.Stunned:
 		if player.StateTimer > 30 { // 30 frames of hitstun
 			transitionToMovementState(player)
@@ -416,8 +405,7 @@ func isInLockedState(state string) bool {
 }
 
 func isInAttackState(state string) bool {
-	return state == cfg.Punch01 || state == cfg.Punch02 || state == cfg.Punch03 ||
-		state == cfg.Kick01 || state == cfg.Kick02 || state == cfg.Kick03
+	return state == cfg.Punch01 || state == cfg.Punch02 || state == cfg.Punch03 || state == cfg.Kick01
 }
 
 func startPunchCombo(player *components.PlayerData) {
@@ -430,7 +418,7 @@ func startPunchCombo(player *components.PlayerData) {
 		}
 	case cfg.Punch02:
 		if player.StateTimer > 8 { // Allow combo after 8 frames
-			player.CurrentState = cfg.Punch03
+			player.CurrentState = cfg.Kick01
 			player.ComboCounter++
 			player.StateTimer = 0
 		}
@@ -441,26 +429,6 @@ func startPunchCombo(player *components.PlayerData) {
 	}
 }
 
-func startKickCombo(player *components.PlayerData) {
-	switch player.CurrentState {
-	case cfg.Kick01:
-		if player.StateTimer > 12 { // Allow combo after 12 frames
-			player.CurrentState = cfg.Kick02
-			player.ComboCounter++
-			player.StateTimer = 0
-		}
-	case cfg.Kick02:
-		if player.StateTimer > 10 { // Allow combo after 10 frames
-			player.CurrentState = cfg.Kick03
-			player.ComboCounter++
-			player.StateTimer = 0
-		}
-	default:
-		player.CurrentState = cfg.Kick01
-		player.ComboCounter = 1
-		player.StateTimer = 0
-	}
-}
 
 func transitionToMovementState(player *components.PlayerData) {
 	if player.WallSliding != nil {
