@@ -17,7 +17,7 @@ const (
 	playerFrameWidth      = 96
 	playerFrameHeight     = 84
 	playerCollisionWidth  = 16
-	playerCollisionHeight = 16
+	playerCollisionHeight = 40 // Fixed: matches actual character height
 )
 
 const (
@@ -40,11 +40,19 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 
 	obj := resolv.NewObject(spawnX, spawnY, playerCollisionWidth, playerCollisionHeight)
 	cfg.SetObject(player, obj)
+	obj.AddTags("character")
 	components.Player.SetValue(player, components.PlayerData{
-		FacingRight:  true,
+		Direction:    components.Vector{X: 1, Y: 0},
+		ComboCounter: 0,
+	})
+	components.State.SetValue(player, components.StateData{
 		CurrentState: cfg.Idle,
 		StateTimer:   0,
-		ComboCounter: 0,
+	})
+	components.Physics.SetValue(player, components.PhysicsData{
+		Gravity:  0.75,
+		Friction: 0.5,
+		MaxSpeed: 6.0,
 	})
 	components.Health.SetValue(player, components.HealthData{
 		Current: 100,

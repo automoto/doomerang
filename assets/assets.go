@@ -1,6 +1,7 @@
 package assets
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"path/filepath"
@@ -17,6 +18,9 @@ var (
 	assetFS embed.FS
 	//go:embed fonts/excel.ttf
 	excelFontData []byte
+
+	//go:embed all:images/spritesheets
+	animationFS embed.FS
 )
 
 type Level struct {
@@ -40,6 +44,27 @@ func NewLevelLoader() *LevelLoader {
 type Path struct {
 	Points []math.Vec2
 	Loops  bool
+}
+
+type AnimationLoader struct {
+	// No fields needed for now, as animationFS is a package-level variable
+}
+
+func NewAnimationLoader() *AnimationLoader {
+	return &AnimationLoader{}
+}
+
+func (l *AnimationLoader) MustLoadImage(path string) *ebiten.Image {
+	imgBytes, err := animationFS.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read image file %s: %v", path, err))
+	}
+
+	img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(imgBytes))
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create image from bytes for %s: %v", path, err))
+	}
+	return img
 }
 
 func (l *LevelLoader) MustLoadLevels() []Level {
@@ -129,19 +154,16 @@ func LoadAssets() error {
 	loader := NewLevelLoader()
 	Levels := loader.MustLoadLevels()
 	fmt.Println(Levels)
-	player, _, err := ebitenutil.NewImageFromFile("assets/images/blue-gopher/run-sm.png")
-	if err != nil {
-		return err
-	}
-	fmt.Println(player)
+	// The animation assets are now embedded and loaded on demand,
+	// so we no longer need to explicitly load them here.
 	return nil
 }
 
+var (
+	animationLoader = NewAnimationLoader()
+)
+
 func GetSheetByState(dir string, state string) *ebiten.Image {
-	path := fmt.Sprintf("assets/images/spritesheets/%s/%s.png", dir, state)
-	sprite, _, err := ebitenutil.NewImageFromFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return sprite
+	path := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state)
+	return animationLoader.MustLoadImage(path)
 }

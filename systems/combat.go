@@ -69,8 +69,8 @@ func startDeathSequence(e *donburi.Entry) {
 
 	// Zero out movement if it has PlayerData.
 	if e.HasComponent(components.Player) {
-		p := components.Player.Get(e)
-		p.SpeedX = 0
-		p.SpeedY = 0
+		physics := components.Physics.Get(e)
+		physics.SpeedX = 0
+		physics.SpeedY = 0
 	}
 }

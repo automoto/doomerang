@@ -24,45 +24,50 @@ In this project, we use the `donburi` library to implement the ECS architecture.
 
 ### Components
 
-All components are defined in the `components/` directory. Each component is a simple struct that holds data. For example, in `components/player.go`, we have:
+All components are defined in the `components/` directory. Each component is a simple struct that holds data. For example, in `components/physics.go`, we have:
 
 ```go
 package components
 
 import (
-    "github.com/solarlune/resolv"
-    "github.com/yohamta/donburi"
+	"github.com/solarlune/resolv"
+	"github.com/yohamta/donburi"
 )
 
-type PlayerData struct {
-    SpeedX         float64
-    SpeedY         float64
-    OnGround       *resolv.Object
-    WallSliding    *resolv.Object
-    FacingRight    bool
-    IgnorePlatform *resolv.Object
+type PhysicsData struct {
+	SpeedX         float64
+	SpeedY         float64
+	AccelX         float64
+	Gravity        float64
+	Friction       float64
+	MaxSpeed       float64
+	OnGround       *resolv.Object
+	WallSliding    *resolv.Object
+	IgnorePlatform *resolv.Object
 }
 
-var Player = donburi.NewComponentType[PlayerData]()
+var Physics = donburi.NewComponentType[PhysicsData]()
 ```
 
 Each component type is registered with `donburi` using `donburi.NewComponentType[T]()`, where `T` is the struct that defines the component's data.
 
 ### Systems
 
-Systems contain the game's logic and are located in the `systems/` directory. A system is a function that takes an `*ecs.ECS` instance as an argument. For example, `systems/player.go` defines the `UpdatePlayer` and `DrawPlayer` systems:
+Systems contain the game's logic and are located in the `systems/` directory. A system is a function that takes an `*ecs.ECS` instance as an argument. For example, `systems/physics.go` defines the `UpdatePhysics` system:
 
 ```go
 package systems
 
-// ...
+import (
+	"github.com/automoto/doomerang/components"
+	"github.com/yohamta/donburi"
+	"github.com/yohamta/donburi/ecs"
+)
 
-func UpdatePlayer(ecs *ecs.ECS) {
-    // Logic to update the player's state
-}
-
-func DrawPlayer(ecs *ecs.ECS, screen *ebiten.Image) {
-    // Logic to draw the player
+func UpdatePhysics(ecs *ecs.ECS) {
+	components.Physics.Each(ecs.World, func(e *donburi.Entry) {
+		// ...
+	})
 }
 ```
 
@@ -83,6 +88,7 @@ var (
         components.Player,
         components.Object,
         components.Animation,
+        components.Physics,
     )
 )
 ```
@@ -111,7 +117,7 @@ This approach encapsulates the complexity of entity creation and ensures that al
 
 ### Game Initialization
 
-The main game scene, `scenes/platformer.go`, is where everything comes together. In the `configure` method, we:
+The main game scene, `scenes/world.go`, is where everything comes together. In the `configure` method, we:
 
 1.  Create a new `ecs.ECS` instance.
 2.  Add all the systems and renderers to the ECS.
@@ -127,10 +133,12 @@ func (ps *PlatformerScene) configure() {
 
     // Add systems
     ecs.AddSystem(systems.UpdatePlayer)
+    ecs.AddSystem(systems.UpdatePhysics)
+    ecs.AddSystem(systems.UpdateCollisions)
     // ...
 
     // Add renderers
-    ecs.AddRenderer(layers.Default, systems.DrawPlayer)
+    ecs.AddRenderer(layers.Default, systems.DrawAnimated)
     // ...
 
     ps.ecs = ecs
