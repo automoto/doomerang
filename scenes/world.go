@@ -54,7 +54,7 @@ func (ps *PlatformerScene) configure() {
 	// ecs.AddRenderer(layers.Default, systems.DrawHitboxes) // Disabled - ugly debug rendering
 	ecs.AddRenderer(layers.Default, systems.DrawHUD)
 	ecs.AddRenderer(layers.Default, systems.DrawDebug)
-	ecs.AddRenderer(layers.Default, systems.DrawHelp)
+	// ecs.AddRenderer(layers.Default, systems.DrawHelp)
 
 	ps.ecs = ecs
 

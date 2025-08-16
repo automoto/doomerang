@@ -2,18 +2,23 @@ package systems
 
 import (
 	"github.com/automoto/doomerang/components"
+	cfg "github.com/automoto/doomerang/config"
+	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
 
-// UpdateDeaths decrements death timers and removes entities when the timer
-// expires.
 func UpdateDeaths(ecs *ecs.ECS) {
-	for e := range components.Death.Iter(ecs.World) {
-		d := components.Death.Get(e)
-		d.Timer--
-		if d.Timer <= 0 {
-			// Remove the entity from the world.
-			e.Remove()
+	components.Death.Each(ecs.World, func(e *donburi.Entry) {
+		death := components.Death.Get(e)
+		death.Timer--
+		if death.Timer <= 0 {
+			// Get the space and object to remove the object from the physics world.
+			spaceEntry, _ := components.Space.First(e.World)
+			space := components.Space.Get(spaceEntry)
+			if obj := cfg.GetObject(e); obj != nil {
+				space.Remove(obj)
+			}
+			ecs.World.Remove(e.Entity())
 		}
-	}
+	})
 }
