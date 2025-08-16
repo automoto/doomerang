@@ -52,7 +52,7 @@ func UpdateEnemies(ecs *ecs.ECS) {
 		}
 
 		// Update AI behavior
-		updateEnemyAI(enemy, cfg.GetObject(e), playerObject)
+		updateEnemyAI(ecs, e, playerObject)
 
 		// Apply physics
 		applyEnemyPhysics(enemy)
@@ -65,7 +65,9 @@ func UpdateEnemies(ecs *ecs.ECS) {
 	})
 }
 
-func updateEnemyAI(enemy *components.EnemyData, enemyObject, playerObject *resolv.Object) {
+func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object) {
+	enemy := components.Enemy.Get(enemyEntry)
+	enemyObject := cfg.GetObject(enemyEntry)
 	enemy.StateTimer++
 
 	// Update attack cooldown
@@ -86,9 +88,9 @@ func updateEnemyAI(enemy *components.EnemyData, enemyObject, playerObject *resol
 	case enemyStatePatrol:
 		handlePatrolState(enemy, enemyObject, playerObject, distanceToPlayer)
 	case enemyStateChase:
-		handleChaseState(enemy, enemyObject, playerObject, distanceToPlayer)
+		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
 	case enemyStateAttack:
-		handleAttackState(enemy, enemyObject, playerObject, distanceToPlayer)
+		handleAttackState(ecs, enemyEntry)
 	}
 }
 
@@ -116,7 +118,9 @@ func handlePatrolState(enemy *components.EnemyData, enemyObject, playerObject *r
 	}
 }
 
-func handleChaseState(enemy *components.EnemyData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object, distanceToPlayer float64) {
+	enemy := components.Enemy.Get(enemyEntry)
+	enemyObject := cfg.GetObject(enemyEntry)
 	// Check if should attack
 	if distanceToPlayer <= enemy.AttackRange && enemy.AttackCooldown == 0 {
 		enemy.CurrentState = enemyStateAttack
@@ -131,33 +135,29 @@ func handleChaseState(enemy *components.EnemyData, enemyObject, playerObject *re
 		return
 	}
 
-	// Stop moving if within stopping distance
-	if distanceToPlayer <= enemy.StoppingDistance {
-		// Face the player even when stopped
-		if playerObject.X > enemyObject.X {
-			enemy.Direction.X = 1
-		} else {
-			enemy.Direction.X = -1
-		}
-		return // Don't apply movement input
-	}
-
-	// Chase player - apply acceleration like player input
+	// Face the player
 	if playerObject.X > enemyObject.X {
-		enemy.SpeedX += enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing
 		enemy.Direction.X = 1
 	} else {
-		enemy.SpeedX -= enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing
 		enemy.Direction.X = -1
+	}
+
+	// Move towards player if not within stopping distance
+	if distanceToPlayer > enemy.StoppingDistance {
+		if playerObject.X > enemyObject.X {
+			enemy.SpeedX += enemy.ChaseSpeed * 1.3
+		} else {
+			enemy.SpeedX -= enemy.ChaseSpeed * 1.3
+		}
 	}
 }
 
-func handleAttackState(enemy *components.EnemyData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
-	// Always face the player when attacking
-	if playerObject.X > enemyObject.X {
-		enemy.Direction.X = 1
-	} else {
-		enemy.Direction.X = -1
+func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
+	enemy := components.Enemy.Get(enemyEntry)
+	enemyObject := cfg.GetObject(enemyEntry)
+	// Create a hitbox on the first frame of the attack
+	if enemy.StateTimer == 1 {
+		CreateHitbox(ecs, enemyEntry, enemyObject, "punch", false)
 	}
 
 	// Attack animation duration (simplified - using timer)

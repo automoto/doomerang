@@ -72,7 +72,7 @@ func createPlayerHitboxes(ecs *ecs.ECS) {
 		if shouldCreateHitbox {
 			// Check if hitbox already exists for this attack
 			if !hasActiveHitbox(ecs, playerEntry) {
-				createHitbox(ecs, playerEntry, playerObject, attackType, true)
+				CreateHitbox(ecs, playerEntry, playerObject, attackType, true)
 			}
 		}
 	})
@@ -86,7 +86,7 @@ func createEnemyHitboxes(ecs *ecs.ECS) {
 		// Enemies only punch for now
 		if enemy.CurrentState == "attack" && enemy.StateTimer >= 10 && enemy.StateTimer <= 15 {
 			if !hasActiveHitbox(ecs, enemyEntry) {
-				createHitbox(ecs, enemyEntry, enemyObject, "punch", false)
+				CreateHitbox(ecs, enemyEntry, enemyObject, "punch", false)
 			}
 		}
 	})
@@ -103,7 +103,7 @@ func hasActiveHitbox(ecs *ecs.ECS, owner *donburi.Entry) bool {
 	return hasHitbox
 }
 
-func createHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object, attackType string, isPlayer bool) {
+func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object, attackType string, isPlayer bool) {
 	hitbox := archetypes.Hitbox.Spawn(ecs)
 	
 	// Determine hitbox size and damage
