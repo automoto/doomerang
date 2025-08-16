@@ -20,6 +20,7 @@ type EnemyData struct {
 	ChaseSpeed     float64       // Speed while chasing player
 	AttackRange    float64       // Distance to start attacking
 	ChaseRange     float64       // Distance to start chasing
+	StoppingDistance float64    // Distance to stop before attacking
 	
 	// Combat
 	AttackCooldown int           // Frames until can attack again

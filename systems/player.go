@@ -1,7 +1,6 @@
 package systems
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -134,7 +133,7 @@ func resolveHorizontalCollision(player *components.PlayerData, playerObject *res
 		return
 	}
 
-	check := playerObject.Check(dx, 0, "solid")
+	check := playerObject.Check(dx, 0, "solid", "character")
 	if check == nil {
 		playerObject.X += dx
 		return
@@ -143,11 +142,28 @@ func resolveHorizontalCollision(player *components.PlayerData, playerObject *res
 	// Debug collision detection if enabled
 	debugHorizontalCollision(dx, playerObject, check)
 
-	// Check if we're actually hitting a wall (not just positioned next to ground)
+	// Check for collisions with solid objects (walls)
 	if shouldStopHorizontalMovement(playerObject, check) {
 		player.SpeedX = 0
 		setWallSlidingIfAirborne(player, check)
-		return // Don't move horizontally
+		dx = 0 // Stop movement
+	}
+
+	// Check for collisions with other characters
+	if characters := check.ObjectsByTags("character"); len(characters) > 0 {
+		// Gentle push-back instead of a hard stop
+		contact := check.ContactWithObject(characters[0])
+		if contact.X() != 0 { // If there is penetration
+			// Apply a small, fixed pushback
+			if dx > 0 {
+				dx = -1
+			} else {
+				dx = 1
+			}
+		} else {
+			// If just touching, use the contact point to slide along the other character
+			dx = contact.X()
+		}
 	}
 
 	playerObject.X += dx
@@ -207,15 +223,15 @@ func debugHorizontalCollision(dx float64, playerObject *resolv.Object, check *re
 		return
 	}
 
-	fmt.Printf("Horizontal collision detected! dx=%.2f, player pos: (%.2f, %.2f)\n",
-		dx, playerObject.X, playerObject.Y)
+	// fmt.Printf("Horizontal collision detected! dx=%.2f, player pos: (%.2f, %.2f)\n",
+	// 	dx, playerObject.X, playerObject.Y)
 
-	if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-		for i, solid := range solids {
-			fmt.Printf("  Solid %d: pos=(%.2f, %.2f), size=(%.2f, %.2f)\n",
-				i, solid.X, solid.Y, solid.W, solid.H)
-		}
-	}
+	// if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
+	// 	for i, solid := range solids {
+	// 		fmt.Printf("  Solid %d: pos=(%.2f, %.2f), size=(%.2f, %.2f)\n",
+	// 			i, solid.X, solid.Y, solid.W, solid.H)
+	// 	}
+	// }
 }
 
 func shouldStopHorizontalMovement(playerObject *resolv.Object, check *resolv.Collision) bool {

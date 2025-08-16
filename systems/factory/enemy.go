@@ -30,18 +30,19 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	obj := resolv.NewObject(x, y, enemyCollisionWidth, enemyCollisionHeight)
 	cfg.SetObject(enemy, obj)
 	obj.SetShape(resolv.NewRectangle(0, 0, enemyCollisionWidth, enemyCollisionHeight))
-
+	obj.AddTags("character")
 	// Set enemy data with AI parameters
 	components.Enemy.SetValue(enemy, components.EnemyData{
 		FacingRight:    false, // Start facing left
 		CurrentState:   enemyStatePatrol,
 		StateTimer:     0,
-		PatrolLeft:     x - 64, // Patrol 64 pixels left from spawn
-		PatrolRight:    x + 64, // Patrol 64 pixels right from spawn
-		PatrolSpeed:    1.0,    // Slow patrol speed
-		ChaseSpeed:     2.5,    // Faster when chasing
+		PatrolLeft:     x - 16,
+		PatrolRight:    x + 16,
+		PatrolSpeed:    1.0,
+		ChaseSpeed:     1.5,    // Faster when chasing
 		AttackRange:    24.0,   // Attack when player within 24 pixels
 		ChaseRange:     80.0,   // Start chasing when player within 80 pixels
+		StoppingDistance: 20.0, // Stop 20 pixels away from player
 		AttackCooldown: 0,
 		InvulnFrames:   0,
 	})

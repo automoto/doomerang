@@ -102,13 +102,13 @@ func handlePatrolState(enemy *components.EnemyData, enemyObject, playerObject *r
 
 	// Patrol behavior - move back and forth
 	if enemy.FacingRight {
-		enemy.SpeedX += enemy.PatrolSpeed * 1.7 // Apply acceleration (15% slower)
+		enemy.SpeedX += enemy.PatrolSpeed * 1.1
 		// Turn around if hit right boundary
 		if enemyObject.X >= enemy.PatrolRight {
 			enemy.FacingRight = false
 		}
 	} else {
-		enemy.SpeedX -= enemy.PatrolSpeed * 1.7 // Apply acceleration (15% slower)
+		enemy.SpeedX -= enemy.PatrolSpeed * 1.1
 		// Turn around if hit left boundary
 		if enemyObject.X <= enemy.PatrolLeft {
 			enemy.FacingRight = true
@@ -131,17 +131,35 @@ func handleChaseState(enemy *components.EnemyData, enemyObject, playerObject *re
 		return
 	}
 
+	// Stop moving if within stopping distance
+	if distanceToPlayer <= enemy.StoppingDistance {
+		// Face the player even when stopped
+		if playerObject.X > enemyObject.X {
+			enemy.FacingRight = true
+		} else {
+			enemy.FacingRight = false
+		}
+		return // Don't apply movement input
+	}
+
 	// Chase player - apply acceleration like player input
 	if playerObject.X > enemyObject.X {
-		enemy.SpeedX += enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing (15% slower)
+		enemy.SpeedX += enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing
 		enemy.FacingRight = true
 	} else {
-		enemy.SpeedX -= enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing (15% slower)
+		enemy.SpeedX -= enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing
 		enemy.FacingRight = false
 	}
 }
 
 func handleAttackState(enemy *components.EnemyData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	// Always face the player when attacking
+	if playerObject.X > enemyObject.X {
+		enemy.FacingRight = true
+	} else {
+		enemy.FacingRight = false
+	}
+
 	// Attack animation duration (simplified - using timer)
 	attackDuration := 30 // 30 frames for attack
 
@@ -184,24 +202,38 @@ func resolveEnemyCollisions(enemy *components.EnemyData, enemyObject *resolv.Obj
 	// Horizontal collision - only stop for actual walls, not ground
 	dx := enemy.SpeedX
 	if dx != 0 {
-		if check := enemyObject.Check(dx, 0, "solid"); check != nil {
-			// Check if this is actually a wall blocking horizontal movement
-			shouldStop := false
+		if check := enemyObject.Check(dx, 0, "solid", "character"); check != nil {
+			// Check for collisions with solid objects (walls)
 			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
+				shouldStop := false
 				for _, solid := range solids {
-					// Only stop if the solid object is actually blocking horizontal movement
-					// (enemy's center would be inside the solid's vertical bounds)
 					enemyCenterY := enemyObject.Y + enemyObject.H/2
 					if enemyCenterY >= solid.Y && enemyCenterY <= solid.Y+solid.H {
 						shouldStop = true
 						break
 					}
 				}
+				if shouldStop {
+					enemy.SpeedX = 0
+					dx = 0
+				}
 			}
 
-			if shouldStop {
-				enemy.SpeedX = 0
-				dx = 0
+			// Check for collisions with other characters
+			if characters := check.ObjectsByTags("character"); len(characters) > 0 {
+				// Gentle push-back instead of a hard stop
+				contact := check.ContactWithObject(characters[0])
+				if contact.X() != 0 { // If there is penetration
+					// Apply a small, fixed pushback
+					if dx > 0 {
+						dx = -1
+					} else {
+						dx = 1
+					}
+				} else {
+					// If just touching, use the contact point to slide along the other character
+					dx = contact.X()
+				}
 			}
 		}
 	}

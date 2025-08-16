@@ -67,6 +67,13 @@ func startDeathSequence(e *donburi.Entry) {
 		anim.SetAnimation(cfg.Die)
 	}
 
+	// Get the space and object to remove the object from the physics world.
+	spaceEntry, _ := components.Space.First(e.World)
+	space := components.Space.Get(spaceEntry)
+	if obj := cfg.GetObject(e); obj != nil {
+		space.Remove(obj)
+	}
+
 	// Zero out movement if it has PlayerData.
 	if e.HasComponent(components.Player) {
 		p := components.Player.Get(e)
