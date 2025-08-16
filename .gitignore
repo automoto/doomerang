@@ -19,7 +19,6 @@ vendor/
 
 # Build output
 bin/
-pkg/
 
 # IDE specific files
 .idea/
