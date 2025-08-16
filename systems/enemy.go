@@ -163,7 +163,6 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	// Don't apply movement input during attack - let friction naturally slow down
 }
 
-
 func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
 	// Simple animation state based on movement and AI state
 	var targetState string
@@ -190,4 +189,3 @@ func updateEnemyAnimation(enemy *components.EnemyData, physics *components.Physi
 		animData.CurrentAnimation.Update()
 	}
 }
-

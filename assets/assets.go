@@ -1,8 +1,8 @@
 package assets
 
 import (
-	"embed"
 	"bytes"
+	"embed"
 	"fmt"
 	"path/filepath"
 

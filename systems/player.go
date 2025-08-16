@@ -93,7 +93,6 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 	}
 }
 
-
 func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
 	state.StateTimer++
 
@@ -185,4 +184,3 @@ func transitionToMovementState(e *donburi.Entry, player *components.PlayerData, 
 	state.StateTimer = 0
 	player.ComboCounter = 0
 }
-
