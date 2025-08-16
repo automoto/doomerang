@@ -128,14 +128,14 @@ func createHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 	
 	if isPlayer {
 		player := components.Player.Get(owner)
-		if player.FacingRight {
+		if player.Direction.X > 0 {
 			hitboxX = ownerObject.X + ownerObject.W
 		} else {
 			hitboxX = ownerObject.X - width
 		}
 	} else {
 		enemy := components.Enemy.Get(owner)
-		if enemy.FacingRight {
+		if enemy.Direction.X > 0 {
 			hitboxX = ownerObject.X + ownerObject.W
 		} else {
 			hitboxX = ownerObject.X - width

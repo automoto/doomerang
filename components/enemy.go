@@ -9,7 +9,7 @@ type EnemyData struct {
 	SpeedX         float64
 	SpeedY         float64
 	OnGround       *resolv.Object
-	FacingRight    bool
+	Direction      Vector
 	
 	// AI state management
 	CurrentState   string        // Current AI state (patrol, chase, attack)

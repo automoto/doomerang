@@ -42,7 +42,7 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 	cfg.SetObject(player, obj)
 	obj.AddTags("character")
 	components.Player.SetValue(player, components.PlayerData{
-		FacingRight:  true,
+		Direction:    components.Vector{X: 1, Y: 0},
 		CurrentState: cfg.Idle,
 		StateTimer:   0,
 		ComboCounter: 0,

@@ -10,7 +10,7 @@ type PlayerData struct {
 	SpeedY         float64
 	OnGround       *resolv.Object
 	WallSliding    *resolv.Object
-	FacingRight    bool
+	Direction      Vector
 	IgnorePlatform *resolv.Object
 
 	// New state management

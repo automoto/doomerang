@@ -33,7 +33,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	obj.AddTags("character")
 	// Set enemy data with AI parameters
 	components.Enemy.SetValue(enemy, components.EnemyData{
-		FacingRight:    false, // Start facing left
+		Direction:      components.Vector{X: -1, Y: 0}, // Start facing left
 		CurrentState:   enemyStatePatrol,
 		StateTimer:     0,
 		PatrolLeft:     x - 16,

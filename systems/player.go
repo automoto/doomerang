@@ -70,12 +70,12 @@ func handlePlayerInput(player *components.PlayerData, playerObject *resolv.Objec
 		if player.WallSliding == nil {
 			if ebiten.IsKeyPressed(ebiten.KeyRight) {
 				player.SpeedX += playerAccel
-				player.FacingRight = true
+				player.Direction.X = 1
 			}
 
 			if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 				player.SpeedX -= playerAccel
-				player.FacingRight = false
+				player.Direction.X = -1
 			}
 		}
 
@@ -200,10 +200,7 @@ func updateWallSliding(player *components.PlayerData, playerObject *resolv.Objec
 		return
 	}
 
-	wallDirection := 1.0
-	if !player.FacingRight {
-		wallDirection = -1.0
-	}
+	wallDirection := player.Direction.X
 
 	if check := playerObject.Check(wallDirection, 0, "solid"); check == nil {
 		player.WallSliding = nil
@@ -486,7 +483,7 @@ func DrawPlayer(ecs *ecs.ECS, screen *ebiten.Image) {
 			op.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
 
 			// Flip the sprite if facing left.
-			if !player.FacingRight {
+			if player.Direction.X < 0 {
 				op.GeoM.Scale(-1, 1)
 			}
 

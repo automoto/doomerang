@@ -101,17 +101,17 @@ func handlePatrolState(enemy *components.EnemyData, enemyObject, playerObject *r
 	}
 
 	// Patrol behavior - move back and forth
-	if enemy.FacingRight {
+	if enemy.Direction.X > 0 {
 		enemy.SpeedX += enemy.PatrolSpeed * 1.1
 		// Turn around if hit right boundary
 		if enemyObject.X >= enemy.PatrolRight {
-			enemy.FacingRight = false
+			enemy.Direction.X = -1
 		}
 	} else {
 		enemy.SpeedX -= enemy.PatrolSpeed * 1.1
 		// Turn around if hit left boundary
 		if enemyObject.X <= enemy.PatrolLeft {
-			enemy.FacingRight = true
+			enemy.Direction.X = 1
 		}
 	}
 }
@@ -135,9 +135,9 @@ func handleChaseState(enemy *components.EnemyData, enemyObject, playerObject *re
 	if distanceToPlayer <= enemy.StoppingDistance {
 		// Face the player even when stopped
 		if playerObject.X > enemyObject.X {
-			enemy.FacingRight = true
+			enemy.Direction.X = 1
 		} else {
-			enemy.FacingRight = false
+			enemy.Direction.X = -1
 		}
 		return // Don't apply movement input
 	}
@@ -145,19 +145,19 @@ func handleChaseState(enemy *components.EnemyData, enemyObject, playerObject *re
 	// Chase player - apply acceleration like player input
 	if playerObject.X > enemyObject.X {
 		enemy.SpeedX += enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing
-		enemy.FacingRight = true
+		enemy.Direction.X = 1
 	} else {
 		enemy.SpeedX -= enemy.ChaseSpeed * 1.3 // Apply stronger acceleration for chasing
-		enemy.FacingRight = false
+		enemy.Direction.X = -1
 	}
 }
 
 func handleAttackState(enemy *components.EnemyData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	// Always face the player when attacking
 	if playerObject.X > enemyObject.X {
-		enemy.FacingRight = true
+		enemy.Direction.X = 1
 	} else {
-		enemy.FacingRight = false
+		enemy.Direction.X = -1
 	}
 
 	// Attack animation duration (simplified - using timer)
@@ -320,7 +320,7 @@ func DrawEnemies(ecs *ecs.ECS, screen *ebiten.Image) {
 			op.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
 
 			// Flip sprite if facing left
-			if !enemy.FacingRight {
+			if enemy.Direction.X < 0 {
 				op.GeoM.Scale(-1, 1)
 			}
 
