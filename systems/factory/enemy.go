@@ -40,9 +40,9 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 		PatrolRight:    x + 16,
 		PatrolSpeed:    1.0,
 		ChaseSpeed:     1.5,    // Faster when chasing
-		AttackRange:    32.0,   // Attack when player within 32 pixels
+		AttackRange:    36.0,   // Attack when player within 32 pixels
 		ChaseRange:     80.0,   // Start chasing when player within 80 pixels
-		StoppingDistance: 24.0, // Stop 24 pixels away from player
+		StoppingDistance: 28.0, // Stop 24 pixels away from player
 		AttackCooldown: 0,
 		InvulnFrames:   0,
 	})
