@@ -33,18 +33,25 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	obj.AddTags("character")
 	// Set enemy data with AI parameters
 	components.Enemy.SetValue(enemy, components.EnemyData{
-		Direction:      components.Vector{X: -1, Y: 0}, // Start facing left
-		CurrentState:   enemyStatePatrol,
-		StateTimer:     0,
-		PatrolLeft:     x - 16,
-		PatrolRight:    x + 16,
-		PatrolSpeed:    1.0,
-		ChaseSpeed:     1.5,    // Faster when chasing
-		AttackRange:    36.0,   // Attack when player within 32 pixels
-		ChaseRange:     80.0,   // Start chasing when player within 80 pixels
+		Direction:        components.Vector{X: -1, Y: 0}, // Start facing left
+		PatrolLeft:       x - 16,
+		PatrolRight:      x + 16,
+		PatrolSpeed:      1.0,
+		ChaseSpeed:       1.5,  // Faster when chasing
+		AttackRange:      36.0, // Attack when player within 32 pixels
+		ChaseRange:       80.0, // Start chasing when player within 80 pixels
 		StoppingDistance: 28.0, // Stop 24 pixels away from player
-		AttackCooldown: 0,
-		InvulnFrames:   0,
+		AttackCooldown:   0,
+		InvulnFrames:     0,
+	})
+	components.State.SetValue(enemy, components.StateData{
+		CurrentState: "patrol",
+		StateTimer:   0,
+	})
+	components.Physics.SetValue(enemy, components.PhysicsData{
+		Gravity:  0.75,
+		Friction: 0.5,
+		MaxSpeed: 6.0,
 	})
 
 	// Set health (enemies have less health than player)

@@ -47,23 +47,23 @@ func UpdateCombatHitboxes(ecs *ecs.ECS) {
 
 func createPlayerHitboxes(ecs *ecs.ECS) {
 	tags.Player.Each(ecs.World, func(playerEntry *donburi.Entry) {
-		player := components.Player.Get(playerEntry)
+		state := components.State.Get(playerEntry)
 		playerObject := cfg.GetObject(playerEntry)
 		
 		// Check if player is in attack state and at the right frame
 		shouldCreateHitbox := false
 		attackType := ""
 		
-		switch player.CurrentState {
+		switch state.CurrentState {
 		case cfg.Punch01, cfg.Punch02, cfg.Punch03:
 			// Create hitbox at frame 10-15 of punch animation
-			if player.StateTimer >= 10 && player.StateTimer <= 15 {
+			if state.StateTimer >= 10 && state.StateTimer <= 15 {
 				shouldCreateHitbox = true
 				attackType = "punch"
 			}
 		case cfg.Kick01:
 			// Create hitbox at frame 15-20 of kick animation
-			if player.StateTimer >= 15 && player.StateTimer <= 20 {
+			if state.StateTimer >= 15 && state.StateTimer <= 20 {
 				shouldCreateHitbox = true
 				attackType = "kick"
 			}
@@ -80,11 +80,11 @@ func createPlayerHitboxes(ecs *ecs.ECS) {
 
 func createEnemyHitboxes(ecs *ecs.ECS) {
 	tags.Enemy.Each(ecs.World, func(enemyEntry *donburi.Entry) {
-		enemy := components.Enemy.Get(enemyEntry)
+		state := components.State.Get(enemyEntry)
 		enemyObject := cfg.GetObject(enemyEntry)
 		
 		// Enemies only punch for now
-		if enemy.CurrentState == "attack" && enemy.StateTimer >= 10 && enemy.StateTimer <= 15 {
+		if state.CurrentState == "attack" && state.StateTimer >= 10 && state.StateTimer <= 15 {
 			if !hasActiveHitbox(ecs, enemyEntry) {
 				CreateHitbox(ecs, enemyEntry, enemyObject, "punch", false)
 			}
@@ -227,7 +227,7 @@ func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
 	})
 	
 	// Apply knockback
-	applyKnockback(enemyEntry, hitbox, enemyObject, true)
+	applyKnockback(enemyEntry, hitbox, enemyObject)
 	
 	// Set invulnerability frames
 	enemy.InvulnFrames = invulnFrames
@@ -245,12 +245,12 @@ func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData)
 	})
 	
 	// Apply knockback
-	applyKnockback(playerEntry, hitbox, playerObject, false)
+	applyKnockback(playerEntry, hitbox, playerObject)
 	
 	// TODO: Set player invulnerability frames (would need to add to PlayerData)
 }
 
-func applyKnockback(targetEntry *donburi.Entry, hitbox *components.HitboxData, targetObject *resolv.Object, isEnemy bool) {
+func applyKnockback(targetEntry *donburi.Entry, hitbox *components.HitboxData, targetObject *resolv.Object) {
 	ownerObject := cfg.GetObject(hitbox.OwnerEntity)
 	
 	// Determine knockback direction
@@ -260,15 +260,9 @@ func applyKnockback(targetEntry *donburi.Entry, hitbox *components.HitboxData, t
 	}
 	
 	// Apply knockback force
-	if isEnemy {
-		enemy := components.Enemy.Get(targetEntry)
-		enemy.SpeedX = knockbackDirection * hitbox.KnockbackForce
-		enemy.SpeedY = -2.0 // Small upward knockback
-	} else {
-		player := components.Player.Get(targetEntry)
-		player.SpeedX = knockbackDirection * hitbox.KnockbackForce
-		player.SpeedY = -2.0 // Small upward knockback
-	}
+	physics := components.Physics.Get(targetEntry)
+	physics.SpeedX = knockbackDirection * hitbox.KnockbackForce
+	physics.SpeedY = -2.0 // Small upward knockback
 }
 
 func cleanupHitboxes(ecs *ecs.ECS) {

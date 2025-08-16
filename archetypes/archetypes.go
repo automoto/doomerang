@@ -24,6 +24,8 @@ var (
 		components.Object,
 		components.Health,
 		components.Animation,
+		components.Physics,
+		components.State,
 	)
 	Enemy = newArchetype(
 		tags.Enemy,
@@ -31,6 +33,8 @@ var (
 		components.Object,
 		components.Health,
 		components.Animation,
+		components.Physics,
+		components.State,
 	)
 	Hitbox = newArchetype(
 		tags.Hitbox,

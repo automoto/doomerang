@@ -1,24 +1,14 @@
 package systems
 
 import (
-	"image"
-	"image/color"
 	"math"
 
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
-)
-
-const (
-	enemyGravity  = 0.75 // Same as player
-	enemyMaxSpeed = 6.0  // Same as player
-	enemyFriction = 0.5  // Same as player
 )
 
 // AI state constants - should match factory
@@ -54,21 +44,17 @@ func UpdateEnemies(ecs *ecs.ECS) {
 		// Update AI behavior
 		updateEnemyAI(ecs, e, playerObject)
 
-		// Apply physics
-		applyEnemyPhysics(enemy)
-
-		// Resolve collisions
-		resolveEnemyCollisions(enemy, cfg.GetObject(e))
-
 		// Update animation state
-		updateEnemyAnimation(enemy, components.Animation.Get(e))
+		updateEnemyAnimation(enemy, components.Physics.Get(e), components.State.Get(e), components.Animation.Get(e))
 	})
 }
 
 func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object) {
 	enemy := components.Enemy.Get(enemyEntry)
+	physics := components.Physics.Get(enemyEntry)
 	enemyObject := cfg.GetObject(enemyEntry)
-	enemy.StateTimer++
+	state := components.State.Get(enemyEntry)
+	state.StateTimer++
 
 	// Update attack cooldown
 	if enemy.AttackCooldown > 0 {
@@ -84,9 +70,9 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 	distanceToPlayer := math.Abs(playerObject.X - enemyObject.X)
 
 	// State machine
-	switch enemy.CurrentState {
+	switch state.CurrentState {
 	case enemyStatePatrol:
-		handlePatrolState(enemy, enemyObject, playerObject, distanceToPlayer)
+		handlePatrolState(enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
 	case enemyStateChase:
 		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
 	case enemyStateAttack:
@@ -94,23 +80,23 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 	}
 }
 
-func handlePatrolState(enemy *components.EnemyData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+func handlePatrolState(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	// Check if should start chasing
 	if distanceToPlayer <= enemy.ChaseRange {
-		enemy.CurrentState = enemyStateChase
-		enemy.StateTimer = 0
+		state.CurrentState = enemyStateChase
+		state.StateTimer = 0
 		return
 	}
 
 	// Patrol behavior - move back and forth
 	if enemy.Direction.X > 0 {
-		enemy.SpeedX += enemy.PatrolSpeed * 1.1
+		physics.SpeedX += enemy.PatrolSpeed * 1.1
 		// Turn around if hit right boundary
 		if enemyObject.X >= enemy.PatrolRight {
 			enemy.Direction.X = -1
 		}
 	} else {
-		enemy.SpeedX -= enemy.PatrolSpeed * 1.1
+		physics.SpeedX -= enemy.PatrolSpeed * 1.1
 		// Turn around if hit left boundary
 		if enemyObject.X <= enemy.PatrolLeft {
 			enemy.Direction.X = 1
@@ -120,18 +106,20 @@ func handlePatrolState(enemy *components.EnemyData, enemyObject, playerObject *r
 
 func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object, distanceToPlayer float64) {
 	enemy := components.Enemy.Get(enemyEntry)
+	physics := components.Physics.Get(enemyEntry)
+	state := components.State.Get(enemyEntry)
 	enemyObject := cfg.GetObject(enemyEntry)
 	// Check if should attack
 	if distanceToPlayer <= enemy.AttackRange && enemy.AttackCooldown == 0 {
-		enemy.CurrentState = enemyStateAttack
-		enemy.StateTimer = 0
+		state.CurrentState = enemyStateAttack
+		state.StateTimer = 0
 		return
 	}
 
 	// Check if should stop chasing (player too far)
 	if distanceToPlayer > enemy.ChaseRange*1.5 { // Hysteresis to prevent flapping
-		enemy.CurrentState = enemyStatePatrol
-		enemy.StateTimer = 0
+		state.CurrentState = enemyStatePatrol
+		state.StateTimer = 0
 		return
 	}
 
@@ -145,28 +133,29 @@ func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *res
 	// Move towards player if not within stopping distance
 	if distanceToPlayer > enemy.StoppingDistance {
 		if playerObject.X > enemyObject.X {
-			enemy.SpeedX += enemy.ChaseSpeed * 1.3
+			physics.SpeedX += enemy.ChaseSpeed * 1.3
 		} else {
-			enemy.SpeedX -= enemy.ChaseSpeed * 1.3
+			physics.SpeedX -= enemy.ChaseSpeed * 1.3
 		}
 	}
 }
 
 func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	enemy := components.Enemy.Get(enemyEntry)
+	state := components.State.Get(enemyEntry)
 	enemyObject := cfg.GetObject(enemyEntry)
 	// Create a hitbox on the first frame of the attack
-	if enemy.StateTimer == 1 {
+	if state.StateTimer == 1 {
 		CreateHitbox(ecs, enemyEntry, enemyObject, "punch", false)
 	}
 
 	// Attack animation duration (simplified - using timer)
 	attackDuration := 30 // 30 frames for attack
 
-	if enemy.StateTimer >= attackDuration {
+	if state.StateTimer >= attackDuration {
 		// Attack finished
-		enemy.CurrentState = enemyStateChase
-		enemy.StateTimer = 0
+		state.CurrentState = enemyStateChase
+		state.StateTimer = 0
 		enemy.AttackCooldown = 60 // 1 second cooldown
 		return
 	}
@@ -174,111 +163,18 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	// Don't apply movement input during attack - let friction naturally slow down
 }
 
-func applyEnemyPhysics(enemy *components.EnemyData) {
-	// Apply friction
-	if enemy.SpeedX > enemyFriction {
-		enemy.SpeedX -= enemyFriction
-	} else if enemy.SpeedX < -enemyFriction {
-		enemy.SpeedX += enemyFriction
-	} else {
-		enemy.SpeedX = 0
-	}
 
-	// Limit horizontal speed
-	if enemy.SpeedX > enemyMaxSpeed {
-		enemy.SpeedX = enemyMaxSpeed
-	} else if enemy.SpeedX < -enemyMaxSpeed {
-		enemy.SpeedX = -enemyMaxSpeed
-	}
-
-	// Apply gravity
-	enemy.SpeedY += enemyGravity
-	if enemy.SpeedY > 16 {
-		enemy.SpeedY = 16
-	}
-}
-
-func resolveEnemyCollisions(enemy *components.EnemyData, enemyObject *resolv.Object) {
-	// Horizontal collision - only stop for actual walls, not ground
-	dx := enemy.SpeedX
-	if dx != 0 {
-		if check := enemyObject.Check(dx, 0, "solid", "character"); check != nil {
-			// Check for collisions with solid objects (walls)
-			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-				shouldStop := false
-				for _, solid := range solids {
-					enemyCenterY := enemyObject.Y + enemyObject.H/2
-					if enemyCenterY >= solid.Y && enemyCenterY <= solid.Y+solid.H {
-						shouldStop = true
-						break
-					}
-				}
-				if shouldStop {
-					enemy.SpeedX = 0
-					dx = 0
-				}
-			}
-
-			// Check for collisions with other characters
-			if characters := check.ObjectsByTags("character"); len(characters) > 0 {
-				// Gentle push-back instead of a hard stop
-				contact := check.ContactWithObject(characters[0])
-				if contact.X() != 0 { // If there is penetration
-					// Apply a small, fixed pushback
-					if dx > 0 {
-						dx = -1
-					} else {
-						dx = 1
-					}
-				} else {
-					// If just touching, use the contact point to slide along the other character
-					dx = contact.X()
-				}
-			}
-		}
-	}
-	enemyObject.X += dx
-
-	// Vertical collision - simplified ground detection
-	enemy.OnGround = nil
-	dy := enemy.SpeedY
-	dy = math.Max(math.Min(dy, 16), -16)
-
-	if check := enemyObject.Check(0, dy, "solid", "platform"); check != nil {
-		if dy > 0 { // Falling down
-			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-				dy = check.ContactWithObject(solids[0]).Y()
-				enemy.OnGround = solids[0]
-				enemy.SpeedY = 0
-			} else if platforms := check.ObjectsByTags("platform"); len(platforms) > 0 {
-				platform := platforms[0]
-				if enemy.SpeedY >= 0 && enemyObject.Bottom() < platform.Y+4 {
-					dy = check.ContactWithObject(platform).Y()
-					enemy.OnGround = platform
-					enemy.SpeedY = 0
-				}
-			}
-		} else { // Moving up
-			if solids := check.ObjectsByTags("solid"); len(solids) > 0 {
-				dy = check.ContactWithObject(solids[0]).Y()
-				enemy.SpeedY = 0
-			}
-		}
-	}
-	enemyObject.Y += dy
-}
-
-func updateEnemyAnimation(enemy *components.EnemyData, animData *components.AnimationData) {
+func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
 	// Simple animation state based on movement and AI state
 	var targetState string
 
-	switch enemy.CurrentState {
+	switch state.CurrentState {
 	case enemyStateAttack:
 		targetState = cfg.Punch01 // Use punch animation for attacks
 	default:
-		if enemy.OnGround == nil {
+		if physics.OnGround == nil {
 			targetState = cfg.Jump
-		} else if enemy.SpeedX != 0 {
+		} else if physics.SpeedX != 0 {
 			targetState = cfg.Running
 		} else {
 			targetState = cfg.Idle
@@ -295,54 +191,3 @@ func updateEnemyAnimation(enemy *components.EnemyData, animData *components.Anim
 	}
 }
 
-func DrawEnemies(ecs *ecs.ECS, screen *ebiten.Image) {
-	// Get camera
-	cameraEntry, _ := components.Camera.First(ecs.World)
-	camera := components.Camera.Get(cameraEntry)
-	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
-
-	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
-		enemy := components.Enemy.Get(e)
-		o := cfg.GetObject(e)
-		animData := components.Animation.Get(e)
-
-		if animData.CurrentAnimation != nil && animData.SpriteSheets[animData.CurrentSheet] != nil {
-			// Calculate the source rectangle for the current frame
-			frame := animData.CurrentAnimation.Frame()
-			sx := frame * animData.FrameWidth
-			sy := 0
-			srcRect := image.Rect(sx, sy, sx+animData.FrameWidth, sy+animData.FrameHeight)
-
-			// Create draw options
-			op := &ebiten.DrawImageOptions{}
-
-			// Anchor the sprite at its bottom-center
-			op.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
-
-			// Flip sprite if facing left
-			if enemy.Direction.X < 0 {
-				op.GeoM.Scale(-1, 1)
-			}
-
-			// Position sprite
-			op.GeoM.Translate(o.X+o.W/2, o.Y+o.H)
-
-			// Apply camera translation
-			op.GeoM.Translate(float64(width)/2-camera.Position.X, float64(height)/2-camera.Position.Y)
-
-			// Flicker effect if invulnerable
-			if enemy.InvulnFrames > 0 && enemy.InvulnFrames%4 < 2 {
-				op.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
-			}
-
-			screen.DrawImage(animData.SpriteSheets[animData.CurrentSheet].SubImage(srcRect).(*ebiten.Image), op)
-		} else {
-			// Fallback rectangle (red for enemies)
-			enemyColor := color.RGBA{255, 60, 60, 255}
-			if enemy.OnGround == nil {
-				enemyColor = color.RGBA{255, 0, 255, 255}
-			}
-			vector.DrawFilledRect(screen, float32(o.X), float32(o.Y), float32(o.W), float32(o.H), enemyColor, false)
-		}
-	})
-}
