@@ -20,6 +20,21 @@ func UpdateCombat(ecs *ecs.ECS) {
 		dmg := components.DamageEvent.Get(e)
 		hp := components.Health.Get(e)
 		hp.Current -= dmg.Amount
+
+		// Apply knockback if the entity has a physics component.
+		if e.HasComponent(components.Physics) {
+			physics := components.Physics.Get(e)
+			physics.SpeedX = dmg.KnockbackX
+			physics.SpeedY = dmg.KnockbackY
+
+			// Set the entity's state to knockback if it has a state component.
+			if e.HasComponent(components.State) {
+				state := components.State.Get(e)
+				state.CurrentState = cfg.Knockback
+				state.StateTimer = 0 // Reset state timer
+			}
+		}
+
 		// Remove the damage event component so it is processed only once.
 		donburi.Remove[components.DamageEventData](e, components.DamageEvent)
 	}

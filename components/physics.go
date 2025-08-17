@@ -11,6 +11,7 @@ type PhysicsData struct {
 	AccelX         float64
 	Gravity        float64
 	Friction       float64
+	AttackFriction float64
 	MaxSpeed       float64
 	OnGround       *resolv.Object
 	WallSliding    *resolv.Object

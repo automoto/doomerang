@@ -50,9 +50,10 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 		StateTimer:   0,
 	})
 	components.Physics.SetValue(player, components.PhysicsData{
-		Gravity:  0.75,
-		Friction: 0.5,
-		MaxSpeed: 6.0,
+		Gravity:        0.75,
+		Friction:       0.5,
+		AttackFriction: 0.2,
+		MaxSpeed:       6.0,
 	})
 	components.Health.SetValue(player, components.HealthData{
 		Current: 100,

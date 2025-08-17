@@ -21,6 +21,7 @@ func (a *AnimationData) SetAnimation(name string) {
 			a.CurrentAnimation = anim
 			a.CurrentSheet = name
 			a.CurrentAnimation.Restart()
+			a.CurrentAnimation.Looped = false
 		}
 	}
 }

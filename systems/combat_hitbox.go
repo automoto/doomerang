@@ -55,18 +55,12 @@ func createPlayerHitboxes(ecs *ecs.ECS) {
 		attackType := ""
 
 		switch state.CurrentState {
-		case cfg.Punch01, cfg.Punch02, cfg.Punch03:
-			// Create hitbox at frame 10-15 of punch animation
-			if state.StateTimer >= 10 && state.StateTimer <= 15 {
-				shouldCreateHitbox = true
-				attackType = "punch"
-			}
-		case cfg.Kick01:
-			// Create hitbox at frame 15-20 of kick animation
-			if state.StateTimer >= 15 && state.StateTimer <= 20 {
-				shouldCreateHitbox = true
-				attackType = "kick"
-			}
+		case cfg.StateAttackingPunch:
+			shouldCreateHitbox = true
+			attackType = "punch"
+		case cfg.StateAttackingKick:
+			shouldCreateHitbox = true
+			attackType = "kick"
 		}
 
 		if shouldCreateHitbox {
@@ -121,6 +115,17 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 		height = punchHitboxHeight
 		damage = punchDamage
 		knockback = punchKnockback
+	}
+
+	// Apply charge bonus
+	if isPlayer {
+		melee := components.MeleeAttack.Get(owner)
+		chargeBonus := 1.0 + (melee.ChargeTime / 60.0) // Add 1% bonus for every frame charged
+		damage = int(float64(damage) * chargeBonus)
+		knockback *= chargeBonus
+		width *= chargeBonus
+		height *= chargeBonus
+		melee.ChargeTime = 0 // Reset charge time
 	}
 
 	// Position hitbox in front of attacker
