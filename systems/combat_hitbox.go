@@ -62,6 +62,9 @@ func createPlayerHitboxes(ecs *ecs.ECS) {
 		case cfg.StateAttackingKick:
 			shouldCreateHitbox = true
 			attackType = "kick"
+		case cfg.StateAttackingJump:
+			shouldCreateHitbox = true
+			attackType = "kick"
 		}
 
 		if shouldCreateHitbox {

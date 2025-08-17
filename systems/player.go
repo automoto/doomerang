@@ -51,8 +51,17 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 		// Combat inputs
 		// Melee attack
 		if inpututil.IsKeyJustPressed(ebiten.KeyZ) {
-			melee.IsCharging = true
-			melee.ChargeTime = 0
+			if physics.OnGround == nil {
+				// if in the air, and not already attacking, do a jump attack
+				if !isInAttackState(state.CurrentState) {
+					state.CurrentState = cfg.StateAttackingJump
+					state.StateTimer = 0
+					melee.IsAttacking = true
+				}
+			} else {
+				melee.IsCharging = true
+				melee.ChargeTime = 0
+			}
 		}
 
 		// Attack release
@@ -153,6 +162,14 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 			transitionToMovementState(playerEntry, player, physics, state)
 		}
 
+	case cfg.StateAttackingJump:
+		// Transition back to jump after attack animation finishes
+		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
+			melee.IsAttacking = false
+			state.CurrentState = cfg.Jump
+			state.StateTimer = 0
+		}
+
 	case cfg.Hit, cfg.Stunned, cfg.Knockback:
 		// Transition back to movement after hitstun/knockback duration
 		if state.StateTimer > 15 {
@@ -186,6 +203,8 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 		anim = cfg.Punch01
 	case cfg.StateAttackingKick:
 		anim = cfg.Kick01
+	case cfg.StateAttackingJump:
+		anim = cfg.Kick02
 	default:
 		anim = state.CurrentState
 	}
@@ -205,7 +224,7 @@ func isInLockedState(state string) bool {
 }
 
 func isInAttackState(state string) bool {
-	return state == cfg.StateAttackingPunch || state == cfg.StateAttackingKick
+	return state == cfg.StateAttackingPunch || state == cfg.StateAttackingKick || state == cfg.StateAttackingJump
 }
 
 func transitionToMovementState(e *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, state *components.StateData) {

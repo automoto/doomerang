@@ -28,4 +28,5 @@ const (
 	StateAttackingPunch = "attacking_punch"
 	StateAttackingKick  = "attacking_kick"
 	StateChargingAttack = "charging_attack"
+	StateAttackingJump  = "attacking_jump"
 )
