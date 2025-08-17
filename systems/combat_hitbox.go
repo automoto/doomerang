@@ -1,5 +1,6 @@
 package systems
 
+
 import (
 	"image/color"
 
@@ -200,6 +201,11 @@ func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *com
 }
 
 func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitboxObject, targetObject *resolv.Object) bool {
+	// Don't hit the owner of the hitbox
+	if hitbox.OwnerEntity == target {
+		return false
+	}
+
 	// Don't hit if already hit this target
 	if hitbox.HitEntities[target] {
 		return false
@@ -215,6 +221,7 @@ func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitbo
 		}
 	}
 
+	// Check collision by testing overlap
 	// Check collision by testing overlap
 	return hitboxObject.Shape.Intersection(0, 0, targetObject.Shape) != nil
 }
