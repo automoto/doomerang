@@ -18,6 +18,15 @@ func UpdateCombat(ecs *ecs.ECS) {
 	// --------------------------------------------------------------------
 	for e := range components.DamageEvent.Iter(ecs.World) {
 		dmg := components.DamageEvent.Get(e)
+		// If the entity is the player, check for invulnerability.
+		if e.HasComponent(components.Player) {
+			player := components.Player.Get(e)
+			if player.InvulnFrames > 0 {
+				donburi.Remove[components.DamageEventData](e, components.DamageEvent)
+				continue // Skip the rest of the loop for this entity
+			}
+		}
+
 		hp := components.Health.Get(e)
 		hp.Current -= dmg.Amount
 
@@ -37,7 +46,11 @@ func UpdateCombat(ecs *ecs.ECS) {
 					// So we just use the string "hit" for now.
 					state.CurrentState = "hit"
 				} else {
-					state.CurrentState = cfg.Knockback
+					state.CurrentState = cfg.Stunned
+					if e.HasComponent(components.Player) {
+						player := components.Player.Get(e)
+						player.InvulnFrames = 30 // 30 frames of invincibility
+					}
 				}
 				state.StateTimer = 0 // Reset state timer
 			}

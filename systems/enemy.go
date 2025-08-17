@@ -97,13 +97,13 @@ func handlePatrolState(enemy *components.EnemyData, physics *components.PhysicsD
 
 	// Patrol behavior - move back and forth
 	if enemy.Direction.X > 0 {
-		physics.SpeedX += enemy.PatrolSpeed * 1.1
+		physics.SpeedX = enemy.PatrolSpeed
 		// Turn around if hit right boundary
 		if enemyObject.X >= enemy.PatrolRight {
 			enemy.Direction.X = -1
 		}
 	} else {
-		physics.SpeedX -= enemy.PatrolSpeed * 1.1
+		physics.SpeedX = -enemy.PatrolSpeed
 		// Turn around if hit left boundary
 		if enemyObject.X <= enemy.PatrolLeft {
 			enemy.Direction.X = 1

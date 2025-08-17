@@ -38,6 +38,11 @@ func UpdatePlayer(ecs *ecs.ECS) {
 
 	handlePlayerInput(player, physics, melee, components.State.Get(playerEntry), playerObject)
 	updatePlayerState(playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))
+
+	// Decrement invulnerability timer
+	if player.InvulnFrames > 0 {
+		player.InvulnFrames--
+	}
 }
 
 func handlePlayerInput(player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, playerObject *resolv.Object) {
@@ -59,6 +64,31 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 		if ebiten.IsKeyPressed(ebiten.KeyDown) && physics.OnGround != nil { // Guard/Crouch
 			// Logic to be moved to updatePlayerState
 		}
+
+		// Jumping - only allow if not in attack state
+		if !isInAttackState(state.CurrentState) {
+			if inpututil.IsKeyJustPressed(ebiten.KeyX) || ebiten.IsGamepadButtonPressed(0, 0) || ebiten.IsGamepadButtonPressed(1, 0) {
+				isTryingToDrop := ebiten.IsKeyPressed(ebiten.KeyDown)
+				canDropDown := physics.OnGround != nil && physics.OnGround.HasTags("platform")
+
+				if isTryingToDrop && canDropDown {
+					physics.IgnorePlatform = physics.OnGround
+				} else {
+					if physics.OnGround != nil {
+						physics.SpeedY = -playerJumpSpd
+					} else if physics.WallSliding != nil {
+						// Wall-jumping
+						physics.SpeedY = -playerJumpSpd
+						if physics.WallSliding.X > playerObject.X {
+							physics.SpeedX = -physics.MaxSpeed
+						} else {
+							physics.SpeedX = physics.MaxSpeed
+						}
+						physics.WallSliding = nil
+					}
+				}
+			}
+		}
 	}
 
 	// Horizontal movement
@@ -75,31 +105,6 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 			physics.SpeedX -= accel
 			player.Direction.X = -1
-		}
-	}
-
-	// Jumping - only allow if not in attack state
-	if !isInAttackState(state.CurrentState) {
-		if inpututil.IsKeyJustPressed(ebiten.KeyX) || ebiten.IsGamepadButtonPressed(0, 0) || ebiten.IsGamepadButtonPressed(1, 0) {
-			isTryingToDrop := ebiten.IsKeyPressed(ebiten.KeyDown)
-			canDropDown := physics.OnGround != nil && physics.OnGround.HasTags("platform")
-
-			if isTryingToDrop && canDropDown {
-				physics.IgnorePlatform = physics.OnGround
-			} else {
-				if physics.OnGround != nil {
-					physics.SpeedY = -playerJumpSpd
-				} else if physics.WallSliding != nil {
-					// Wall-jumping
-					physics.SpeedY = -playerJumpSpd
-					if physics.WallSliding.X > playerObject.X {
-						physics.SpeedX = -physics.MaxSpeed
-					} else {
-						physics.SpeedX = physics.MaxSpeed
-					}
-					physics.WallSliding = nil
-				}
-			}
 		}
 	}
 }
@@ -164,6 +169,9 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 		// Transition to idle/running when landing on the ground
 		if physics.OnGround != nil {
 			transitionToMovementState(playerEntry, player, physics, state)
+		} else if physics.WallSliding != nil {
+			state.CurrentState = cfg.WallSlide
+			state.StateTimer = 0
 		}
 
 	default:

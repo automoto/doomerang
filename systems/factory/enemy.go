@@ -36,8 +36,8 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 		Direction:        components.Vector{X: -1, Y: 0}, // Start facing left
 		PatrolLeft:       x - 16,
 		PatrolRight:      x + 16,
-		PatrolSpeed:      1.0,
-		ChaseSpeed:       1.5,  // Faster when chasing
+		PatrolSpeed:      2.0,
+		ChaseSpeed:       2.5,  // Faster when chasing
 		AttackRange:      36.0, // Attack when player within 32 pixels
 		ChaseRange:       80.0, // Start chasing when player within 80 pixels
 		StoppingDistance: 28.0, // Stop 24 pixels away from player
@@ -50,7 +50,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	})
 	components.Physics.SetValue(enemy, components.PhysicsData{
 		Gravity:  0.75,
-		Friction: 0.5,
+		Friction: 0.2,
 		MaxSpeed: 6.0,
 	})
 

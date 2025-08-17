@@ -64,6 +64,12 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 					op.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
 				}
 			}
+			if e.HasComponent(components.Player) {
+				player := components.Player.Get(e)
+				if player.InvulnFrames > 0 && player.InvulnFrames%4 < 2 {
+					op.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
+				}
+			}
 
 			// Draw the current frame.
 			screen.DrawImage(animData.SpriteSheets[animData.CurrentSheet].SubImage(srcRect).(*ebiten.Image), op)
