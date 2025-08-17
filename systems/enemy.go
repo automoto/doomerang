@@ -42,6 +42,15 @@ func UpdateEnemies(ecs *ecs.ECS) {
 			enemy.InvulnFrames--
 		}
 
+		// Update health bar timer
+		if e.HasComponent(components.HealthBar) {
+			healthBar := components.HealthBar.Get(e)
+			healthBar.TimeToLive--
+			if healthBar.TimeToLive <= 0 {
+				donburi.Remove[components.HealthBarData](e, components.HealthBar)
+			}
+		}
+
 		// Update AI behavior
 		updateEnemyAI(ecs, e, playerObject)
 

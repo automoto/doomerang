@@ -30,6 +30,13 @@ func UpdateCombat(ecs *ecs.ECS) {
 		hp := components.Health.Get(e)
 		hp.Current -= dmg.Amount
 
+		// If the entity is an enemy, show the health bar.
+		if e.HasComponent(tags.Enemy) {
+			donburi.Add(e, components.HealthBar, &components.HealthBarData{
+				TimeToLive: 120, // 120 frames = 2 seconds
+			})
+		}
+
 		// Apply knockback if the entity has a physics component.
 		if e.HasComponent(components.Physics) {
 			physics := components.Physics.Get(e)
