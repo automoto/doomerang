@@ -16,6 +16,7 @@ const (
 	enemyStatePatrol = "patrol"
 	enemyStateChase  = "chase"
 	enemyStateAttack = "attack"
+	enemyStateHit    = "hit"
 )
 
 func UpdateEnemies(ecs *ecs.ECS) {
@@ -77,6 +78,12 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
 	case enemyStateAttack:
 		handleAttackState(ecs, enemyEntry)
+	case enemyStateHit:
+		// Stunned for a short period
+		if state.StateTimer > 15 { // 15 frames of hitstun
+			state.CurrentState = enemyStateChase
+			state.StateTimer = 0
+		}
 	}
 }
 
@@ -133,9 +140,9 @@ func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *res
 	// Move towards player if not within stopping distance
 	if distanceToPlayer > enemy.StoppingDistance {
 		if playerObject.X > enemyObject.X {
-			physics.SpeedX += enemy.ChaseSpeed * 1.3
+			physics.SpeedX = enemy.ChaseSpeed
 		} else {
-			physics.SpeedX -= enemy.ChaseSpeed * 1.3
+			physics.SpeedX = -enemy.ChaseSpeed
 		}
 	}
 }
@@ -170,6 +177,8 @@ func updateEnemyAnimation(enemy *components.EnemyData, physics *components.Physi
 	switch state.CurrentState {
 	case enemyStateAttack:
 		targetState = cfg.Punch01 // Use punch animation for attacks
+	case enemyStateHit:
+		targetState = cfg.Hit
 	default:
 		if physics.OnGround == nil {
 			targetState = cfg.Jump

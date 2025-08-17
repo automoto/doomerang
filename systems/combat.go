@@ -30,7 +30,15 @@ func UpdateCombat(ecs *ecs.ECS) {
 			// Set the entity's state to knockback if it has a state component.
 			if e.HasComponent(components.State) {
 				state := components.State.Get(e)
-				state.CurrentState = cfg.Knockback
+				if e.HasComponent(tags.Enemy) {
+					// Enemies have a specific hit state
+					// We would need to import the systems package to use enemyStateHit
+					// but that would create a circular dependency.
+					// So we just use the string "hit" for now.
+					state.CurrentState = "hit"
+				} else {
+					state.CurrentState = cfg.Knockback
+				}
 				state.StateTimer = 0 // Reset state timer
 			}
 		}

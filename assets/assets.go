@@ -163,7 +163,7 @@ var (
 	animationLoader = NewAnimationLoader()
 )
 
-func GetSheetByState(dir string, state string) *ebiten.Image {
+func GetSheet(dir string, state string) *ebiten.Image {
 	path := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state)
 	return animationLoader.MustLoadImage(path)
 }
