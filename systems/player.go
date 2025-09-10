@@ -209,8 +209,11 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 		anim = state.CurrentState
 	}
 
-	if animData.CurrentAnimation != animData.Animations[anim] {
-		animData.SetAnimation(anim)
+	// Check if the animation exists before setting it
+	if newAnim, ok := animData.Animations[anim]; ok {
+		if animData.CurrentAnimation != newAnim {
+			animData.SetAnimation(anim)
+		}
 	}
 
 	if animData.CurrentAnimation != nil {

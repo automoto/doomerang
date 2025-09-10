@@ -22,7 +22,7 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 		o := cfg.GetObject(e)
 		animData := components.Animation.Get(e)
 
-		if animData.CurrentAnimation != nil && animData.SpriteSheets[animData.CurrentSheet] != nil {
+		if animData.CurrentAnimation != nil && animData.CurrentSheet != "" && animData.SpriteSheets[animData.CurrentSheet] != nil {
 			// Calculate the source rectangle for the current frame.
 			frame := animData.CurrentAnimation.Frame()
 			sx := frame * animData.FrameWidth
