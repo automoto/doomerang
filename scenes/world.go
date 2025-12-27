@@ -124,8 +124,10 @@ func (ps *PlatformerScene) configure() {
 
 	space.Add(playerObj)
 
-	// Create test enemy
-	enemy := factory2.CreateTestEnemy(ps.ecs)
-	enemyObj := cfg.GetObject(enemy)
-	space.Add(enemyObj)
+	// Spawn enemies for the current level
+	for _, spawn := range levelData.CurrentLevel.EnemySpawns {
+		enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath)
+		enemyObj := cfg.GetObject(enemy)
+		space.Add(enemyObj)
+	}
 }

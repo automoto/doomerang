@@ -23,7 +23,7 @@ const (
 	enemyStateAttack = "attack"
 )
 
-func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
+func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 	enemy := archetypes.Enemy.Spawn(ecs)
 
 	// Create collision object
@@ -70,6 +70,5 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 
 // CreateTestEnemy spawns a hardcoded enemy for testing
 func CreateTestEnemy(ecs *ecs.ECS) *donburi.Entry {
-	// Spawn enemy at position (200, 128) - to the right of player spawn
-	return CreateEnemy(ecs, 200, 128+float64(enemyFrameHeight-enemyCollisionHeight))
+	return CreateEnemy(ecs, 200, 128+float64(enemyFrameHeight-enemyCollisionHeight), "")
 }
