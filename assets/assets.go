@@ -24,11 +24,19 @@ var (
 )
 
 type Level struct {
-	Background *ebiten.Image
-	Paths      map[uint32]Path
-	Name       string
-	Width      int
-	Height     int
+	Background  *ebiten.Image
+	Paths       map[uint32]Path
+	EnemySpawns []EnemySpawn
+	Name        string
+	Width       int
+	Height      int
+}
+
+type EnemySpawn struct {
+	X          float64
+	Y          float64
+	EnemyType  string
+	PatrolPath string
 }
 
 type LevelLoader struct {
@@ -96,10 +104,11 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 	}
 
 	level := Level{
-		Paths:  make(map[uint32]Path),
-		Name:   levelPath,
-		Width:  levelMap.Width * levelMap.TileWidth,
-		Height: levelMap.Height * levelMap.TileHeight,
+		Paths:       make(map[uint32]Path),
+		EnemySpawns: []EnemySpawn{},
+		Name:        levelPath,
+		Width:       levelMap.Width * levelMap.TileWidth,
+		Height:      levelMap.Height * levelMap.TileHeight,
 	}
 
 	// Load ground objects from the ground-walls object group
@@ -115,6 +124,17 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					},
 				}
 			}
+		} else if og.Name == "EnemySpawn" {
+			for _, o := range og.Objects {
+				enemyType := o.Properties.GetString("enemyType")
+				patrolPath := o.Properties.GetString("pathName")
+				level.EnemySpawns = append(level.EnemySpawns, EnemySpawn{
+					X:          o.X,
+					Y:          o.Y,
+					EnemyType:  enemyType,
+					PatrolPath: patrolPath,
+				})
+			}
 		}
 	}
 
@@ -129,9 +149,14 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 
 	// Render all visible layers
 	for i, layer := range levelMap.Layers {
-		if layer.Visible {
+		// Use "render" custom property to determine visibility
+		shouldRender := layer.Properties.GetBool("render")
+
+		if shouldRender {
 			if err := renderer.RenderLayer(i); err != nil {
-				panic(fmt.Sprintf("Failed to render layer %d: %v", i, err))
+				// Object layers can fail to render as they are not tile layers
+				fmt.Printf("Warning: Failed to render layer %d: %v\n", i, err)
+				continue
 			}
 			// Convert the rendered layer to an Ebiten image and draw it
 			layerImage := ebiten.NewImageFromImage(renderer.Result)
@@ -167,3 +192,4 @@ func GetSheet(dir string, state string) *ebiten.Image {
 	path := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state)
 	return animationLoader.MustLoadImage(path)
 }
+
