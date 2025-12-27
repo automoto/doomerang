@@ -90,12 +90,12 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				}
 			}
 
-			vector.DrawFilledRect(screen, float32(screenX), float32(screenY), float32(o.W), float32(o.H), entityColor, false)
+			// Calculate screen position for debug rect
 			screenX := float64(width)/2 - camera.Position.X + o.X
 			screenY := float64(height)/2 - camera.Position.Y + o.Y
 
 			// This debug draw doesn't need to be camera-aware, as it's for debugging.
-			vector.DrawFilledRect(screen, float32(o.X), float32(o.Y), float32(o.W), float32(o.H), entityColor, false)
+			vector.DrawFilledRect(screen, float32(screenX), float32(screenY), float32(o.W), float32(o.H), entityColor, false)
 		}
 	})
 }
