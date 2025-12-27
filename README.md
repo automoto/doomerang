@@ -45,3 +45,27 @@ library with the Donburi ECS. It provides helper functions for managing physics
 objects within the ECS world.                                                   
                                                                                 
 -   `/config`: Holds global configuration values like screen dimensions and types of valid global states.
+
+## Tags
+
+In Donburi ECS, tags are special components used to label and identify entities without attaching complex data. They are defined in `tags/tags.go`.
+
+### Why use tags?
+- **Lightweight Identification**: Tags act as flags (e.g., `Player`, `Enemy`, `Platform`) to easily categorize entities.
+- **Filtering Queries**: They allow systems to efficiently query for specific groups of entities. For example, the `render` system might query all entities with a `Player` tag to apply player-specific rendering logic.
+
+### Usage
+- **Defining Tags**: Tags are defined as exported variables in `tags/tags.go` using `donburi.NewTag().SetName("TagName")`.
+- **Adding to Entities**: Tags are added to entities during creation, typically within Archetypes (see `archetypes/archetypes.go`).
+- **Querying**: Systems can use tags to iterate over specific entities:
+  ```go
+  // Example: Iterate over all entities with the Player tag
+  tags.Player.Each(ecs.World, func(e *donburi.Entry) {
+      // Logic for player entity
+  })
+  
+  // Example: Check if a specific entity has a tag
+  if e.HasComponent(tags.Enemy) {
+      // Logic for enemy entity
+  }
+  ```
