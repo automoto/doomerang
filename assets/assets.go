@@ -23,13 +23,20 @@ var (
 	animationFS embed.FS
 )
 
+type PlayerSpawn struct {
+	X float64
+	Y float64
+	SpawnPoint string
+}
+
 type Level struct {
-	Background  *ebiten.Image
-	Paths       map[uint32]Path
-	EnemySpawns []EnemySpawn
-	Name        string
-	Width       int
-	Height      int
+	Background   *ebiten.Image
+	Paths        map[uint32]Path
+	EnemySpawns  []EnemySpawn
+	PlayerSpawns []PlayerSpawn
+	Name         string
+	Width        int
+	Height       int
 }
 
 type EnemySpawn struct {
@@ -104,11 +111,12 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 	}
 
 	level := Level{
-		Paths:       make(map[uint32]Path),
-		EnemySpawns: []EnemySpawn{},
-		Name:        levelPath,
-		Width:       levelMap.Width * levelMap.TileWidth,
-		Height:      levelMap.Height * levelMap.TileHeight,
+		Paths:        make(map[uint32]Path),
+		EnemySpawns:  []EnemySpawn{},
+		PlayerSpawns: []PlayerSpawn{},
+		Name:         levelPath,
+		Width:        levelMap.Width * levelMap.TileWidth,
+		Height:       levelMap.Height * levelMap.TileHeight,
 	}
 
 	// Load ground objects from the ground-walls object group
@@ -133,6 +141,15 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					Y:          o.Y,
 					EnemyType:  enemyType,
 					PatrolPath: patrolPath,
+				})
+			}
+		} else if og.Name == "PlayerSpawn" {
+			for _, o := range og.Objects {
+				spawnPoint := o.Properties.GetString("spawnPoint")
+				level.PlayerSpawns = append(level.PlayerSpawns, PlayerSpawn{
+					X: o.X,
+					Y: o.Y,
+					SpawnPoint: spawnPoint,
 				})
 			}
 		}
@@ -192,4 +209,3 @@ func GetSheet(dir string, state string) *ebiten.Image {
 	path := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state)
 	return animationLoader.MustLoadImage(path)
 }
-

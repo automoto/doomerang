@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="254" height="128" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="24">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="254" height="128" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="26">
  <tileset firstgid="1" source="mainlev_build.tsx"/>
  <tileset firstgid="4097" source="ground-tiles.tsx"/>
  <layer id="1" name="wg-tiles" width="254" height="128">
@@ -142,6 +142,13 @@
    <property name="render" type="bool" value="false"/>
   </properties>
  </imagelayer>
+ <objectgroup id="8" name="PlayerSpawn">
+  <object id="24" x="75.6667" y="304.333">
+   <properties>
+    <property name="spawnPoint" type="int" value="1"/>
+   </properties>
+  </object>
+ </objectgroup>
  <objectgroup id="5" name="ground-walls">
   <properties>
    <property name="render" type="bool" value="false"/>

@@ -30,15 +30,10 @@ func handleError(err error) {
 	}
 }
 
-func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
+func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	player := archetypes.Player.Spawn(ecs)
 
-	// Calculate spawn position so that the bottom of the collision box aligns
-	// with where the bottom of the full 96x84 sprite would have been previously.
-	spawnX := 32.0
-	spawnY := 128.0 + float64(playerFrameHeight-playerCollisionHeight)
-
-	obj := resolv.NewObject(spawnX, spawnY, playerCollisionWidth, playerCollisionHeight)
+	obj := resolv.NewObject(x, y, playerCollisionWidth, playerCollisionHeight)
 	cfg.SetObject(player, obj)
 	obj.AddTags("character")
 	components.Player.SetValue(player, components.PlayerData{
