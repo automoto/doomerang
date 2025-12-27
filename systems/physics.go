@@ -11,10 +11,17 @@ func UpdatePhysics(ecs *ecs.ECS) {
 		physics := components.Physics.Get(e)
 
 		// Apply friction and horizontal speed limiting.
-		if physics.SpeedX > physics.Friction {
-			physics.SpeedX -= physics.Friction
-		} else if physics.SpeedX < -physics.Friction {
-			physics.SpeedX += physics.Friction
+		friction := physics.Friction
+		if e.HasComponent(components.MeleeAttack) {
+			if melee := components.MeleeAttack.Get(e); melee.IsAttacking {
+				friction = physics.AttackFriction
+			}
+		}
+
+		if physics.SpeedX > friction {
+			physics.SpeedX -= friction
+		} else if physics.SpeedX < -friction {
+			physics.SpeedX += friction
 		} else {
 			physics.SpeedX = 0
 		}

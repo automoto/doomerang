@@ -64,6 +64,12 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 					op.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
 				}
 			}
+			if e.HasComponent(components.Player) {
+				player := components.Player.Get(e)
+				if player.InvulnFrames > 0 && player.InvulnFrames%4 < 2 {
+					op.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
+				}
+			}
 
 			// Draw the current frame.
 			screen.DrawImage(animData.SpriteSheets[animData.CurrentSheet].SubImage(srcRect).(*ebiten.Image), op)
@@ -86,5 +92,41 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 			// This debug draw doesn't need to be camera-aware, as it's for debugging.
 			vector.DrawFilledRect(screen, float32(o.X), float32(o.Y), float32(o.W), float32(o.H), entityColor, false)
 		}
+	})
+}
+
+func DrawHealthBars(ecs *ecs.ECS, screen *ebiten.Image) {
+	// Get camera for position translation
+	cameraEntry, _ := components.Camera.First(ecs.World)
+	camera := components.Camera.Get(cameraEntry)
+	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
+
+	// Iterate over entities with Health and HealthBar components
+	components.HealthBar.Each(ecs.World, func(e *donburi.Entry) {
+		if !e.HasComponent(components.Health) {
+			return
+		}
+		hp := components.Health.Get(e)
+		o := cfg.GetObject(e)
+
+		// Health bar dimensions and position
+		barWidth := 32.0
+		barHeight := 4.0
+		// Position the bar above the entity's collision box
+		barX := o.X + (o.W-barWidth)/2
+		barY := o.Y - barHeight - 4 // 4 pixels of padding
+
+		// Calculate health percentage
+		healthPercentage := float64(hp.Current) / float64(hp.Max)
+
+		// Apply camera translation
+		drawX := barX + float64(width)/2 - camera.Position.X
+		drawY := barY + float64(height)/2 - camera.Position.Y
+
+		// Draw the background of the health bar (red)
+		vector.DrawFilledRect(screen, float32(drawX), float32(drawY), float32(barWidth), float32(barHeight), color.RGBA{R: 255, A: 255}, false)
+
+		// Draw the foreground of the health bar (green)
+		vector.DrawFilledRect(screen, float32(drawX), float32(drawY), float32(barWidth*healthPercentage), float32(barHeight), color.RGBA{G: 255, A: 255}, false)
 	})
 }

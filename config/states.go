@@ -1,7 +1,7 @@
 package config
 
 const (
-	// character states
+	// character animation states
 	Crouch      = "crouch"
 	Die         = "die"
 	Guard       = "guard"
@@ -23,4 +23,10 @@ const (
 	Throw       = "throw"
 	Walk        = "walk"
 	WallSlide   = "wallslide"
+
+	// combat states
+	StateAttackingPunch = "attacking_punch"
+	StateAttackingKick  = "attacking_kick"
+	StateChargingAttack = "charging_attack"
+	StateAttackingJump  = "attacking_jump"
 )

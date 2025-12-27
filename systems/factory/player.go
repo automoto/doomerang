@@ -50,9 +50,10 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 		StateTimer:   0,
 	})
 	components.Physics.SetValue(player, components.PhysicsData{
-		Gravity:  0.75,
-		Friction: 0.5,
-		MaxSpeed: 6.0,
+		Gravity:        0.75,
+		Friction:       0.5,
+		AttackFriction: 0.2,
+		MaxSpeed:       6.0,
 	})
 	components.Health.SetValue(player, components.HealthData{
 		Current: 100,
@@ -70,27 +71,27 @@ func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
 }
 
 func GeneratePlayerAnimations() *components.AnimationData {
-	crouchSprite := assets.GetSheetByState(playerDir, cfg.Crouch)
-	dieSprite := assets.GetSheetByState(playerDir, cfg.Die)
-	guardSprite := assets.GetSheetByState(playerDir, cfg.Guard)
-	guardImpactSprite := assets.GetSheetByState(playerDir, cfg.GuardImpact)
-	hitSprite := assets.GetSheetByState(playerDir, cfg.Hit)
-	idleSprite := assets.GetSheetByState(playerDir, cfg.Idle)
-	jumpSprite := assets.GetSheetByState(playerDir, cfg.Jump)
-	kick01Sprite := assets.GetSheetByState(playerDir, cfg.Kick01)
-	kick02Sprite := assets.GetSheetByState(playerDir, cfg.Kick02)
-	kick03Sprite := assets.GetSheetByState(playerDir, cfg.Kick03)
-	knockbackSprite := assets.GetSheetByState(playerDir, cfg.Knockback)
-	ledgeSprite := assets.GetSheetByState(playerDir, cfg.Ledge)
-	ledgeGrabSprite := assets.GetSheetByState(playerDir, cfg.LedgeGrab)
-	punch01Sprite := assets.GetSheetByState(playerDir, cfg.Punch01)
-	punch02Sprite := assets.GetSheetByState(playerDir, cfg.Punch02)
-	punch03Sprite := assets.GetSheetByState(playerDir, cfg.Punch03)
-	runningSprite := assets.GetSheetByState(playerDir, cfg.Running)
-	stunnedSprite := assets.GetSheetByState(playerDir, cfg.Stunned)
-	throwSprite := assets.GetSheetByState(playerDir, cfg.Throw)
-	walkSprite := assets.GetSheetByState(playerDir, cfg.Walk)
-	wallSlideSprite := assets.GetSheetByState(playerDir, cfg.WallSlide)
+	crouchSprite := assets.GetSheet(playerDir, cfg.Crouch)
+	dieSprite := assets.GetSheet(playerDir, cfg.Die)
+	guardSprite := assets.GetSheet(playerDir, cfg.Guard)
+	guardImpactSprite := assets.GetSheet(playerDir, cfg.GuardImpact)
+	hitSprite := assets.GetSheet(playerDir, cfg.Hit)
+	idleSprite := assets.GetSheet(playerDir, cfg.Idle)
+	jumpSprite := assets.GetSheet(playerDir, cfg.Jump)
+	kick01Sprite := assets.GetSheet(playerDir, cfg.Kick01)
+	kick02Sprite := assets.GetSheet(playerDir, cfg.Kick02)
+	kick03Sprite := assets.GetSheet(playerDir, cfg.Kick03)
+	knockbackSprite := assets.GetSheet(playerDir, cfg.Knockback)
+	ledgeSprite := assets.GetSheet(playerDir, cfg.Ledge)
+	ledgeGrabSprite := assets.GetSheet(playerDir, cfg.LedgeGrab)
+	punch01Sprite := assets.GetSheet(playerDir, cfg.Punch01)
+	punch02Sprite := assets.GetSheet(playerDir, cfg.Punch02)
+	punch03Sprite := assets.GetSheet(playerDir, cfg.Punch03)
+	runningSprite := assets.GetSheet(playerDir, cfg.Running)
+	stunnedSprite := assets.GetSheet(playerDir, cfg.Stunned)
+	throwSprite := assets.GetSheet(playerDir, cfg.Throw)
+	walkSprite := assets.GetSheet(playerDir, cfg.Walk)
+	wallSlideSprite := assets.GetSheet(playerDir, cfg.WallSlide)
 
 	// Set up animations
 	animData := &components.AnimationData{
@@ -128,13 +129,13 @@ func GeneratePlayerAnimations() *components.AnimationData {
 			cfg.Hit:         animations.NewAnimation(0, 2, 1, 5),
 			cfg.Idle:        animations.NewAnimation(0, 6, 1, 5),
 			cfg.Jump:        animations.NewAnimation(0, 2, 1, 10),
-			cfg.Kick01:      animations.NewAnimation(0, 8, 1, 5),
-			cfg.Kick02:      animations.NewAnimation(0, 7, 1, 5),
+			cfg.Kick01:      animations.NewAnimation(0, 8, 1, 4),
+			cfg.Kick02:      animations.NewAnimation(0, 7, 1, 3),
 			cfg.Kick03:      animations.NewAnimation(0, 8, 1, 5),
 			cfg.Knockback:   animations.NewAnimation(0, 5, 1, 5),
 			cfg.Ledge:       animations.NewAnimation(0, 7, 1, 5),
 			cfg.LedgeGrab:   animations.NewAnimation(0, 4, 1, 5),
-			cfg.Punch01:     animations.NewAnimation(0, 5, 1, 5),
+			cfg.Punch01:     animations.NewAnimation(0, 5, 1, 4),
 			cfg.Punch02:     animations.NewAnimation(0, 3, 1, 5),
 			cfg.Punch03:     animations.NewAnimation(0, 6, 1, 5),
 			cfg.Running:     animations.NewAnimation(0, 7, 1, 5),

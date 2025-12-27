@@ -7,6 +7,7 @@ type Animation struct {
 	SpeedInTps   float32 // how many ticks before next frame
 	frameCounter float32
 	frame        int
+	Looped       bool
 }
 
 func (a *Animation) Update() {
@@ -15,6 +16,7 @@ func (a *Animation) Update() {
 		a.frameCounter = a.SpeedInTps
 		a.frame += a.Step
 		if a.frame > a.Last {
+			a.Looped = true
 			// loop back to the beginning
 			a.frame = a.First
 		}
@@ -32,11 +34,12 @@ func (a *Animation) Restart() {
 
 func NewAnimation(first, last, step int, speed float32) *Animation {
 	return &Animation{
-		first,
-		last,
-		step,
-		speed,
-		speed,
-		first,
+		First:        first,
+		Last:         last,
+		Step:         step,
+		SpeedInTps:   speed,
+		frameCounter: speed,
+		frame:        first,
+		Looped:       false,
 	}
 }

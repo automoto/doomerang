@@ -1,5 +1,6 @@
 package systems
 
+
 import (
 	"image/color"
 
@@ -31,6 +32,15 @@ const (
 	kickHitboxHeight  = 20
 )
 
+type HitboxConfig struct {
+	Width    float64
+	Height   float64
+	OffsetX  float64
+	OffsetY  float64
+	Damage   int
+	Knockback float64
+}
+
 func UpdateCombatHitboxes(ecs *ecs.ECS) {
 	// Create hitboxes for attacking players
 	createPlayerHitboxes(ecs)
@@ -55,18 +65,15 @@ func createPlayerHitboxes(ecs *ecs.ECS) {
 		attackType := ""
 
 		switch state.CurrentState {
-		case cfg.Punch01, cfg.Punch02, cfg.Punch03:
-			// Create hitbox at frame 10-15 of punch animation
-			if state.StateTimer >= 10 && state.StateTimer <= 15 {
-				shouldCreateHitbox = true
-				attackType = "punch"
-			}
-		case cfg.Kick01:
-			// Create hitbox at frame 15-20 of kick animation
-			if state.StateTimer >= 15 && state.StateTimer <= 20 {
-				shouldCreateHitbox = true
-				attackType = "kick"
-			}
+		case cfg.StateAttackingPunch:
+			shouldCreateHitbox = true
+			attackType = "punch"
+		case cfg.StateAttackingKick:
+			shouldCreateHitbox = true
+			attackType = "kick"
+		case cfg.StateAttackingJump:
+			shouldCreateHitbox = true
+			attackType = "jump_kick"
 		}
 
 		if shouldCreateHitbox {
@@ -104,60 +111,78 @@ func hasActiveHitbox(ecs *ecs.ECS, owner *donburi.Entry) bool {
 }
 
 func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object, attackType string, isPlayer bool) {
-	hitbox := archetypes.Hitbox.Spawn(ecs)
+	var configs []HitboxConfig
 
-	// Determine hitbox size and damage
-	var width, height float64
-	var damage int
-	var knockback float64
-
-	if attackType == "kick" {
-		width = kickHitboxWidth
-		height = kickHitboxHeight
-		damage = kickDamage
-		knockback = kickKnockback
-	} else { // punch
-		width = punchHitboxWidth
-		height = punchHitboxHeight
-		damage = punchDamage
-		knockback = punchKnockback
-	}
-
-	// Position hitbox in front of attacker
-	var hitboxX, hitboxY float64
-
-	if isPlayer {
-		player := components.Player.Get(owner)
-		if player.Direction.X > 0 {
-			hitboxX = ownerObject.X + ownerObject.W
-		} else {
-			hitboxX = ownerObject.X - width
+	switch attackType {
+	case "punch":
+		configs = []HitboxConfig{
+			{Width: punchHitboxWidth, Height: punchHitboxHeight, OffsetX: 0, OffsetY: 0, Damage: punchDamage, Knockback: punchKnockback},
 		}
-	} else {
-		enemy := components.Enemy.Get(owner)
-		if enemy.Direction.X > 0 {
-			hitboxX = ownerObject.X + ownerObject.W
-		} else {
-			hitboxX = ownerObject.X - width
+	case "kick":
+		configs = []HitboxConfig{
+			{Width: kickHitboxWidth, Height: kickHitboxHeight, OffsetX: 0, OffsetY: 0, Damage: kickDamage, Knockback: kickKnockback},
+		}
+	case "jump_kick":
+		configs = []HitboxConfig{
+			// Main horizontal kick
+			{Width: kickHitboxWidth, Height: kickHitboxHeight, OffsetX: 0, OffsetY: 0, Damage: kickDamage, Knockback: kickKnockback},
+			// Diagonal hitbox
+			{Width: 16, Height: 16, OffsetX: 10, OffsetY: 10, Damage: kickDamage, Knockback: kickKnockback},
+			// Downward hitbox
+			{Width: 12, Height: 24, OffsetX: 0, OffsetY: 20, Damage: kickDamage, Knockback: kickKnockback},
 		}
 	}
 
-	hitboxY = ownerObject.Y + (ownerObject.H-height)/2 // Center vertically
+	for _, config := range configs {
+		hitbox := archetypes.Hitbox.Spawn(ecs)
 
-	// Create hitbox object
-	hitboxObject := resolv.NewObject(hitboxX, hitboxY, width, height)
-	hitboxObject.SetShape(resolv.NewRectangle(0, 0, width, height))
-	cfg.SetObject(hitbox, hitboxObject)
+		// Apply charge bonus
+		if isPlayer {
+			melee := components.MeleeAttack.Get(owner)
+			chargeBonus := 1.0 + (melee.ChargeTime / 60.0) // Add 1% bonus for every frame charged
+			config.Damage = int(float64(config.Damage) * chargeBonus)
+			config.Knockback *= chargeBonus
+			config.Width *= chargeBonus
+			config.Height *= chargeBonus
+			melee.ChargeTime = 0 // Reset charge time
+		}
 
-	// Set hitbox data
-	components.Hitbox.SetValue(hitbox, components.HitboxData{
-		OwnerEntity:    owner,
-		Damage:         damage,
-		KnockbackForce: knockback,
-		LifeTime:       10, // Hitbox lasts 10 frames
-		HitEntities:    make(map[*donburi.Entry]bool),
-		AttackType:     attackType,
-	})
+		// Position hitbox in front of attacker
+		var hitboxX, hitboxY float64
+
+		if isPlayer {
+			player := components.Player.Get(owner)
+			if player.Direction.X > 0 {
+				hitboxX = ownerObject.X + ownerObject.W + config.OffsetX
+			} else {
+				hitboxX = ownerObject.X - config.Width - config.OffsetX
+			}
+		} else {
+			enemy := components.Enemy.Get(owner)
+			if enemy.Direction.X > 0 {
+				hitboxX = ownerObject.X + ownerObject.W + config.OffsetX
+			} else {
+				hitboxX = ownerObject.X - config.Width - config.OffsetX
+			}
+		}
+
+		hitboxY = ownerObject.Y + (ownerObject.H-config.Height)/2 + config.OffsetY // Center vertically
+
+		// Create hitbox object
+		hitboxObject := resolv.NewObject(hitboxX, hitboxY, config.Width, config.Height)
+		hitboxObject.SetShape(resolv.NewRectangle(0, 0, config.Width, config.Height))
+		cfg.SetObject(hitbox, hitboxObject)
+
+		// Set hitbox data
+		components.Hitbox.SetValue(hitbox, components.HitboxData{
+			OwnerEntity:    owner,
+			Damage:         config.Damage,
+			KnockbackForce: config.Knockback,
+			LifeTime:       10, // Hitbox lasts 10 frames
+			HitEntities:    make(map[*donburi.Entry]bool),
+			AttackType:     attackType,
+		})
+	}
 }
 
 func updateHitboxes(ecs *ecs.ECS) {
@@ -195,6 +220,11 @@ func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *com
 }
 
 func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitboxObject, targetObject *resolv.Object) bool {
+	// Don't hit the owner of the hitbox
+	if hitbox.OwnerEntity == target {
+		return false
+	}
+
 	// Don't hit if already hit this target
 	if hitbox.HitEntities[target] {
 		return false
@@ -210,6 +240,7 @@ func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitbo
 		}
 	}
 
+	// Check collision by testing overlap
 	// Check collision by testing overlap
 	return hitboxObject.Shape.Intersection(0, 0, targetObject.Shape) != nil
 }
@@ -281,6 +312,11 @@ func cleanupHitboxes(ecs *ecs.ECS) {
 }
 
 func DrawHitboxes(ecs *ecs.ECS, screen *ebiten.Image) {
+	settings := GetOrCreateSettings(ecs)
+	if !settings.Debug {
+		return
+	}
+
 	// Get camera
 	cameraEntry, _ := components.Camera.First(ecs.World)
 	camera := components.Camera.Get(cameraEntry)
@@ -291,9 +327,16 @@ func DrawHitboxes(ecs *ecs.ECS, screen *ebiten.Image) {
 		o := cfg.GetObject(hitboxEntry)
 
 		// Different colors for different attack types
-		hitboxColor := color.RGBA{255, 255, 0, 100} // Yellow for punch
-		if hitbox.AttackType == "kick" {
-			hitboxColor = color.RGBA{255, 128, 0, 100} // Orange for kick
+		var hitboxColor color.RGBA
+		switch hitbox.AttackType {
+		case "punch":
+			hitboxColor = color.RGBA{255, 255, 0, 100} // Yellow
+		case "kick":
+			hitboxColor = color.RGBA{255, 128, 0, 100} // Orange
+		case "jump_kick":
+			hitboxColor = color.RGBA{0, 255, 0, 100} // Green
+		default:
+			hitboxColor = color.RGBA{255, 255, 255, 100} // White
 		}
 
 		// Apply camera offset

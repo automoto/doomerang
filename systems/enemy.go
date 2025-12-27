@@ -16,6 +16,7 @@ const (
 	enemyStatePatrol = "patrol"
 	enemyStateChase  = "chase"
 	enemyStateAttack = "attack"
+	enemyStateHit    = "hit"
 )
 
 func UpdateEnemies(ecs *ecs.ECS) {
@@ -39,6 +40,15 @@ func UpdateEnemies(ecs *ecs.ECS) {
 		enemy := components.Enemy.Get(e)
 		if enemy.InvulnFrames > 0 {
 			enemy.InvulnFrames--
+		}
+
+		// Update health bar timer
+		if e.HasComponent(components.HealthBar) {
+			healthBar := components.HealthBar.Get(e)
+			healthBar.TimeToLive--
+			if healthBar.TimeToLive <= 0 {
+				donburi.Remove[components.HealthBarData](e, components.HealthBar)
+			}
 		}
 
 		// Update AI behavior
@@ -77,6 +87,12 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
 	case enemyStateAttack:
 		handleAttackState(ecs, enemyEntry)
+	case enemyStateHit:
+		// Stunned for a short period
+		if state.StateTimer > 15 { // 15 frames of hitstun
+			state.CurrentState = enemyStateChase
+			state.StateTimer = 0
+		}
 	}
 }
 
@@ -90,13 +106,13 @@ func handlePatrolState(enemy *components.EnemyData, physics *components.PhysicsD
 
 	// Patrol behavior - move back and forth
 	if enemy.Direction.X > 0 {
-		physics.SpeedX += enemy.PatrolSpeed * 1.1
+		physics.SpeedX = enemy.PatrolSpeed
 		// Turn around if hit right boundary
 		if enemyObject.X >= enemy.PatrolRight {
 			enemy.Direction.X = -1
 		}
 	} else {
-		physics.SpeedX -= enemy.PatrolSpeed * 1.1
+		physics.SpeedX = -enemy.PatrolSpeed
 		// Turn around if hit left boundary
 		if enemyObject.X <= enemy.PatrolLeft {
 			enemy.Direction.X = 1
@@ -133,9 +149,9 @@ func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *res
 	// Move towards player if not within stopping distance
 	if distanceToPlayer > enemy.StoppingDistance {
 		if playerObject.X > enemyObject.X {
-			physics.SpeedX += enemy.ChaseSpeed * 1.3
+			physics.SpeedX = enemy.ChaseSpeed
 		} else {
-			physics.SpeedX -= enemy.ChaseSpeed * 1.3
+			physics.SpeedX = -enemy.ChaseSpeed
 		}
 	}
 }
@@ -170,6 +186,8 @@ func updateEnemyAnimation(enemy *components.EnemyData, physics *components.Physi
 	switch state.CurrentState {
 	case enemyStateAttack:
 		targetState = cfg.Punch01 // Use punch animation for attacks
+	case enemyStateHit:
+		targetState = cfg.Hit
 	default:
 		if physics.OnGround == nil {
 			targetState = cfg.Jump

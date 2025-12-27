@@ -18,8 +18,51 @@ func UpdateCombat(ecs *ecs.ECS) {
 	// --------------------------------------------------------------------
 	for e := range components.DamageEvent.Iter(ecs.World) {
 		dmg := components.DamageEvent.Get(e)
+		// If the entity is the player, check for invulnerability.
+		if e.HasComponent(components.Player) {
+			player := components.Player.Get(e)
+			if player.InvulnFrames > 0 {
+				donburi.Remove[components.DamageEventData](e, components.DamageEvent)
+				continue // Skip the rest of the loop for this entity
+			}
+		}
+
 		hp := components.Health.Get(e)
 		hp.Current -= dmg.Amount
+
+		// If the entity is an enemy, show the health bar.
+		if e.HasComponent(tags.Enemy) {
+			donburi.Add(e, components.HealthBar, &components.HealthBarData{
+				TimeToLive: 120, // 120 frames = 2 seconds
+			})
+		}
+
+		// Apply knockback if the entity has a physics component.
+		if e.HasComponent(components.Physics) {
+			physics := components.Physics.Get(e)
+			physics.SpeedX = dmg.KnockbackX
+			physics.SpeedY = dmg.KnockbackY
+
+			// Set the entity's state to knockback if it has a state component.
+			if e.HasComponent(components.State) {
+				state := components.State.Get(e)
+				if e.HasComponent(tags.Enemy) {
+					// Enemies have a specific hit state
+					// We would need to import the systems package to use enemyStateHit
+					// but that would create a circular dependency.
+					// So we just use the string "hit" for now.
+					state.CurrentState = "hit"
+				} else {
+					state.CurrentState = cfg.Stunned
+					if e.HasComponent(components.Player) {
+						player := components.Player.Get(e)
+						player.InvulnFrames = 30 // 30 frames of invincibility
+					}
+				}
+				state.StateTimer = 0 // Reset state timer
+			}
+		}
+
 		// Remove the damage event component so it is processed only once.
 		donburi.Remove[components.DamageEventData](e, components.DamageEvent)
 	}
