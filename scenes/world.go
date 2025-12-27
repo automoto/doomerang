@@ -4,12 +4,11 @@ import (
 	"image/color"
 	"sync"
 
-	dresolv "github.com/automoto/doomerang/config"
+	cfg "github.com/automoto/doomerang/config"
 	factory2 "github.com/automoto/doomerang/systems/factory"
 
 	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/components"
-	"github.com/automoto/doomerang/layers"
 	"github.com/automoto/doomerang/systems"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/solarlune/resolv"
@@ -49,12 +48,12 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.UpdateCamera)
 
 	// Add renderers
-	ecs.AddRenderer(layers.Default, systems.DrawLevel)
-	ecs.AddRenderer(layers.Default, systems.DrawAnimated)
-	ecs.AddRenderer(layers.Default, systems.DrawHealthBars)
-	ecs.AddRenderer(layers.Default, systems.DrawHitboxes)
-	ecs.AddRenderer(layers.Default, systems.DrawHUD)
-	ecs.AddRenderer(layers.Default, systems.DrawDebug)
+	ecs.AddRenderer(cfg.Default, systems.DrawLevel)
+	ecs.AddRenderer(cfg.Default, systems.DrawAnimated)
+	ecs.AddRenderer(cfg.Default, systems.DrawHealthBars)
+	ecs.AddRenderer(cfg.Default, systems.DrawHitboxes)
+	ecs.AddRenderer(cfg.Default, systems.DrawHUD)
+	ecs.AddRenderer(cfg.Default, systems.DrawDebug)
 	// ecs.AddRenderer(layers.Default, systems.DrawHelp)
 
 	ps.ecs = ecs
@@ -91,13 +90,13 @@ func (ps *PlatformerScene) configure() {
 		))
 
 		// Add the wall to the collision space
-		wallObj := dresolv.GetObject(wall)
+		wallObj := cfg.GetObject(wall)
 		space.Add(wallObj)
 	}
 
 	// Create the player at a safe starting position
 	player := factory2.CreatePlayer(ps.ecs)
-	playerObj := dresolv.GetObject(player)
+	playerObj := cfg.GetObject(player)
 
 	// Position the player at a safe starting point
 	if len(levelData.CurrentLevel.Paths) > 0 {
@@ -127,6 +126,6 @@ func (ps *PlatformerScene) configure() {
 
 	// Create test enemy
 	enemy := factory2.CreateTestEnemy(ps.ecs)
-	enemyObj := dresolv.GetObject(enemy)
+	enemyObj := cfg.GetObject(enemy)
 	space.Add(enemyObj)
 }

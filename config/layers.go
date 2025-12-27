@@ -1,4 +1,4 @@
-package layers
+package config
 
 import "github.com/yohamta/donburi/ecs"
 
