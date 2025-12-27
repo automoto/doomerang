@@ -2,7 +2,7 @@ package archetypes
 
 import (
 	"github.com/automoto/doomerang/components"
-	"github.com/automoto/doomerang/layers"
+	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
@@ -69,7 +69,7 @@ func newArchetype(cs ...donburi.IComponentType) *archetype {
 
 func (a *archetype) Spawn(ecs *ecs.ECS, cs ...donburi.IComponentType) *donburi.Entry {
 	e := ecs.World.Entry(ecs.Create(
-		layers.Default,
+		cfg.Default,
 		append(a.components, cs...)...,
 	))
 	return e
