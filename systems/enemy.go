@@ -9,6 +9,7 @@ import (
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
+	math2 "github.com/yohamta/donburi/features/math"
 )
 
 // AI state constants - should match factory
@@ -82,7 +83,7 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 	// State machine
 	switch state.CurrentState {
 	case enemyStatePatrol:
-		handlePatrolState(enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
+		handlePatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
 	case enemyStateChase:
 		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
 	case enemyStateAttack:
@@ -96,7 +97,7 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 	}
 }
 
-func handlePatrolState(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+func handlePatrolState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	// Check if should start chasing
 	if distanceToPlayer <= enemy.ChaseRange {
 		state.CurrentState = enemyStateChase
@@ -104,7 +105,88 @@ func handlePatrolState(enemy *components.EnemyData, physics *components.PhysicsD
 		return
 	}
 
-	// Patrol behavior - move back and forth
+	// If enemy has a custom patrol path, use it
+	if enemy.PatrolPathName != "" {
+		handleCustomPatrol(ecs, enemyEntry, enemy, physics, state, enemyObject)
+	} else {
+		// Default patrol behavior - move back and forth
+		if enemy.Direction.X > 0 {
+			physics.SpeedX = enemy.PatrolSpeed
+			// Turn around if hit right boundary
+			if enemyObject.X >= enemy.PatrolRight {
+				enemy.Direction.X = -1
+			}
+		} else {
+			physics.SpeedX = -enemy.PatrolSpeed
+			// Turn around if hit left boundary
+			if enemyObject.X <= enemy.PatrolLeft {
+				enemy.Direction.X = 1
+			}
+		}
+	}
+}
+
+func handleCustomPatrol(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject *resolv.Object) {
+	// Get the current level to access patrol paths
+	levelEntry, ok := components.Level.First(ecs.World)
+	if !ok {
+		// Fallback to default patrol if no level found
+		handleDefaultPatrol(enemy, physics, enemyObject)
+		return
+	}
+
+	levelData := components.Level.Get(levelEntry)
+	currentLevel := levelData.CurrentLevel
+
+	// Find the patrol path by name
+	patrolPath, exists := currentLevel.PatrolPaths[enemy.PatrolPathName]
+	if !exists || len(patrolPath.Points) < 2 {
+		// Fallback to default patrol if path not found or invalid
+		handleDefaultPatrol(enemy, physics, enemyObject)
+		return
+	}
+
+	// For 2-point polylines, implement back-and-forth patrol between start and end points
+	startPoint := patrolPath.Points[0]
+	endPoint := patrolPath.Points[1]
+
+	// Ensure startPoint is the leftmost point to align with Direction logic
+	if startPoint.X > endPoint.X {
+		startPoint, endPoint = endPoint, startPoint
+	}
+
+	// Determine which direction we should be moving based on current position
+	var targetPoint math2.Vec2
+	if enemy.Direction.X > 0 {
+		targetPoint = endPoint
+	} else {
+		targetPoint = startPoint
+	}
+
+	// Set the speed directly, bypassing friction for patrol
+	physics.SpeedX = enemy.PatrolSpeed * enemy.Direction.X
+
+	// If we are close to the target, or have overshot it, switch directions
+	// Check distance for proximity flip
+	if math.Abs(targetPoint.X-enemyObject.X) < enemy.PatrolSpeed {
+		enemy.Direction.X *= -1
+		return
+	}
+
+	// Check for overshoot based on direction
+	if enemy.Direction.X > 0 { // Moving Right towards End
+		if enemyObject.X > targetPoint.X {
+			enemy.Direction.X = -1
+		}
+	} else { // Moving Left towards Start
+		if enemyObject.X < targetPoint.X {
+			enemy.Direction.X = 1
+		}
+	}
+}
+
+func handleDefaultPatrol(enemy *components.EnemyData, physics *components.PhysicsData, enemyObject *resolv.Object) {
+	// Default patrol behavior - move back and forth
 	if enemy.Direction.X > 0 {
 		physics.SpeedX = enemy.PatrolSpeed
 		// Turn around if hit right boundary

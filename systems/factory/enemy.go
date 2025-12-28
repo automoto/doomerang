@@ -32,10 +32,8 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 	obj.SetShape(resolv.NewRectangle(0, 0, enemyCollisionWidth, enemyCollisionHeight))
 	obj.AddTags("character")
 	// Set enemy data with AI parameters
-	components.Enemy.SetValue(enemy, components.EnemyData{
+	enemyData := components.EnemyData{
 		Direction:        components.Vector{X: -1, Y: 0}, // Start facing left
-		PatrolLeft:       x - 16,
-		PatrolRight:      x + 16,
 		PatrolSpeed:      2.0,
 		ChaseSpeed:       2.5,  // Faster when chasing
 		AttackRange:      36.0, // Attack when player within 32 pixels
@@ -43,7 +41,22 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 		StoppingDistance: 28.0, // Stop 24 pixels away from player
 		AttackCooldown:   0,
 		InvulnFrames:     0,
-	})
+	}
+
+	// Set patrol boundaries based on whether we have a custom patrol path
+	if patrolPath != "" {
+		// Custom patrol path will be handled in the AI system
+		enemyData.PatrolPathName = patrolPath
+		// Initialize default patrol boundaries (will be overridden by custom path)
+		enemyData.PatrolLeft = x
+		enemyData.PatrolRight = x
+	} else {
+		// Default patrol behavior (back and forth from current position)
+		enemyData.PatrolLeft = x - 16
+		enemyData.PatrolRight = x + 16
+	}
+
+	components.Enemy.SetValue(enemy, enemyData)
 	components.State.SetValue(enemy, components.StateData{
 		CurrentState: "patrol",
 		StateTimer:   0,

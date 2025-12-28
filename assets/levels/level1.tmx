@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="254" height="128" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="26">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="254" height="128" tilewidth="16" tileheight="16" infinite="0" nextlayerid="11" nextobjectid="34">
  <tileset firstgid="1" source="mainlev_build.tsx"/>
  <tileset firstgid="4097" source="ground-tiles.tsx"/>
  <layer id="1" name="wg-tiles" width="254" height="128">
@@ -179,6 +179,17 @@
     <property name="enemyType" value="regular"/>
     <property name="pathName" value="enemy3"/>
    </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="10" name="PatrolPaths">
+  <object id="31" name="enemy1" x="1016.67" y="326.761">
+   <polyline points="10,4 -324.667,5"/>
+  </object>
+  <object id="33" name="enemy3" x="2080" y="330.545">
+   <polyline points="10,4 -324.667,5"/>
+  </object>
+  <object id="32" name="enemy2" x="1488" y="335.333">
+   <polyline points="0,0 -334.667,1"/>
   </object>
  </objectgroup>
 </map>
