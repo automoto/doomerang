@@ -3,6 +3,7 @@
 *.dll
 *.so
 *.dylib
+doomerang
 
 # Test binary, built with `go test -c`
 *.test
@@ -31,3 +32,4 @@ Thumbs.db
 # Roo rules and Cursor files
 .roo/
 .cursor/
+
