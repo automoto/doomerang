@@ -11,12 +11,6 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-const (
-	playerJumpSpd = 15.0
-	playerAccel        = 0.75
-	playerAttackAccel = 0.1
-)
-
 func UpdatePlayer(ecs *ecs.ECS) {
 	playerEntry, _ := components.Player.First(ecs.World)
 	if playerEntry == nil {
@@ -24,6 +18,7 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	}
 
 	// If the player is in death sequence, only advance animation and return.
+	// The entity will be removed by the death system.
 	if playerEntry.HasComponent(components.Death) {
 		if anim := components.Animation.Get(playerEntry); anim != nil && anim.CurrentAnimation != nil {
 			anim.CurrentAnimation.Update()
@@ -84,10 +79,10 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 					physics.IgnorePlatform = physics.OnGround
 				} else {
 					if physics.OnGround != nil {
-						physics.SpeedY = -playerJumpSpd
+						physics.SpeedY = -cfg.Player.JumpSpeed
 					} else if physics.WallSliding != nil {
 						// Wall-jumping
-						physics.SpeedY = -playerJumpSpd
+						physics.SpeedY = -cfg.Player.JumpSpeed
 						if physics.WallSliding.X > playerObject.X {
 							physics.SpeedX = -physics.MaxSpeed
 						} else {
@@ -101,9 +96,9 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 	}
 
 	// Horizontal movement
-	accel := playerAccel
+	accel := cfg.Player.Acceleration
 	if isInAttackState(state.CurrentState) {
-		accel = playerAttackAccel
+		accel = cfg.Player.AttackAccel
 	}
 
 	if physics.WallSliding == nil {
@@ -172,7 +167,7 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 
 	case cfg.Hit, cfg.Stunned, cfg.Knockback:
 		// Transition back to movement after hitstun/knockback duration
-		if state.StateTimer > 15 {
+		if state.StateTimer > cfg.Player.InvulnFrames {
 			transitionToMovementState(playerEntry, player, physics, state)
 		}
 

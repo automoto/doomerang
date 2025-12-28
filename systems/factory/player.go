@@ -14,13 +14,6 @@ import (
 )
 
 const (
-	playerFrameWidth      = 96
-	playerFrameHeight     = 84
-	playerCollisionWidth  = 16
-	playerCollisionHeight = 40 // Fixed: matches actual character height
-)
-
-const (
 	playerDir = "player"
 )
 
@@ -30,10 +23,35 @@ func handleError(err error) {
 	}
 }
 
+func init() {
+	cfg.Player = cfg.PlayerConfig{
+		// Movement
+		JumpSpeed:    15.0,
+		Acceleration: 0.75,
+		AttackAccel:  0.1,
+		MaxSpeed:     6.0,
+
+		// Combat
+		Health:       100,
+		InvulnFrames: 30,
+
+		// Physics
+		Gravity:        0.75,
+		Friction:       0.5,
+		AttackFriction: 0.2,
+
+		// Dimensions
+		FrameWidth:      96,
+		FrameHeight:     84,
+		CollisionWidth:  16,
+		CollisionHeight: 40,
+	}
+}
+
 func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	player := archetypes.Player.Spawn(ecs)
 
-	obj := resolv.NewObject(x, y, playerCollisionWidth, playerCollisionHeight)
+	obj := resolv.NewObject(x, y, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight))
 	cfg.SetObject(player, obj)
 	obj.AddTags("character")
 	components.Player.SetValue(player, components.PlayerData{
@@ -45,17 +63,17 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 		StateTimer:   0,
 	})
 	components.Physics.SetValue(player, components.PhysicsData{
-		Gravity:        0.75,
-		Friction:       0.5,
-		AttackFriction: 0.2,
-		MaxSpeed:       6.0,
+		Gravity:        cfg.Player.Gravity,
+		Friction:       cfg.Player.Friction,
+		AttackFriction: cfg.Player.AttackFriction,
+		MaxSpeed:       cfg.Player.MaxSpeed,
 	})
 	components.Health.SetValue(player, components.HealthData{
-		Current: 100,
-		Max:     100,
+		Current: cfg.Player.Health,
+		Max:     cfg.Player.Health,
 	})
 
-	obj.SetShape(resolv.NewRectangle(0, 0, playerCollisionWidth, playerCollisionHeight))
+	obj.SetShape(resolv.NewRectangle(0, 0, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight)))
 
 	// Load sprite sheets
 	animData := GeneratePlayerAnimations()
@@ -114,8 +132,8 @@ func GeneratePlayerAnimations() *components.AnimationData {
 			cfg.WallSlide:   wallSlideSprite,
 		},
 		CurrentSheet: cfg.Idle,
-		FrameWidth:   playerFrameWidth,
-		FrameHeight:  playerFrameHeight,
+		FrameWidth:   cfg.Player.FrameWidth,
+		FrameHeight:  cfg.Player.FrameHeight,
 		Animations: map[string]*animations.Animation{
 			cfg.Crouch:      animations.NewAnimation(0, 5, 1, 5),
 			cfg.Die:         animations.NewAnimation(0, 8, 1, 5),

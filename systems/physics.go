@@ -2,9 +2,27 @@ package systems
 
 import (
 	"github.com/automoto/doomerang/components"
+	cfg "github.com/automoto/doomerang/config"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
+
+func init() {
+	cfg.Physics = cfg.PhysicsConfig{
+		// Global physics
+		Gravity:      0.75,
+		MaxFallSpeed: 10.0,
+		MaxRiseSpeed: -10.0,
+
+		// Wall sliding
+		WallSlideSpeed: 1.0,
+
+		// Collision
+		PlatformDropThreshold: 4.0,  // Pixels above platform to allow drop-through
+		CharacterPushback:     2.0,  // Pushback force for character collisions
+		VerticalSpeedClamp:    10.0, // Maximum vertical speed magnitude
+	}
+}
 
 func UpdatePhysics(ecs *ecs.ECS) {
 	components.Physics.Each(ecs.World, func(e *donburi.Entry) {
@@ -34,8 +52,8 @@ func UpdatePhysics(ecs *ecs.ECS) {
 
 		// Apply gravity
 		physics.SpeedY += physics.Gravity
-		if physics.WallSliding != nil && physics.SpeedY > 1 {
-			physics.SpeedY = 1
+		if physics.WallSliding != nil && physics.SpeedY > cfg.Physics.WallSlideSpeed {
+			physics.SpeedY = cfg.Physics.WallSlideSpeed
 		}
 	})
 }

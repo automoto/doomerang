@@ -90,7 +90,10 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 		handleAttackState(ecs, enemyEntry)
 	case enemyStateHit:
 		// Stunned for a short period
-		if state.StateTimer > 15 { // 15 frames of hitstun
+		//TODO: need to update enemy types
+		// Use the default Guard type's hitstun duration for now
+		guardType := cfg.Enemy.Types["Guard"]
+		if state.StateTimer > guardType.HitstunDuration {
 			state.CurrentState = enemyStateChase
 			state.StateTimer = 0
 		}
@@ -215,7 +218,7 @@ func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *res
 	}
 
 	// Check if should stop chasing (player too far)
-	if distanceToPlayer > enemy.ChaseRange*1.5 { // Hysteresis to prevent flapping
+	if distanceToPlayer > enemy.ChaseRange*cfg.Enemy.HysteresisMultiplier { // Hysteresis to prevent flapping
 		state.CurrentState = enemyStatePatrol
 		state.StateTimer = 0
 		return
@@ -248,13 +251,15 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	}
 
 	// Attack animation duration (simplified - using timer)
-	attackDuration := 30 // 30 frames for attack
+	// Use the default Guard type's attack duration for now
+	guardType := cfg.Enemy.Types["Guard"]
+	attackDuration := guardType.AttackDuration
 
 	if state.StateTimer >= attackDuration {
 		// Attack finished
 		state.CurrentState = enemyStateChase
 		state.StateTimer = 0
-		enemy.AttackCooldown = 60 // 1 second cooldown
+		enemy.AttackCooldown = guardType.AttackCooldown
 		return
 	}
 

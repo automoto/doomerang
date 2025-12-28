@@ -9,13 +9,6 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-const (
-	enemyFrameWidth      = 96
-	enemyFrameHeight     = 84
-	enemyCollisionWidth  = 16
-	enemyCollisionHeight = 40 // Fixed: matches actual character height
-)
-
 // AI state constants
 const (
 	enemyStatePatrol = "patrol"
@@ -23,22 +16,60 @@ const (
 	enemyStateAttack = "attack"
 )
 
+func init() {
+	// Define a default "Guard" enemy type
+	guardType := cfg.EnemyTypeConfig{
+		Name:             "Guard",
+		Health:           60,
+		PatrolSpeed:      2.0,
+		ChaseSpeed:       2.5,
+		AttackRange:      36.0,
+		ChaseRange:       80.0,
+		StoppingDistance: 28.0,
+		AttackCooldown:   60,
+		InvulnFrames:     15,
+		AttackDuration:   30,
+		HitstunDuration:  15,
+		Damage:           10,
+		KnockbackForce:   5.0,
+		Gravity:          0.75,
+		Friction:         0.2,
+		MaxSpeed:         6.0,
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   16,
+		CollisionHeight:  40,
+	}
+
+	cfg.Enemy = cfg.EnemyConfig{
+		Types: map[string]cfg.EnemyTypeConfig{
+			"Guard": guardType,
+		},
+		HysteresisMultiplier:  1.5,
+		DefaultPatrolDistance: 32.0,
+	}
+}
+
 func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
+	// Use the default "Guard" type for now
+	enemyType := cfg.Enemy.Types["Guard"]
+
 	enemy := archetypes.Enemy.Spawn(ecs)
 
 	// Create collision object
-	obj := resolv.NewObject(x, y, enemyCollisionWidth, enemyCollisionHeight)
+	obj := resolv.NewObject(x, y, float64(enemyType.CollisionWidth), float64(enemyType.CollisionHeight))
 	cfg.SetObject(enemy, obj)
-	obj.SetShape(resolv.NewRectangle(0, 0, enemyCollisionWidth, enemyCollisionHeight))
+	obj.SetShape(resolv.NewRectangle(0, 0, float64(enemyType.CollisionWidth), float64(enemyType.CollisionHeight)))
 	obj.AddTags("character")
-	// Set enemy data with AI parameters
+
+	// Set enemy data with AI parameters from config
 	enemyData := components.EnemyData{
 		Direction:        components.Vector{X: -1, Y: 0}, // Start facing left
-		PatrolSpeed:      2.0,
-		ChaseSpeed:       2.5,  // Faster when chasing
-		AttackRange:      36.0, // Attack when player within 32 pixels
-		ChaseRange:       80.0, // Start chasing when player within 80 pixels
-		StoppingDistance: 28.0, // Stop 24 pixels away from player
+		PatrolSpeed:      enemyType.PatrolSpeed,
+		ChaseSpeed:       enemyType.ChaseSpeed,
+		AttackRange:      enemyType.AttackRange,
+		ChaseRange:       enemyType.ChaseRange,
+		StoppingDistance: enemyType.StoppingDistance,
 		AttackCooldown:   0,
 		InvulnFrames:     0,
 	}
@@ -52,8 +83,8 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 		enemyData.PatrolRight = x
 	} else {
 		// Default patrol behavior (back and forth from current position)
-		enemyData.PatrolLeft = x - 16
-		enemyData.PatrolRight = x + 16
+		enemyData.PatrolLeft = x - cfg.Enemy.DefaultPatrolDistance
+		enemyData.PatrolRight = x + cfg.Enemy.DefaultPatrolDistance
 	}
 
 	components.Enemy.SetValue(enemy, enemyData)
@@ -62,15 +93,15 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 		StateTimer:   0,
 	})
 	components.Physics.SetValue(enemy, components.PhysicsData{
-		Gravity:  0.75,
-		Friction: 0.2,
-		MaxSpeed: 6.0,
+		Gravity:  enemyType.Gravity,
+		Friction: enemyType.Friction,
+		MaxSpeed: enemyType.MaxSpeed,
 	})
 
-	// Set health (enemies have less health than player)
+	// Set health from config
 	components.Health.SetValue(enemy, components.HealthData{
-		Current: 60, // Less health than player (100)
-		Max:     60,
+		Current: enemyType.Health,
+		Max:     enemyType.Health,
 	})
 
 	// Use same animations as player
@@ -83,5 +114,6 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 
 // CreateTestEnemy spawns a hardcoded enemy for testing
 func CreateTestEnemy(ecs *ecs.ECS) *donburi.Entry {
-	return CreateEnemy(ecs, 200, 128+float64(enemyFrameHeight-enemyCollisionHeight), "")
+	enemyType := cfg.Enemy.Types["Guard"]
+	return CreateEnemy(ecs, 200, 128+float64(enemyType.FrameHeight-enemyType.CollisionHeight), "")
 }
