@@ -39,12 +39,19 @@ physics, and player-specific components).
     -   `/levels`: Tiled (`.tmx`) map files define the level layouts.           
     -   `/images`: Spritesheets and other images.                               
     -   `/fonts`: Font files.                                                   
-                                                                                
--   `/resolv`: A small wrapper package to integrate the `resolv` collision      
-library with the Donburi ECS. It provides helper functions for managing physics 
-objects within the ECS world.                                                   
-                                                                                
--   `/config`: Holds global configuration values like screen dimensions and types of valid global states.
+    -   `assets.go`: Handles asset loading with built-in **caching** to prevent redundant decoding.
+
+-   `/config`: Holds global configuration values, constants, and the type-safe `StateID` system.
+
+## Performance & Architecture
+
+The project has been optimized for high performance and stability:
+
+-   **Asset Caching**: Images are decoded once and cached in memory. Subsequent requests for the same sprite sheet return the cached pointer, drastically reducing CPU and memory overhead during level loads and entity creation.
+-   **Zero-Allocation Rendering**: The render systems reuse global `DrawImageOptions` and pre-defined `color.Color` variables to eliminate per-frame heap allocations, preventing GC stuttering.
+-   **Type-Safe States**: All character and game states use the `StateID` enum (defined in `config/states.go`). This prevents typo-related bugs and improves comparison speed.
+-   **Memory Safety**: Physics objects (`resolv.Object`) are stored via a pointer wrapper (`ObjectData`) in ECS components. This ensures that the `resolv.Space` always has valid pointers even when Donburi reallocates component storage.
+-   **O(1) Hitbox Lookup**: Entities maintain a direct reference to their active hitbox, eliminating O(N) searches in hot combat loops.
 
 ## Tags
 

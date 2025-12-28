@@ -24,32 +24,29 @@ In this project, we use the `donburi` library to implement the ECS architecture.
 
 ### Components
 
-All components are defined in the `components/` directory. Each component is a simple struct that holds data. For example, in `components/physics.go`, we have:
+All components are defined in the `components/` directory. Each component is a simple struct that holds data. 
+
+#### Pointer Wrapper Pattern (`ObjectData`)
+A critical pattern used in this project is the **Pointer Wrapper** for external library objects. For example, `resolv.Object` is stored as:
 
 ```go
-package components
-
-import (
-	"github.com/solarlune/resolv"
-	"github.com/yohamta/donburi"
-)
-
-type PhysicsData struct {
-	SpeedX         float64
-	SpeedY         float64
-	AccelX         float64
-	Gravity        float64
-	Friction       float64
-	MaxSpeed       float64
-	OnGround       *resolv.Object
-	WallSliding    *resolv.Object
-	IgnorePlatform *resolv.Object
+type ObjectData struct {
+	*resolv.Object
 }
-
-var Physics = donburi.NewComponentType[PhysicsData]()
+var Object = donburi.NewComponentType[ObjectData]()
 ```
 
-Each component type is registered with `donburi` using `donburi.NewComponentType[T]()`, where `T` is the struct that defines the component's data.
+**Why?** Donburi stores component data in contiguous slices. When these slices grow, they reallocate, and the memory addresses of the components change. Libraries like `resolv` maintain their own pointers to these objects. By storing a pointer *inside* the component (the wrapper), we ensure that the address held by the library remains valid even if the component itself moves in memory.
+
+#### State Management (`StateID`)
+Characters use a type-safe `StateID` enum (defined in `config/states.go`) instead of strings:
+
+```go
+type StateData struct {
+	CurrentState config.StateID
+	StateTimer   int
+}
+```
 
 ### Systems
 
@@ -150,4 +147,10 @@ func (ps *PlatformerScene) configure() {
 }
 ```
 
-By following these conventions, we can maintain a clean, organized, and efficient codebase that is easy to extend and maintain.
+## Best Practices Going Forward
+
+1.  **State Safety**: Always add new character or game states to `config/states.go` as `StateID` constants. Update the `StateToFileName` map if the state requires a new sprite sheet.
+2.  **Zero Allocation**: Avoid creating new objects (like `ebiten.DrawImageOptions` or `color.RGBA`) inside `Draw` or `Update` loops. Reuse package-level variables.
+3.  **Component Caching**: When iterating over entities in a system, if you need to access multiple components, call `Get` once at the start of the loop body and store the pointer.
+4.  **Pointer Wrappers**: If you integrate a new library that tracks object pointers, use the `ObjectData` pattern (store a pointer inside a struct) to prevent memory invalidation during ECS reallocation.
+5.  **O(1) Relationships**: Instead of searching all entities for a relationship (like "who is the active hitbox for this player?"), store a direct `*donburi.Entry` reference on the parent component.
