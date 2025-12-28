@@ -11,6 +11,7 @@ type EnemyData struct {
 	PatrolLeft       float64 // Left boundary for patrol
 	PatrolRight      float64 // Right boundary for patrol
 	PatrolSpeed      float64 // Speed while patrolling
+	PatrolPathName   string  // Name of custom patrol path (if any)
 	ChaseSpeed       float64 // Speed while chasing player
 	AttackRange      float64 // Distance to start attacking
 	ChaseRange       float64 // Distance to start chasing

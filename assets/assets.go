@@ -24,14 +24,15 @@ var (
 )
 
 type PlayerSpawn struct {
-	X float64
-	Y float64
+	X          float64
+	Y          float64
 	SpawnPoint string
 }
 
 type Level struct {
 	Background   *ebiten.Image
 	Paths        map[uint32]Path
+	PatrolPaths  map[string]PatrolPath // New field for patrol paths
 	EnemySpawns  []EnemySpawn
 	PlayerSpawns []PlayerSpawn
 	Name         string
@@ -59,6 +60,11 @@ func NewLevelLoader() *LevelLoader {
 type Path struct {
 	Points []math.Vec2
 	Loops  bool
+}
+
+type PatrolPath struct {
+	Name   string
+	Points []math.Vec2 // Converted polyline points to world coordinates
 }
 
 type AnimationLoader struct {
@@ -112,6 +118,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 
 	level := Level{
 		Paths:        make(map[uint32]Path),
+		PatrolPaths:  make(map[string]PatrolPath), // Initialize patrol paths map
 		EnemySpawns:  []EnemySpawn{},
 		PlayerSpawns: []PlayerSpawn{},
 		Name:         levelPath,
@@ -147,10 +154,32 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 			for _, o := range og.Objects {
 				spawnPoint := o.Properties.GetString("spawnPoint")
 				level.PlayerSpawns = append(level.PlayerSpawns, PlayerSpawn{
-					X: o.X,
-					Y: o.Y,
+					X:          o.X,
+					Y:          o.Y,
 					SpawnPoint: spawnPoint,
 				})
+			}
+		} else if og.Name == "PatrolPaths" {
+			// Parse patrol paths from polyline objects
+			for _, o := range og.Objects {
+				if len(o.PolyLines) > 0 {
+					// Use the first polyline if multiple polylines exist
+					polyline := o.PolyLines[0]
+					if polyline.Points != nil && len(*polyline.Points) >= 2 {
+						// Convert polyline points to world coordinates
+						points := make([]math.Vec2, len(*polyline.Points))
+						for i, point := range *polyline.Points {
+							points[i] = math.Vec2{
+								X: o.X + point.X,
+								Y: o.Y + point.Y,
+							}
+						}
+						level.PatrolPaths[o.Name] = PatrolPath{
+							Name:   o.Name,
+							Points: points,
+						}
+					}
+				}
 			}
 		}
 	}
