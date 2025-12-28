@@ -8,6 +8,7 @@ type MeleeAttackData struct {
 	ChargeTime  float64 // Time in seconds the attack button has been held
 	IsCharging  bool
 	IsAttacking bool
+	ActiveHitbox *donburi.Entry // Direct reference to the active hitbox
 }
 
 var MeleeAttack = donburi.NewComponentType[MeleeAttackData]()

@@ -18,8 +18,9 @@ type EnemyData struct {
 	StoppingDistance float64 // Distance to stop before attacking
 
 	// Combat
-	AttackCooldown int // Frames until can attack again
-	InvulnFrames   int // Invincibility frames after being hit
+	AttackCooldown int            // Frames until can attack again
+	InvulnFrames   int            // Invincibility frames after being hit
+	ActiveHitbox   *donburi.Entry // Direct reference to the active hitbox
 }
 
 var Enemy = donburi.NewComponentType[EnemyData]()

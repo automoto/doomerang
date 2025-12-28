@@ -100,14 +100,13 @@ func createEnemyHitboxes(ecs *ecs.ECS) {
 }
 
 func hasActiveHitbox(ecs *ecs.ECS, owner *donburi.Entry) bool {
-	hasHitbox := false
-	tags.Hitbox.Each(ecs.World, func(hitboxEntry *donburi.Entry) {
-		hitbox := components.Hitbox.Get(hitboxEntry)
-		if hitbox.OwnerEntity == owner {
-			hasHitbox = true
-		}
-	})
-	return hasHitbox
+	if owner.HasComponent(components.Player) {
+		return components.MeleeAttack.Get(owner).ActiveHitbox != nil
+	}
+	if owner.HasComponent(components.Enemy) {
+		return components.Enemy.Get(owner).ActiveHitbox != nil
+	}
+	return false
 }
 
 func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object, attackType string, isPlayer bool) {
@@ -182,6 +181,13 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 			HitEntities:    make(map[*donburi.Entry]bool),
 			AttackType:     attackType,
 		})
+
+		// Set active hitbox reference on owner
+		if isPlayer {
+			components.MeleeAttack.Get(owner).ActiveHitbox = hitbox
+		} else {
+			components.Enemy.Get(owner).ActiveHitbox = hitbox
+		}
 	}
 }
 
@@ -303,6 +309,22 @@ func cleanupHitboxes(ecs *ecs.ECS) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
 		if hitbox.LifeTime <= 0 {
 			toRemove = append(toRemove, hitboxEntry)
+			
+			// Clear active hitbox reference on owner
+			owner := hitbox.OwnerEntity
+			if owner != nil && owner.Valid() {
+				if owner.HasComponent(components.Player) {
+					melee := components.MeleeAttack.Get(owner)
+					if melee.ActiveHitbox == hitboxEntry {
+						melee.ActiveHitbox = nil
+					}
+				} else if owner.HasComponent(components.Enemy) {
+					enemy := components.Enemy.Get(owner)
+					if enemy.ActiveHitbox == hitboxEntry {
+						enemy.ActiveHitbox = nil
+					}
+				}
+			}
 		}
 	})
 
