@@ -10,6 +10,6 @@ import (
 
 func CreateWall(ecs *ecs.ECS, obj *resolv.Object) *donburi.Entry {
 	wall := archetypes.Wall.Spawn(ecs)
-	components.Object.Set(wall, obj)
+	components.Object.SetValue(wall, components.ObjectData{Object: obj})
 	return wall
 }

@@ -17,7 +17,7 @@ func UpdateEnemies(ecs *ecs.ECS) {
 	playerEntry, _ := components.Player.First(ecs.World)
 	var playerObject *resolv.Object
 	if playerEntry != nil {
-		playerObject = components.Object.Get(playerEntry)
+		playerObject = components.Object.Get(playerEntry).Object
 	}
 
 	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
@@ -75,7 +75,7 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 	// State machine
 	switch state.CurrentState {
 	case cfg.StatePatrol:
-		handlePatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
+		handlePatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
 	case cfg.StateChase:
 		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
 	case cfg.StateAttackingPunch:
@@ -242,7 +242,7 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	enemyObject := components.Object.Get(enemyEntry)
 	// Create a hitbox on the first frame of the attack
 	if state.StateTimer == 1 {
-		CreateHitbox(ecs, enemyEntry, enemyObject, "punch", false)
+		CreateHitbox(ecs, enemyEntry, enemyObject.Object, "punch", false)
 	}
 
 	// Attack animation duration (simplified - using timer)

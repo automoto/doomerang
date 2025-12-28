@@ -89,51 +89,51 @@ func (ps *PlatformerScene) configure() {
 			"solid",
 		))
 
-		// Add the wall to the collision space
-		wallObj := components.Object.Get(wall)
-		space.Add(wallObj)
-	}
-
-	// Determine player spawn position
-	var playerSpawnX, playerSpawnY float64
-
-	if len(levelData.CurrentLevel.PlayerSpawns) > 0 {
-		// Use the first player spawn point defined in Tiled
-		spawn := levelData.CurrentLevel.PlayerSpawns[0]
-		playerSpawnX = spawn.X
-		playerSpawnY = spawn.Y
-	} else if len(levelData.CurrentLevel.Paths) > 0 {
-		// Fallback: Find the main ground platform (largest platform by area)
-		var mainPlatform assets.Path
-		maxArea := 0.0
-		for _, path := range levelData.CurrentLevel.Paths {
-			width := path.Points[1].X - path.Points[0].X
-			height := path.Points[1].Y - path.Points[0].Y
-			area := width * height
-			if area > maxArea {
-				maxArea = area
-				mainPlatform = path
+		        // Add the wall to the collision space
+				wallObj := components.Object.Get(wall)
+				space.Add(wallObj.Object)
+			}
+		
+			// Determine player spawn position
+			var playerSpawnX, playerSpawnY float64
+		
+			if len(levelData.CurrentLevel.PlayerSpawns) > 0 {
+				// Use the first player spawn point defined in Tiled
+				spawn := levelData.CurrentLevel.PlayerSpawns[0]
+				playerSpawnX = spawn.X
+				playerSpawnY = spawn.Y
+			} else if len(levelData.CurrentLevel.Paths) > 0 {
+				// Fallback: Find the main ground platform (largest platform by area)
+				var mainPlatform assets.Path
+				maxArea := 0.0
+				for _, path := range levelData.CurrentLevel.Paths {
+					width := path.Points[1].X - path.Points[0].X
+					height := path.Points[1].Y - path.Points[0].Y
+					area := width * height
+					if area > maxArea {
+						maxArea = area
+						mainPlatform = path
+					}
+				}
+		
+				// Position player well above the main platform to avoid any embedding issues
+				playerSpawnX = mainPlatform.Points[0].X + 200              // Start 200 pixels from the left edge (away from left wall)
+				playerSpawnY = mainPlatform.Points[0].Y - 40 - 20 // 20 pixels above the platform for safety (playerCollisionHeight is 40)
+			} else {
+				// If no platforms found, place the player at a default position
+				playerSpawnX = 200
+				playerSpawnY = 100
+			}
+		
+			// Create the player at the determined position
+			player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
+			playerObj := components.Object.Get(player)
+			space.Add(playerObj.Object)
+		
+			// Spawn enemies for the current level
+			for _, spawn := range levelData.CurrentLevel.EnemySpawns {
+				enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath)
+				enemyObj := components.Object.Get(enemy)
+				space.Add(enemyObj.Object)
 			}
 		}
-
-		// Position player well above the main platform to avoid any embedding issues
-		playerSpawnX = mainPlatform.Points[0].X + 200              // Start 200 pixels from the left edge (away from left wall)
-		playerSpawnY = mainPlatform.Points[0].Y - 40 - 20 // 20 pixels above the platform for safety (playerCollisionHeight is 40)
-	} else {
-		// If no platforms found, place the player at a default position
-		playerSpawnX = 200
-		playerSpawnY = 100
-	}
-
-	// Create the player at the determined position
-	player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
-	playerObj := components.Object.Get(player)
-	space.Add(playerObj)
-
-	// Spawn enemies for the current level
-	for _, spawn := range levelData.CurrentLevel.EnemySpawns {
-		enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath)
-		enemyObj := components.Object.Get(enemy)
-		space.Add(enemyObj)
-	}
-}

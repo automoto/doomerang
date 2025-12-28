@@ -17,17 +17,17 @@ func UpdateCollisions(ecs *ecs.ECS) {
 		physics := components.Physics.Get(e)
 		obj := components.Object.Get(e)
 
-		resolveObjectHorizontalCollision(physics, obj, true)
-		resolveObjectVerticalCollision(physics, obj)
-		updateWallSliding(player, physics, obj)
+		resolveObjectHorizontalCollision(physics, obj.Object, true)
+		resolveObjectVerticalCollision(physics, obj.Object)
+		updateWallSliding(player, physics, obj.Object)
 	})
 
 	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
 		physics := components.Physics.Get(e)
 		obj := components.Object.Get(e)
 
-		resolveObjectHorizontalCollision(physics, obj, false)
-		resolveObjectVerticalCollision(physics, obj)
+		resolveObjectHorizontalCollision(physics, obj.Object, false)
+		resolveObjectVerticalCollision(physics, obj.Object)
 	})
 }
 

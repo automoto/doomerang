@@ -12,14 +12,14 @@ import (
 
 func CreatePlatform(ecs *ecs.ECS, object *resolv.Object) *donburi.Entry {
 	platform := archetypes.Platform.Spawn(ecs)
-	components.Object.Set(platform, object)
+	components.Object.SetValue(platform, components.ObjectData{Object: object})
 
 	return platform
 }
 
 func CreateFloatingPlatform(ecs *ecs.ECS, object *resolv.Object) *donburi.Entry {
 	platform := archetypes.FloatingPlatform.Spawn(ecs)
-	components.Object.Set(platform, object)
+	components.Object.SetValue(platform, components.ObjectData{Object: object})
 
 	// The floating platform moves using a *gween.Sequence sequence of tweens, moving it back and forth.
 	tw := gween.NewSequence()

@@ -29,7 +29,7 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	player := components.Player.Get(playerEntry)
 	physics := components.Physics.Get(playerEntry)
 	melee := components.MeleeAttack.Get(playerEntry)
-	playerObject := components.Object.Get(playerEntry)
+	playerObject := components.Object.Get(playerEntry).Object
 
 	handlePlayerInput(player, physics, melee, components.State.Get(playerEntry), playerObject)
 	updatePlayerState(playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))

@@ -15,7 +15,7 @@ func UpdateDeaths(ecs *ecs.ECS) {
 			spaceEntry, _ := components.Space.First(e.World)
 			space := components.Space.Get(spaceEntry)
 			if obj := components.Object.Get(e); obj != nil {
-				space.Remove(obj)
+				space.Remove(obj.Object)
 			}
 			ecs.World.Remove(e.Entity())
 		}

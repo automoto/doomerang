@@ -51,7 +51,7 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	player := archetypes.Player.Spawn(ecs)
 
 	obj := resolv.NewObject(x, y, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight))
-	components.Object.Set(player, obj)
+	components.Object.SetValue(player, components.ObjectData{Object: obj})
 	obj.AddTags("character")
 	components.Player.SetValue(player, components.PlayerData{
 		Direction:    components.Vector{X: 1, Y: 0},

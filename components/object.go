@@ -5,4 +5,8 @@ import (
 	"github.com/yohamta/donburi"
 )
 
-var Object = donburi.NewComponentType[resolv.Object]()
+type ObjectData struct {
+	*resolv.Object
+}
+
+var Object = donburi.NewComponentType[ObjectData]()
