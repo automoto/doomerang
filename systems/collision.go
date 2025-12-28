@@ -291,19 +291,21 @@ func resolveEnemyCollisions(enemy *components.EnemyData, physics *components.Phy
 			}
 
 			// Check for collisions with other characters
-			if characters := check.ObjectsByTags("character"); len(characters) > 0 {
-				// Gentle push-back instead of a hard stop
-				contact := check.ContactWithObject(characters[0])
-				if contact.X() != 0 { // If there is penetration
-					// Apply a small, fixed pushback
-					if dx > 0 {
-						dx = -1
+			if dx != 0 {
+				if characters := check.ObjectsByTags("character"); len(characters) > 0 {
+					// Gentle push-back instead of a hard stop
+					contact := check.ContactWithObject(characters[0])
+					if contact.X() != 0 { // If there is penetration
+						// Apply a small, fixed pushback
+						if dx > 0 {
+							dx = -1
+						} else {
+							dx = 1
+						}
 					} else {
-						dx = 1
+						// If just touching, use the contact point to slide along the other character
+						dx = contact.X()
 					}
-				} else {
-					// If just touching, use the contact point to slide along the other character
-					dx = contact.X()
 				}
 			}
 		}

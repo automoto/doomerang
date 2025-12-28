@@ -29,7 +29,8 @@ bin/
 .DS_Store
 Thumbs.db
 
-# Roo rules and Cursor files
+# Agent, Roo rules and Cursor files
 .roo/
 .cursor/
-
+agent/
+AGENT.md
