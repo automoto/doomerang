@@ -12,6 +12,16 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
+var (
+	drawOp        = &ebiten.DrawImageOptions{}
+	colorHealthBg = color.RGBA{R: 255, A: 255}
+	colorHealthFg = color.RGBA{G: 255, A: 255}
+	colorPlayer   = color.RGBA{0, 255, 60, 255}
+	colorPlayerAir = color.RGBA{200, 0, 200, 255}
+	colorEnemy    = color.RGBA{255, 60, 60, 255}
+	colorEnemyAir = color.RGBA{255, 0, 255, 255}
+)
+
 func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Get camera
 	cameraEntry, _ := components.Camera.First(ecs.World)
@@ -29,64 +39,65 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 			sy := 0
 			srcRect := image.Rect(sx, sy, sx+animData.FrameWidth, sy+animData.FrameHeight)
 
-			// Create draw options.
-			op := &ebiten.DrawImageOptions{}
+			// Reset draw options.
+			drawOp.GeoM.Reset()
+			drawOp.ColorM.Reset()
 
 			// Anchor the sprite at its bottom-center so that the feet line up with the
 			// bottom of the collision box.
-			op.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
+			drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
 
 			// Flip the sprite if facing left.
 			if e.HasComponent(components.Player) {
 				player := components.Player.Get(e)
 				if player.Direction.X < 0 {
-					op.GeoM.Scale(-1, 1)
+					drawOp.GeoM.Scale(-1, 1)
 				}
 			}
 			if e.HasComponent(components.Enemy) {
 				enemy := components.Enemy.Get(e)
 				if enemy.Direction.X < 0 {
-					op.GeoM.Scale(-1, 1)
+					drawOp.GeoM.Scale(-1, 1)
 				}
 			}
 
 			// Move the sprite so that its bottom-center aligns with the bottom-center
 			// of the (smaller) collision box.
-			op.GeoM.Translate(o.X+o.W/2, o.Y+o.H)
+			drawOp.GeoM.Translate(o.X+o.W/2, o.Y+o.H)
 
 			// Apply the camera translation.
-			op.GeoM.Translate(float64(width)/2-camera.Position.X, float64(height)/2-camera.Position.Y)
+			drawOp.GeoM.Translate(float64(width)/2-camera.Position.X, float64(height)/2-camera.Position.Y)
 
 			// Flicker effect if invulnerable
 			if e.HasComponent(components.Enemy) {
 				enemy := components.Enemy.Get(e)
 				if enemy.InvulnFrames > 0 && enemy.InvulnFrames%4 < 2 {
-					op.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
+					drawOp.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
 				}
 			}
 			if e.HasComponent(components.Player) {
 				player := components.Player.Get(e)
 				if player.InvulnFrames > 0 && player.InvulnFrames%4 < 2 {
-					op.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
+					drawOp.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
 				}
 			}
 
 			// Draw the current frame.
-			screen.DrawImage(animData.SpriteSheets[animData.CurrentSheet].SubImage(srcRect).(*ebiten.Image), op)
+			screen.DrawImage(animData.SpriteSheets[animData.CurrentSheet].SubImage(srcRect).(*ebiten.Image), drawOp)
 		} else {
 			// Fallback to rectangle if no animation is available
 			var entityColor color.Color
 			if e.HasComponent(components.Player) {
 				physics := components.Physics.Get(e)
-				entityColor = color.RGBA{0, 255, 60, 255}
+				entityColor = colorPlayer
 				if physics.OnGround == nil {
-					entityColor = color.RGBA{200, 0, 200, 255}
+					entityColor = colorPlayerAir
 				}
 			} else if e.HasComponent(components.Enemy) {
 				physics := components.Physics.Get(e)
-				entityColor = color.RGBA{255, 60, 60, 255}
+				entityColor = colorEnemy
 				if physics.OnGround == nil {
-					entityColor = color.RGBA{255, 0, 255, 255}
+					entityColor = colorEnemyAir
 				}
 			}
 
@@ -129,9 +140,9 @@ func DrawHealthBars(ecs *ecs.ECS, screen *ebiten.Image) {
 		drawY := barY + float64(height)/2 - camera.Position.Y
 
 		// Draw the background of the health bar (red)
-		vector.DrawFilledRect(screen, float32(drawX), float32(drawY), float32(barWidth), float32(barHeight), color.RGBA{R: 255, A: 255}, false)
+		vector.DrawFilledRect(screen, float32(drawX), float32(drawY), float32(barWidth), float32(barHeight), colorHealthBg, false)
 
 		// Draw the foreground of the health bar (green)
-		vector.DrawFilledRect(screen, float32(drawX), float32(drawY), float32(barWidth*healthPercentage), float32(barHeight), color.RGBA{G: 255, A: 255}, false)
+		vector.DrawFilledRect(screen, float32(drawX), float32(drawY), float32(barWidth*healthPercentage), float32(barHeight), colorHealthFg, false)
 	})
 }
