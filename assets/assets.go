@@ -68,14 +68,20 @@ type PatrolPath struct {
 }
 
 type AnimationLoader struct {
-	// No fields needed for now, as animationFS is a package-level variable
+	cache map[string]*ebiten.Image
 }
 
 func NewAnimationLoader() *AnimationLoader {
-	return &AnimationLoader{}
+	return &AnimationLoader{
+		cache: make(map[string]*ebiten.Image),
+	}
 }
 
 func (l *AnimationLoader) MustLoadImage(path string) *ebiten.Image {
+	if img, ok := l.cache[path]; ok {
+		return img
+	}
+
 	imgBytes, err := animationFS.ReadFile(path)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read image file %s: %v", path, err))
@@ -85,6 +91,9 @@ func (l *AnimationLoader) MustLoadImage(path string) *ebiten.Image {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create image from bytes for %s: %v", path, err))
 	}
+
+	l.cache[path] = img
+
 	return img
 }
 
