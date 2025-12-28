@@ -3,7 +3,6 @@ package factory
 import (
 	"github.com/automoto/doomerang/archetypes"
 	"github.com/automoto/doomerang/components"
-	dresolv "github.com/automoto/doomerang/config"
 	"github.com/solarlune/resolv"
 	"github.com/tanema/gween"
 	"github.com/tanema/gween/ease"
@@ -13,14 +12,14 @@ import (
 
 func CreatePlatform(ecs *ecs.ECS, object *resolv.Object) *donburi.Entry {
 	platform := archetypes.Platform.Spawn(ecs)
-	dresolv.SetObject(platform, object)
+	components.Object.Set(platform, object)
 
 	return platform
 }
 
 func CreateFloatingPlatform(ecs *ecs.ECS, object *resolv.Object) *donburi.Entry {
 	platform := archetypes.FloatingPlatform.Spawn(ecs)
-	dresolv.SetObject(platform, object)
+	components.Object.Set(platform, object)
 
 	// The floating platform moves using a *gween.Sequence sequence of tweens, moving it back and forth.
 	tw := gween.NewSequence()

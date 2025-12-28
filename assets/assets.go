@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/automoto/doomerang/config"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/lafriks/go-tiled"
@@ -243,7 +244,7 @@ var (
 	animationLoader = NewAnimationLoader()
 )
 
-func GetSheet(dir string, state string) *ebiten.Image {
-	path := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state)
+func GetSheet(dir string, state config.StateID) *ebiten.Image {
+	path := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state.String())
 	return animationLoader.MustLoadImage(path)
 }

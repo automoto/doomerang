@@ -7,7 +7,6 @@ import (
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/hajimehoshi/ebiten/v2"
-	_ "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
@@ -52,7 +51,7 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	player := archetypes.Player.Spawn(ecs)
 
 	obj := resolv.NewObject(x, y, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight))
-	cfg.SetObject(player, obj)
+	components.Object.Set(player, obj)
 	obj.AddTags("character")
 	components.Player.SetValue(player, components.PlayerData{
 		Direction:    components.Vector{X: 1, Y: 0},
@@ -108,7 +107,7 @@ func GeneratePlayerAnimations() *components.AnimationData {
 
 	// Set up animations
 	animData := &components.AnimationData{
-		SpriteSheets: map[string]*ebiten.Image{
+		SpriteSheets: map[cfg.StateID]*ebiten.Image{
 			cfg.Crouch:      crouchSprite,
 			cfg.Die:         dieSprite,
 			cfg.Guard:       guardSprite,
@@ -134,7 +133,7 @@ func GeneratePlayerAnimations() *components.AnimationData {
 		CurrentSheet: cfg.Idle,
 		FrameWidth:   cfg.Player.FrameWidth,
 		FrameHeight:  cfg.Player.FrameHeight,
-		Animations: map[string]*animations.Animation{
+		Animations: map[cfg.StateID]*animations.Animation{
 			cfg.Crouch:      animations.NewAnimation(0, 5, 1, 5),
 			cfg.Die:         animations.NewAnimation(0, 8, 1, 5),
 			cfg.Guard:       animations.NewAnimation(0, 0, 1, 10),

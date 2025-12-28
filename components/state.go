@@ -1,9 +1,12 @@
 package components
 
-import "github.com/yohamta/donburi"
+import (
+	"github.com/automoto/doomerang/config"
+	"github.com/yohamta/donburi"
+)
 
 type StateData struct {
-	CurrentState string
+	CurrentState config.StateID
 	StateTimer   int
 }
 

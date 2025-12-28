@@ -76,10 +76,7 @@ func UpdateCombat(ecs *ecs.ECS) {
 				state := components.State.Get(e)
 				if e.HasComponent(tags.Enemy) {
 					// Enemies have a specific hit state
-					// We would need to import the systems package to use enemyStateHit
-					// but that would create a circular dependency.
-					// So we just use the string "hit" for now.
-					state.CurrentState = "hit"
+					state.CurrentState = cfg.Hit
 				} else {
 					state.CurrentState = cfg.Stunned
 					if e.HasComponent(components.Player) {

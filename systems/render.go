@@ -5,7 +5,6 @@ import (
 	"image/color"
 
 	"github.com/automoto/doomerang/components"
-	cfg "github.com/automoto/doomerang/config"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi"
@@ -29,7 +28,7 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 
 	components.Animation.Each(ecs.World, func(e *donburi.Entry) {
-		o := cfg.GetObject(e)
+		o := components.Object.Get(e)
 		animData := components.Animation.Get(e)
 
 		if animData.CurrentAnimation != nil && animData.SpriteSheets[animData.CurrentSheet] != nil {
@@ -123,7 +122,7 @@ func DrawHealthBars(ecs *ecs.ECS, screen *ebiten.Image) {
 			return
 		}
 		hp := components.Health.Get(e)
-		o := cfg.GetObject(e)
+		o := components.Object.Get(e)
 
 		// Health bar dimensions and position
 		barWidth := 32.0

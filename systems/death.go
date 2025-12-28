@@ -2,7 +2,6 @@ package systems
 
 import (
 	"github.com/automoto/doomerang/components"
-	cfg "github.com/automoto/doomerang/config"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -15,7 +14,7 @@ func UpdateDeaths(ecs *ecs.ECS) {
 			// Get the space and object to remove the object from the physics world.
 			spaceEntry, _ := components.Space.First(e.World)
 			space := components.Space.Get(spaceEntry)
-			if obj := cfg.GetObject(e); obj != nil {
+			if obj := components.Object.Get(e); obj != nil {
 				space.Remove(obj)
 			}
 			ecs.World.Remove(e.Entity())

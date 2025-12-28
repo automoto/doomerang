@@ -2,6 +2,7 @@ package systems
 
 import (
 	"github.com/automoto/doomerang/components"
+	cfg "github.com/automoto/doomerang/config"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -30,21 +31,20 @@ func updatePlayerStateTags(e *donburi.Entry, player *components.PlayerData, phys
 
 	// Add the current state tag
 	switch state.CurrentState {
-	case "idle":
+	case cfg.Idle:
 		donburi.Add(e, components.Idle, &components.IdleState{})
-	case "running":
+	case cfg.Running:
 		donburi.Add(e, components.Running, &components.RunningState{})
-	case "jumping":
+	case cfg.Jump:
 		donburi.Add(e, components.Jumping, &components.JumpingState{})
-	case "falling":
-		donburi.Add(e, components.Falling, &components.FallingState{})
-	case "wallsliding":
+	// Falling case removed as there is no explicit Falling state in StateID yet, handled by Jump or Logic
+	case cfg.WallSlide:
 		donburi.Add(e, components.WallSliding, &components.WallSlidingState{})
-	case "attacking":
+	case cfg.StateAttackingPunch, cfg.StateAttackingKick, cfg.StateAttackingJump:
 		donburi.Add(e, components.Attacking, &components.AttackingState{})
-	case "crouching":
+	case cfg.Crouch:
 		donburi.Add(e, components.Crouching, &components.CrouchingState{})
-	case "stunned":
+	case cfg.Stunned, cfg.Knockback, cfg.Hit:
 		donburi.Add(e, components.Stunned, &components.StunnedState{})
 	}
 }
@@ -55,13 +55,13 @@ func updateEnemyStateTags(e *donburi.Entry, enemy *components.EnemyData, physics
 
 	// Add the current state tag
 	switch state.CurrentState {
-	case "idle":
+	case cfg.Idle, cfg.StatePatrol: // Map Patrol to Idle tag for now, or maybe Running depending on logic
 		donburi.Add(e, components.Idle, &components.IdleState{})
-	case "running":
+	case cfg.Running, cfg.StateChase:
 		donburi.Add(e, components.Running, &components.RunningState{})
-	case "attacking":
+	case cfg.StateAttackingPunch:
 		donburi.Add(e, components.Attacking, &components.AttackingState{})
-	case "stunned":
+	case cfg.Stunned, cfg.Hit:
 		donburi.Add(e, components.Stunned, &components.StunnedState{})
 	}
 }

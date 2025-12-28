@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/automoto/doomerang/components"
-	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -16,7 +15,7 @@ func UpdateCollisions(ecs *ecs.ECS) {
 	tags.Player.Each(ecs.World, func(e *donburi.Entry) {
 		player := components.Player.Get(e)
 		physics := components.Physics.Get(e)
-		obj := cfg.GetObject(e)
+		obj := components.Object.Get(e)
 
 		resolveObjectHorizontalCollision(physics, obj, true)
 		resolveObjectVerticalCollision(physics, obj)
@@ -25,7 +24,7 @@ func UpdateCollisions(ecs *ecs.ECS) {
 
 	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
 		physics := components.Physics.Get(e)
-		obj := cfg.GetObject(e)
+		obj := components.Object.Get(e)
 
 		resolveObjectHorizontalCollision(physics, obj, false)
 		resolveObjectVerticalCollision(physics, obj)

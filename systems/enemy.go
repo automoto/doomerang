@@ -12,20 +12,12 @@ import (
 	math2 "github.com/yohamta/donburi/features/math"
 )
 
-// AI state constants - should match factory
-const (
-	enemyStatePatrol = "patrol"
-	enemyStateChase  = "chase"
-	enemyStateAttack = "attack"
-	enemyStateHit    = "hit"
-)
-
 func UpdateEnemies(ecs *ecs.ECS) {
 	// Get player position for AI decisions
 	playerEntry, _ := components.Player.First(ecs.World)
 	var playerObject *resolv.Object
 	if playerEntry != nil {
-		playerObject = cfg.GetObject(playerEntry)
+		playerObject = components.Object.Get(playerEntry)
 	}
 
 	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
@@ -63,7 +55,7 @@ func UpdateEnemies(ecs *ecs.ECS) {
 func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object) {
 	enemy := components.Enemy.Get(enemyEntry)
 	physics := components.Physics.Get(enemyEntry)
-	enemyObject := cfg.GetObject(enemyEntry)
+	enemyObject := components.Object.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
 	state.StateTimer++
 
@@ -82,13 +74,13 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 
 	// State machine
 	switch state.CurrentState {
-	case enemyStatePatrol:
+	case cfg.StatePatrol:
 		handlePatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
-	case enemyStateChase:
+	case cfg.StateChase:
 		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
-	case enemyStateAttack:
+	case cfg.StateAttackingPunch:
 		handleAttackState(ecs, enemyEntry)
-	case enemyStateHit:
+	case cfg.Hit:
 		// Stunned for a short period
 		typeName := "Guard"
 		enemyType, ok := cfg.Enemy.Types[typeName]
@@ -97,7 +89,7 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 		}
 
 		if state.StateTimer > enemyType.HitstunDuration {
-			state.CurrentState = enemyStateChase
+			state.CurrentState = cfg.StateChase
 			state.StateTimer = 0
 		}
 	}
@@ -106,7 +98,7 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 func handlePatrolState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	// Check if should start chasing
 	if distanceToPlayer <= enemy.ChaseRange {
-		state.CurrentState = enemyStateChase
+		state.CurrentState = cfg.StateChase
 		state.StateTimer = 0
 		return
 	}
@@ -212,17 +204,17 @@ func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *res
 	enemy := components.Enemy.Get(enemyEntry)
 	physics := components.Physics.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
-	enemyObject := cfg.GetObject(enemyEntry)
+	enemyObject := components.Object.Get(enemyEntry)
 	// Check if should attack
 	if distanceToPlayer <= enemy.AttackRange && enemy.AttackCooldown == 0 {
-		state.CurrentState = enemyStateAttack
+		state.CurrentState = cfg.StateAttackingPunch
 		state.StateTimer = 0
 		return
 	}
 
 	// Check if should stop chasing (player too far)
 	if distanceToPlayer > enemy.ChaseRange*cfg.Enemy.HysteresisMultiplier { // Hysteresis to prevent flapping
-		state.CurrentState = enemyStatePatrol
+		state.CurrentState = cfg.StatePatrol
 		state.StateTimer = 0
 		return
 	}
@@ -247,7 +239,7 @@ func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *res
 func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	enemy := components.Enemy.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
-	enemyObject := cfg.GetObject(enemyEntry)
+	enemyObject := components.Object.Get(enemyEntry)
 	// Create a hitbox on the first frame of the attack
 	if state.StateTimer == 1 {
 		CreateHitbox(ecs, enemyEntry, enemyObject, "punch", false)
@@ -262,7 +254,7 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 
 	if state.StateTimer >= enemyType.AttackDuration {
 		// Attack finished
-		state.CurrentState = enemyStateChase
+		state.CurrentState = cfg.StateChase
 		state.StateTimer = 0
 		enemy.AttackCooldown = enemyType.AttackCooldown
 		return
@@ -273,12 +265,12 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 
 func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
 	// Simple animation state based on movement and AI state
-	var targetState string
+	var targetState cfg.StateID
 
 	switch state.CurrentState {
-	case enemyStateAttack:
+	case cfg.StateAttackingPunch:
 		targetState = cfg.Punch01 // Use punch animation for attacks
-	case enemyStateHit:
+	case cfg.Hit:
 		targetState = cfg.Hit
 	default:
 		if physics.OnGround == nil {

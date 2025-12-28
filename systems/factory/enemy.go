@@ -9,13 +9,6 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-// AI state constants
-const (
-	enemyStatePatrol = "patrol"
-	enemyStateChase  = "chase"
-	enemyStateAttack = "attack"
-)
-
 func init() {
 	// Define a default "Guard" enemy type
 	guardType := cfg.EnemyTypeConfig{
@@ -58,7 +51,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 
 	// Create collision object
 	obj := resolv.NewObject(x, y, float64(enemyType.CollisionWidth), float64(enemyType.CollisionHeight))
-	cfg.SetObject(enemy, obj)
+	components.Object.Set(enemy, obj)
 	obj.SetShape(resolv.NewRectangle(0, 0, float64(enemyType.CollisionWidth), float64(enemyType.CollisionHeight)))
 	obj.AddTags("character")
 
@@ -89,7 +82,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 
 	components.Enemy.SetValue(enemy, enemyData)
 	components.State.SetValue(enemy, components.StateData{
-		CurrentState: "patrol",
+		CurrentState: cfg.StatePatrol,
 		StateTimer:   0,
 	})
 	components.Physics.SetValue(enemy, components.PhysicsData{

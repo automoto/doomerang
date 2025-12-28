@@ -90,7 +90,7 @@ func (ps *PlatformerScene) configure() {
 		))
 
 		// Add the wall to the collision space
-		wallObj := cfg.GetObject(wall)
+		wallObj := components.Object.Get(wall)
 		space.Add(wallObj)
 	}
 
@@ -127,13 +127,13 @@ func (ps *PlatformerScene) configure() {
 
 	// Create the player at the determined position
 	player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
-	playerObj := cfg.GetObject(player)
+	playerObj := components.Object.Get(player)
 	space.Add(playerObj)
 
 	// Spawn enemies for the current level
 	for _, spawn := range levelData.CurrentLevel.EnemySpawns {
 		enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath)
-		enemyObj := cfg.GetObject(enemy)
+		enemyObj := components.Object.Get(enemy)
 		space.Add(enemyObj)
 	}
 }

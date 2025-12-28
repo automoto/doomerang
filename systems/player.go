@@ -29,7 +29,7 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	player := components.Player.Get(playerEntry)
 	physics := components.Physics.Get(playerEntry)
 	melee := components.MeleeAttack.Get(playerEntry)
-	playerObject := cfg.GetObject(playerEntry)
+	playerObject := components.Object.Get(playerEntry)
 
 	handlePlayerInput(player, physics, melee, components.State.Get(playerEntry), playerObject)
 	updatePlayerState(playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))
@@ -192,7 +192,7 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 	}
 
 	// --- Animation Update ---
-	var anim string
+	var anim cfg.StateID
 	switch state.CurrentState {
 	case cfg.StateAttackingPunch:
 		anim = cfg.Punch01
@@ -214,11 +214,11 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 }
 
 // Helper functions for state management
-func isInLockedState(state string) bool {
+func isInLockedState(state cfg.StateID) bool {
 	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback
 }
 
-func isInAttackState(state string) bool {
+func isInAttackState(state cfg.StateID) bool {
 	return state == cfg.StateAttackingPunch || state == cfg.StateAttackingKick || state == cfg.StateAttackingJump
 }
 

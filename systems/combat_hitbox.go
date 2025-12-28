@@ -58,7 +58,7 @@ func UpdateCombatHitboxes(ecs *ecs.ECS) {
 func createPlayerHitboxes(ecs *ecs.ECS) {
 	tags.Player.Each(ecs.World, func(playerEntry *donburi.Entry) {
 		state := components.State.Get(playerEntry)
-		playerObject := cfg.GetObject(playerEntry)
+		playerObject := components.Object.Get(playerEntry)
 
 		// Check if player is in attack state and at the right frame
 		shouldCreateHitbox := false
@@ -88,10 +88,10 @@ func createPlayerHitboxes(ecs *ecs.ECS) {
 func createEnemyHitboxes(ecs *ecs.ECS) {
 	tags.Enemy.Each(ecs.World, func(enemyEntry *donburi.Entry) {
 		state := components.State.Get(enemyEntry)
-		enemyObject := cfg.GetObject(enemyEntry)
+		enemyObject := components.Object.Get(enemyEntry)
 
 		// Enemies only punch for now
-		if state.CurrentState == "attack" && state.StateTimer >= 10 && state.StateTimer <= 15 {
+		if state.CurrentState == cfg.StateAttackingPunch && state.StateTimer >= 10 && state.StateTimer <= 15 {
 			if !hasActiveHitbox(ecs, enemyEntry) {
 				CreateHitbox(ecs, enemyEntry, enemyObject, "punch", false)
 			}
@@ -170,7 +170,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 		// Create hitbox object
 		hitboxObject := resolv.NewObject(hitboxX, hitboxY, config.Width, config.Height)
 		hitboxObject.SetShape(resolv.NewRectangle(0, 0, config.Width, config.Height))
-		cfg.SetObject(hitbox, hitboxObject)
+		components.Object.Set(hitbox, hitboxObject)
 
 		// Set hitbox data
 		components.Hitbox.SetValue(hitbox, components.HitboxData{
@@ -194,7 +194,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 func updateHitboxes(ecs *ecs.ECS) {
 	tags.Hitbox.Each(ecs.World, func(hitboxEntry *donburi.Entry) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
-		hitboxObject := cfg.GetObject(hitboxEntry)
+		hitboxObject := components.Object.Get(hitboxEntry)
 
 		// Check for collisions with targets
 		checkHitboxCollisions(ecs, hitboxEntry, hitbox, hitboxObject)
@@ -211,14 +211,14 @@ func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *com
 	if isPlayerAttack {
 		// Player hitbox - check collision with enemies
 		tags.Enemy.Each(ecs.World, func(enemyEntry *donburi.Entry) {
-			if shouldHitTarget(hitbox, enemyEntry, hitboxObject, cfg.GetObject(enemyEntry)) {
+			if shouldHitTarget(hitbox, enemyEntry, hitboxObject, components.Object.Get(enemyEntry)) {
 				applyHitToEnemy(enemyEntry, hitbox)
 			}
 		})
 	} else {
 		// Enemy hitbox - check collision with player
 		tags.Player.Each(ecs.World, func(playerEntry *donburi.Entry) {
-			if shouldHitTarget(hitbox, playerEntry, hitboxObject, cfg.GetObject(playerEntry)) {
+			if shouldHitTarget(hitbox, playerEntry, hitboxObject, components.Object.Get(playerEntry)) {
 				applyHitToPlayer(playerEntry, hitbox)
 			}
 		})
@@ -253,7 +253,7 @@ func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitbo
 
 func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
 	enemy := components.Enemy.Get(enemyEntry)
-	enemyObject := cfg.GetObject(enemyEntry)
+	enemyObject := components.Object.Get(enemyEntry)
 
 	// Mark as hit
 	hitbox.HitEntities[enemyEntry] = true
@@ -271,7 +271,7 @@ func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
 }
 
 func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData) {
-	playerObject := cfg.GetObject(playerEntry)
+	playerObject := components.Object.Get(playerEntry)
 
 	// Mark as hit
 	hitbox.HitEntities[playerEntry] = true
@@ -288,7 +288,7 @@ func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData)
 }
 
 func applyKnockback(targetEntry *donburi.Entry, hitbox *components.HitboxData, targetObject *resolv.Object) {
-	ownerObject := cfg.GetObject(hitbox.OwnerEntity)
+	ownerObject := components.Object.Get(hitbox.OwnerEntity)
 
 	// Determine knockback direction
 	knockbackDirection := 1.0
@@ -346,7 +346,7 @@ func DrawHitboxes(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	tags.Hitbox.Each(ecs.World, func(hitboxEntry *donburi.Entry) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
-		o := cfg.GetObject(hitboxEntry)
+		o := components.Object.Get(hitboxEntry)
 
 		// Different colors for different attack types
 		var hitboxColor color.RGBA
