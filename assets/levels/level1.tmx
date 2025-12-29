@@ -164,19 +164,19 @@
   </properties>
   <object id="21" x="1041" y="321">
    <properties>
-    <property name="enemyType" value="regular"/>
+    <property name="enemyType" value="Guard"/>
     <property name="pathName" value="enemy1"/>
    </properties>
   </object>
   <object id="22" x="1496" y="321">
    <properties>
-    <property name="enemyType" value="regular"/>
+    <property name="enemyType" value="LightGuard"/>
     <property name="pathName" value="enemy2"/>
    </properties>
   </object>
   <object id="23" x="1742" y="321">
    <properties>
-    <property name="enemyType" value="regular"/>
+    <property name="enemyType" value="HeavyGuard"/>
     <property name="pathName" value="enemy3"/>
    </properties>
   </object>

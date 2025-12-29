@@ -2,25 +2,13 @@ package factory
 
 import (
 	"github.com/automoto/doomerang/archetypes"
-	"github.com/automoto/doomerang/assets"
-	"github.com/automoto/doomerang/assets/animations"
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
 
-const (
-	playerDir = "player"
-)
-
-func handleError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
 
 func init() {
 	cfg.Player = cfg.PlayerConfig{
@@ -75,87 +63,10 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	obj.SetShape(resolv.NewRectangle(0, 0, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight)))
 
 	// Load sprite sheets
-	animData := GeneratePlayerAnimations()
+	animData := GenerateAnimations("player", cfg.Player.FrameWidth, cfg.Player.FrameHeight)
 	animData.CurrentAnimation = animData.Animations[cfg.Idle]
 	components.Animation.Set(player, animData)
 
 	return player
 }
 
-func GeneratePlayerAnimations() *components.AnimationData {
-	crouchSprite := assets.GetSheet(playerDir, cfg.Crouch)
-	dieSprite := assets.GetSheet(playerDir, cfg.Die)
-	guardSprite := assets.GetSheet(playerDir, cfg.Guard)
-	guardImpactSprite := assets.GetSheet(playerDir, cfg.GuardImpact)
-	hitSprite := assets.GetSheet(playerDir, cfg.Hit)
-	idleSprite := assets.GetSheet(playerDir, cfg.Idle)
-	jumpSprite := assets.GetSheet(playerDir, cfg.Jump)
-	kick01Sprite := assets.GetSheet(playerDir, cfg.Kick01)
-	kick02Sprite := assets.GetSheet(playerDir, cfg.Kick02)
-	kick03Sprite := assets.GetSheet(playerDir, cfg.Kick03)
-	knockbackSprite := assets.GetSheet(playerDir, cfg.Knockback)
-	ledgeSprite := assets.GetSheet(playerDir, cfg.Ledge)
-	ledgeGrabSprite := assets.GetSheet(playerDir, cfg.LedgeGrab)
-	punch01Sprite := assets.GetSheet(playerDir, cfg.Punch01)
-	punch02Sprite := assets.GetSheet(playerDir, cfg.Punch02)
-	punch03Sprite := assets.GetSheet(playerDir, cfg.Punch03)
-	runningSprite := assets.GetSheet(playerDir, cfg.Running)
-	stunnedSprite := assets.GetSheet(playerDir, cfg.Stunned)
-	throwSprite := assets.GetSheet(playerDir, cfg.Throw)
-	walkSprite := assets.GetSheet(playerDir, cfg.Walk)
-	wallSlideSprite := assets.GetSheet(playerDir, cfg.WallSlide)
-
-	// Set up animations
-	animData := &components.AnimationData{
-		SpriteSheets: map[cfg.StateID]*ebiten.Image{
-			cfg.Crouch:      crouchSprite,
-			cfg.Die:         dieSprite,
-			cfg.Guard:       guardSprite,
-			cfg.GuardImpact: guardImpactSprite,
-			cfg.Hit:         hitSprite,
-			cfg.Idle:        idleSprite,
-			cfg.Jump:        jumpSprite,
-			cfg.Kick01:      kick01Sprite,
-			cfg.Kick02:      kick02Sprite,
-			cfg.Kick03:      kick03Sprite,
-			cfg.Knockback:   knockbackSprite,
-			cfg.Ledge:       ledgeSprite,
-			cfg.LedgeGrab:   ledgeGrabSprite,
-			cfg.Punch01:     punch01Sprite,
-			cfg.Punch02:     punch02Sprite,
-			cfg.Punch03:     punch03Sprite,
-			cfg.Running:     runningSprite,
-			cfg.Stunned:     stunnedSprite,
-			cfg.Throw:       throwSprite,
-			cfg.Walk:        walkSprite,
-			cfg.WallSlide:   wallSlideSprite,
-		},
-		CurrentSheet: cfg.Idle,
-		FrameWidth:   cfg.Player.FrameWidth,
-		FrameHeight:  cfg.Player.FrameHeight,
-		Animations: map[cfg.StateID]*animations.Animation{
-			cfg.Crouch:      animations.NewAnimation(0, 5, 1, 5),
-			cfg.Die:         animations.NewAnimation(0, 8, 1, 5),
-			cfg.Guard:       animations.NewAnimation(0, 0, 1, 10),
-			cfg.GuardImpact: animations.NewAnimation(0, 2, 1, 5),
-			cfg.Hit:         animations.NewAnimation(0, 2, 1, 5),
-			cfg.Idle:        animations.NewAnimation(0, 6, 1, 5),
-			cfg.Jump:        animations.NewAnimation(0, 2, 1, 10),
-			cfg.Kick01:      animations.NewAnimation(0, 8, 1, 4),
-			cfg.Kick02:      animations.NewAnimation(0, 7, 1, 3),
-			cfg.Kick03:      animations.NewAnimation(0, 8, 1, 5),
-			cfg.Knockback:   animations.NewAnimation(0, 5, 1, 5),
-			cfg.Ledge:       animations.NewAnimation(0, 7, 1, 5),
-			cfg.LedgeGrab:   animations.NewAnimation(0, 4, 1, 5),
-			cfg.Punch01:     animations.NewAnimation(0, 5, 1, 4),
-			cfg.Punch02:     animations.NewAnimation(0, 3, 1, 5),
-			cfg.Punch03:     animations.NewAnimation(0, 6, 1, 5),
-			cfg.Running:     animations.NewAnimation(0, 7, 1, 5),
-			cfg.Stunned:     animations.NewAnimation(0, 6, 1, 5),
-			cfg.Throw:       animations.NewAnimation(0, 4, 1, 5),
-			cfg.Walk:        animations.NewAnimation(0, 7, 1, 5),
-			cfg.WallSlide:   animations.NewAnimation(0, 5, 1, 5),
-		},
-	}
-	return animData
-}

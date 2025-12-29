@@ -33,6 +33,7 @@ func init() {
 		CollisionWidth:   16,
 		CollisionHeight:  40,
 		TintColor:        cfg.White,
+		SpriteSheetKey:   "player",
 	}
 	
 	lightGuardType := cfg.EnemyTypeConfig{
@@ -57,6 +58,7 @@ func init() {
 		CollisionWidth:   14,
 		CollisionHeight:  36,
 		TintColor:        cfg.Yellow,
+		SpriteSheetKey:   "player",
 	}
 	
 	heavyGuardType := cfg.EnemyTypeConfig{
@@ -81,6 +83,7 @@ func init() {
 		CollisionWidth:   20,
 		CollisionHeight:  44,
 		TintColor:        cfg.Orange,
+		SpriteSheetKey:   "player",
 	}
 
 	cfg.Enemy = cfg.EnemyConfig{
@@ -154,7 +157,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName st
 	})
 
 	// Use same animations as player
-	animData := GeneratePlayerAnimations() // Reuse from player factory
+	animData := GenerateAnimations(enemyType.SpriteSheetKey, enemyType.FrameWidth, enemyType.FrameHeight)
 	animData.CurrentAnimation = animData.Animations[cfg.Idle]
 	components.Animation.Set(enemy, animData)
 
