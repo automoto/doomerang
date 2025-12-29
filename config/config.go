@@ -167,22 +167,23 @@ var Physics PhysicsConfig
 var Animation AnimationConfig
 var UI UIConfig
 
+// Shared RGBA color constants
+var (
+	White       = color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	Yellow      = color.RGBA{R: 255, G: 255, B: 0, A: 255}
+	Orange      = color.RGBA{R: 255, G: 165, B: 0, A: 255}
+	Red         = color.RGBA{R: 255, G: 0, B: 0, A: 255}
+	Green       = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+	BrightGreen = color.RGBA{R: 0, G: 255, B: 60, A: 255}
+	Blue        = color.RGBA{R: 0, G: 100, B: 255, A: 255}
+	Purple      = color.RGBA{R: 128, G: 0, B: 255, A: 255}
+	LightRed    = color.RGBA{R: 255, G: 60, B: 60, A: 255}
+	Magenta     = color.RGBA{R: 255, G: 0, B: 255, A: 255}
+)
+
 func init() {
 	C = &Config{
 		Width:  640,
 		Height: 360,
 	}
 }
-
-// Shared RGBA color constants
-var (
-	White    = color.RGBA{R: 255, G: 255, B: 255, A: 255}
-	Yellow   = color.RGBA{R: 255, G: 255, B: 0, A: 255}
-	Orange   = color.RGBA{R: 255, G: 165, B: 0, A: 255}
-	Red      = color.RGBA{R: 255, G: 0, B: 0, A: 255}
-	Green    = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-	Blue     = color.RGBA{R: 0, G: 255, B: 60, A: 255}
-	Purple   = color.RGBA{R: 200, G: 0, B: 200, A: 255}
-	LightRed = color.RGBA{R: 255, G: 60, B: 60, A: 255}
-	Magenta  = color.RGBA{R: 255, G: 0, B: 255, A: 255}
-)

@@ -98,7 +98,8 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName st
 	// Use the requested enemy type, default to "Guard" if not found
 	enemyType, exists := cfg.Enemy.Types[enemyTypeName]
 	if !exists {
-		enemyType = cfg.Enemy.Types["Guard"] // Fallback to default
+		enemyTypeName = "Guard"
+		enemyType = cfg.Enemy.Types[enemyTypeName] // Fallback to default
 	}
 
 	enemy := archetypes.Enemy.Spawn(ecs)
