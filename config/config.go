@@ -56,7 +56,8 @@ type EnemyTypeConfig struct {
 	CollisionHeight int
 
 	// Visual
-	TintColor color.RGBA // RGBA color tint for this enemy type
+	TintColor      color.RGBA // RGBA color tint for this enemy type
+	SpriteSheetKey string     // e.g., "player", "guard", "slime"
 }
 
 // EnemyConfig contains enemy system configuration
