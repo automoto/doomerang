@@ -1,5 +1,7 @@
 package config
 
+import "image/color"
+
 // PlayerConfig contains all player-related configuration values
 type PlayerConfig struct {
 	// Movement
@@ -52,6 +54,9 @@ type EnemyTypeConfig struct {
 	FrameHeight     int
 	CollisionWidth  int
 	CollisionHeight int
+
+	// Visual
+	TintColor color.RGBA // RGBA color tint for this enemy type
 }
 
 // EnemyConfig contains enemy system configuration
@@ -168,3 +173,16 @@ func init() {
 		Height: 360,
 	}
 }
+
+// Shared RGBA color constants
+var (
+	White    = color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	Yellow   = color.RGBA{R: 255, G: 255, B: 0, A: 255}
+	Orange   = color.RGBA{R: 255, G: 165, B: 0, A: 255}
+	Red      = color.RGBA{R: 255, G: 0, B: 0, A: 255}
+	Green    = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+	Blue     = color.RGBA{R: 0, G: 255, B: 60, A: 255}
+	Purple   = color.RGBA{R: 200, G: 0, B: 200, A: 255}
+	LightRed = color.RGBA{R: 255, G: 60, B: 60, A: 255}
+	Magenta  = color.RGBA{R: 255, G: 0, B: 255, A: 255}
+)

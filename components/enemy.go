@@ -5,6 +5,7 @@ import (
 )
 
 type EnemyData struct {
+	TypeName string // "Guard", "LightGuard", "HeavyGuard" etc...
 	Direction Vector
 
 	// AI state management

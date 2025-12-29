@@ -132,7 +132,12 @@ func (ps *PlatformerScene) configure() {
 		
 			// Spawn enemies for the current level
 			for _, spawn := range levelData.CurrentLevel.EnemySpawns {
-				enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath)
+				// Use the enemy type from the spawn data, default to "Guard" if not specified
+				enemyType := spawn.EnemyType
+				if enemyType == "" {
+					enemyType = "Guard"
+				}
+				enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath, enemyType)
 				enemyObj := components.Object.Get(enemy)
 				space.Add(enemyObj.Object)
 			}

@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	// Define a default "Guard" enemy type
+	// Define enemy types
 	guardType := cfg.EnemyTypeConfig{
 		Name:             "Guard",
 		Health:           60,
@@ -32,20 +32,74 @@ func init() {
 		FrameHeight:      84,
 		CollisionWidth:   16,
 		CollisionHeight:  40,
+		TintColor:        cfg.White,
+	}
+	
+	lightGuardType := cfg.EnemyTypeConfig{
+		Name:             "LightGuard",
+		Health:           40,
+		PatrolSpeed:      3.0,
+		ChaseSpeed:       3.5,
+		AttackRange:      32.0,
+		ChaseRange:       100.0,
+		StoppingDistance: 24.0,
+		AttackCooldown:   40,
+		InvulnFrames:     10,
+		AttackDuration:   20,
+		HitstunDuration:  10,
+		Damage:           8,
+		KnockbackForce:   3.0,
+		Gravity:          0.8,
+		Friction:         0.25,
+		MaxSpeed:         7.0,
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   14,
+		CollisionHeight:  36,
+		TintColor:        cfg.Yellow,
+	}
+	
+	heavyGuardType := cfg.EnemyTypeConfig{
+		Name:             "HeavyGuard",
+		Health:           100,
+		PatrolSpeed:      1.5,
+		ChaseSpeed:       2.0,
+		AttackRange:      40.0,
+		ChaseRange:       60.0,
+		StoppingDistance: 32.0,
+		AttackCooldown:   90,
+		InvulnFrames:     25,
+		AttackDuration:   45,
+		HitstunDuration:  25,
+		Damage:           18,
+		KnockbackForce:   8.0,
+		Gravity:          0.7,
+		Friction:         0.15,
+		MaxSpeed:         4.0,
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   20,
+		CollisionHeight:  44,
+		TintColor:        cfg.Orange,
 	}
 
 	cfg.Enemy = cfg.EnemyConfig{
 		Types: map[string]cfg.EnemyTypeConfig{
-			"Guard": guardType,
+			"Guard":      guardType,
+			"LightGuard": lightGuardType,
+			"HeavyGuard": heavyGuardType,
 		},
 		HysteresisMultiplier:  1.5,
 		DefaultPatrolDistance: 32.0,
 	}
 }
 
-func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
-	// Use the default "Guard" type for now
-	enemyType := cfg.Enemy.Types["Guard"]
+func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName string) *donburi.Entry {
+	// Use the requested enemy type, default to "Guard" if not found
+	enemyType, exists := cfg.Enemy.Types[enemyTypeName]
+	if !exists {
+		enemyType = cfg.Enemy.Types["Guard"] // Fallback to default
+	}
 
 	enemy := archetypes.Enemy.Spawn(ecs)
 
@@ -57,6 +111,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 
 	// Set enemy data with AI parameters from config
 	enemyData := components.EnemyData{
+		TypeName:         enemyTypeName, // Set the enemy type name
 		Direction:        components.Vector{X: -1, Y: 0}, // Start facing left
 		PatrolSpeed:      enemyType.PatrolSpeed,
 		ChaseSpeed:       enemyType.ChaseSpeed,
@@ -108,5 +163,5 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string) *donburi.Entry {
 // CreateTestEnemy spawns a hardcoded enemy for testing
 func CreateTestEnemy(ecs *ecs.ECS) *donburi.Entry {
 	enemyType := cfg.Enemy.Types["Guard"]
-	return CreateEnemy(ecs, 200, 128+float64(enemyType.FrameHeight-enemyType.CollisionHeight), "")
+	return CreateEnemy(ecs, 200, 128+float64(enemyType.FrameHeight-enemyType.CollisionHeight), "", "Guard")
 }
