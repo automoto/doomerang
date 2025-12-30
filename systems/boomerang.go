@@ -60,6 +60,9 @@ func updateInbound(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, 
 	// Homing Logic
 	if b.Owner == nil || !b.Owner.Valid() {
 		// Owner dead or gone? Destroy boomerang?
+		if spaceEntry, ok := components.Space.First(ecs.World); ok {
+			components.Space.Get(spaceEntry).Remove(obj.Object)
+		}
 		ecs.World.Remove(e.Entity())
 		return
 	}
@@ -233,6 +236,13 @@ func catchBoomerang(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData)
 		}
 	}
 	
+	// Remove from space
+	if spaceEntry, ok := components.Space.First(ecs.World); ok {
+		if obj := components.Object.Get(e); obj != nil {
+			components.Space.Get(spaceEntry).Remove(obj.Object)
+		}
+	}
+
 	// Destroy entity
 	ecs.World.Remove(e.Entity())
 }
