@@ -7,7 +7,6 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 	factory2 "github.com/automoto/doomerang/systems/factory"
 
-	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/components"
 	"github.com/automoto/doomerang/systems"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -97,33 +96,10 @@ func (ps *PlatformerScene) configure() {
 			// Determine player spawn position
 			var playerSpawnX, playerSpawnY float64
 		
-			if len(levelData.CurrentLevel.PlayerSpawns) > 0 {
-				// Use the first player spawn point defined in Tiled
-				spawn := levelData.CurrentLevel.PlayerSpawns[0]
-				playerSpawnX = spawn.X
-				playerSpawnY = spawn.Y
-			} else if len(levelData.CurrentLevel.Paths) > 0 {
-				// Fallback: Find the main ground platform (largest platform by area)
-				var mainPlatform assets.Path
-				maxArea := 0.0
-				for _, path := range levelData.CurrentLevel.Paths {
-					width := path.Points[1].X - path.Points[0].X
-					height := path.Points[1].Y - path.Points[0].Y
-					area := width * height
-					if area > maxArea {
-						maxArea = area
-						mainPlatform = path
-					}
-				}
-		
-				// Position player well above the main platform to avoid any embedding issues
-				playerSpawnX = mainPlatform.Points[0].X + 200              // Start 200 pixels from the left edge (away from left wall)
-				playerSpawnY = mainPlatform.Points[0].Y - 40 - 20 // 20 pixels above the platform for safety (playerCollisionHeight is 40)
-			} else {
-				// If no platforms found, place the player at a default position
-				playerSpawnX = 200
-				playerSpawnY = 100
-			}
+			// Use the first player spawn point defined in Tiled
+			spawn := levelData.CurrentLevel.PlayerSpawns[0]
+			playerSpawnX = spawn.X
+			playerSpawnY = spawn.Y
 		
 			// Create the player at the determined position
 			player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
