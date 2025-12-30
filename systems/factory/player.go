@@ -40,7 +40,7 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 
 	obj := resolv.NewObject(x, y, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight))
 	components.Object.SetValue(player, components.ObjectData{Object: obj})
-	obj.AddTags("character")
+	obj.AddTags("character", "Player")
 	components.Player.SetValue(player, components.PlayerData{
 		Direction:    components.Vector{X: 1, Y: 0},
 		ComboCounter: 0,

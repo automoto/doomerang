@@ -91,7 +91,7 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 		MaxRange:         maxRange,
 		PierceDistance:   config.Boomerang.PierceDistance,
 		HitEnemies:       make([]*donburi.Entry, 0),
-		Damage:           1, // Base damage, can be scaled by charge
+		Damage:           20, // Significant damage
 	})
 
 	// Sprite
@@ -102,6 +102,11 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 		PivotX:   float64(img.Bounds().Dx()) / 2,
 		PivotY:   float64(img.Bounds().Dy()) / 2,
 	})
+
+	// Track active boomerang on player
+	if owner.HasComponent(components.Player) {
+		ownerPlayer.ActiveBoomerang = b
+	}
 
 	return b
 }

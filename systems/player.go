@@ -120,7 +120,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 		if melee.IsCharging {
 			state.CurrentState = cfg.StateChargingAttack
 			state.StateTimer = 0
-		} else if ebiten.IsKeyPressed(ebiten.KeySpace) && physics.OnGround != nil {
+		} else if ebiten.IsKeyPressed(ebiten.KeySpace) && physics.OnGround != nil && player.ActiveBoomerang == nil {
 			// Start Charging Boomerang
 			state.CurrentState = cfg.StateChargingBoomerang
 			player.BoomerangChargeTime = 0

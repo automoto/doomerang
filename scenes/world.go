@@ -41,6 +41,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.UpdatePhysics)
 	ecs.AddSystem(systems.UpdateCollisions)
 	ecs.AddSystem(systems.UpdateObjects)
+	ecs.AddSystem(systems.UpdateBoomerang)
 	ecs.AddSystem(systems.UpdateCombat)
 	ecs.AddSystem(systems.UpdateCombatHitboxes)
 	ecs.AddSystem(systems.UpdateDeaths)

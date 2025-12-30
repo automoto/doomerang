@@ -72,4 +72,32 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 			}
 		}
 	}
+
+	// Draw all collision objects in the space (Entities)
+	if ok { // reusing spaceEntry check from above
+		space := components.Space.Get(spaceEntry)
+		for _, obj := range space.Objects() {
+			// Apply camera offset
+			x := obj.X + camX
+			y := obj.Y + camY
+			
+			// Determine color based on tags
+			c := color.RGBA{0, 255, 255, 100} // Cyan default
+			if obj.HasTags("solid") {
+				c = color.RGBA{100, 100, 100, 100} // Grey
+			} else if obj.HasTags("Player") {
+				c = color.RGBA{0, 0, 255, 100} // Blue
+			} else if obj.HasTags("Enemy") {
+				c = color.RGBA{255, 0, 0, 100} // Red
+			} else if obj.HasTags("Boomerang") {
+				c = color.RGBA{0, 255, 0, 200} // Green, more opaque
+			}
+
+			// Draw outline
+			ebitenutil.DrawRect(screen, x, y, obj.W, 1, c) // Top
+			ebitenutil.DrawRect(screen, x, y+obj.H-1, obj.W, 1, c) // Bottom
+			ebitenutil.DrawRect(screen, x, y, 1, obj.H, c) // Left
+			ebitenutil.DrawRect(screen, x+obj.W-1, y, 1, obj.H, c) // Right
+		}
+	}
 }

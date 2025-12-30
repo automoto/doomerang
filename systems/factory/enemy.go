@@ -111,7 +111,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName st
 	obj := resolv.NewObject(x, y, float64(enemyType.CollisionWidth), float64(enemyType.CollisionHeight))
 	components.Object.SetValue(enemy, components.ObjectData{Object: obj})
 	obj.SetShape(resolv.NewRectangle(0, 0, float64(enemyType.CollisionWidth), float64(enemyType.CollisionHeight)))
-	obj.AddTags("character")
+	obj.AddTags("character", "Enemy")
 
 	// Set enemy data with AI parameters from config
 	enemyData := components.EnemyData{

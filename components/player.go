@@ -9,6 +9,7 @@ type PlayerData struct {
 	ComboCounter        int // For tracking punch/kick sequences
 	InvulnFrames        int // Invulnerability frames timer
 	BoomerangChargeTime int
+	ActiveBoomerang     *donburi.Entry
 }
 
 var Player = donburi.NewComponentType[PlayerData]()
