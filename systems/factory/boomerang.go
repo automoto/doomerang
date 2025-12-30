@@ -11,20 +11,6 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-// InitializeBoomerangConfig sets up the global boomerang configuration.
-// This should be called once at game startup.
-func InitializeBoomerangConfig() {
-	config.Boomerang = config.BoomerangConfig{
-		ThrowSpeed:     6.0,
-		ReturnSpeed:    8.0,
-		BaseRange:      150.0,
-		MaxChargeRange: 250.0,
-		PierceDistance: 40.0,
-		Gravity:        0.2,
-		MaxChargeTime:  60,
-	}
-}
-
 // CreateBoomerang spawns a new boomerang entity.
 func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *donburi.Entry {
 	b := archetypes.Boomerang.Spawn(ecs)

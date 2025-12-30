@@ -199,4 +199,163 @@ func init() {
 		Width:  640,
 		Height: 360,
 	}
+
+	// Physics Config
+	Physics = PhysicsConfig{
+		// Global physics
+		Gravity:      0.75,
+		MaxFallSpeed: 10.0,
+		MaxRiseSpeed: -10.0,
+
+		// Wall sliding
+		WallSlideSpeed: 1.0,
+
+		// Collision
+		PlatformDropThreshold: 4.0,  // Pixels above platform to allow drop-through
+		CharacterPushback:     2.0,  // Pushback force for character collisions
+		VerticalSpeedClamp:    10.0, // Maximum vertical speed magnitude
+	}
+
+	// Player Config
+	Player = PlayerConfig{
+		// Movement
+		JumpSpeed:    15.0,
+		Acceleration: 0.75,
+		AttackAccel:  0.1,
+		MaxSpeed:     6.0,
+
+		// Combat
+		Health:       100,
+		InvulnFrames: 30,
+
+		// Physics
+		Gravity:        0.75,
+		Friction:       0.5,
+		AttackFriction: 0.2,
+
+		// Dimensions
+		FrameWidth:      96,
+		FrameHeight:     84,
+		CollisionWidth:  16,
+		CollisionHeight: 40,
+	}
+
+	// Boomerang Config
+	Boomerang = BoomerangConfig{
+		ThrowSpeed:     6.0,
+		ReturnSpeed:    8.0,
+		BaseRange:      150.0,
+		MaxChargeRange: 250.0,
+		PierceDistance: 40.0,
+		Gravity:        0.2,
+		MaxChargeTime:  60,
+	}
+	
+	// Enemy Config
+	guardType := EnemyTypeConfig{
+		Name:             "Guard",
+		Health:           60,
+		PatrolSpeed:      2.0,
+		ChaseSpeed:       2.5,
+		AttackRange:      36.0,
+		ChaseRange:       80.0,
+		StoppingDistance: 28.0,
+		AttackCooldown:   60,
+		InvulnFrames:     15,
+		AttackDuration:   30,
+		HitstunDuration:  15,
+		Damage:           10,
+		KnockbackForce:   5.0,
+		Gravity:          0.75,
+		Friction:         0.2,
+		MaxSpeed:         6.0,
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   16,
+		CollisionHeight:  40,
+		TintColor:        White,
+		SpriteSheetKey:   "player",
+	}
+	
+	lightGuardType := EnemyTypeConfig{
+		Name:             "LightGuard",
+		Health:           40,
+		PatrolSpeed:      3.0,
+		ChaseSpeed:       3.5,
+		AttackRange:      32.0,
+		ChaseRange:       100.0,
+		StoppingDistance: 24.0,
+		AttackCooldown:   40,
+		InvulnFrames:     10,
+		AttackDuration:   20,
+		HitstunDuration:  10,
+		Damage:           8,
+		KnockbackForce:   3.0,
+		Gravity:          0.8,
+		Friction:         0.25,
+		MaxSpeed:         7.0,
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   14,
+		CollisionHeight:  36,
+		TintColor:        Yellow,
+		SpriteSheetKey:   "player",
+	}
+	
+	heavyGuardType := EnemyTypeConfig{
+		Name:             "HeavyGuard",
+		Health:           100,
+		PatrolSpeed:      1.5,
+		ChaseSpeed:       2.0,
+		AttackRange:      40.0,
+		ChaseRange:       60.0,
+		StoppingDistance: 32.0,
+		AttackCooldown:   90,
+		InvulnFrames:     25,
+		AttackDuration:   45,
+		HitstunDuration:  25,
+		Damage:           18,
+		KnockbackForce:   8.0,
+		Gravity:          0.7,
+		Friction:         0.15,
+		MaxSpeed:         4.0,
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   20,
+		CollisionHeight:  44,
+		TintColor:        Orange,
+		SpriteSheetKey:   "player",
+	}
+
+	Enemy = EnemyConfig{
+		Types: map[string]EnemyTypeConfig{
+			"Guard":      guardType,
+			"LightGuard": lightGuardType,
+			"HeavyGuard": heavyGuardType,
+		},
+		HysteresisMultiplier:  1.5,
+		DefaultPatrolDistance: 32.0,
+	}
+
+	// Combat Config (Populated with default values matching the previous constants)
+	Combat = CombatConfig{
+		PlayerPunchDamage:    15,
+		PlayerKickDamage:     22,
+		PlayerPunchKnockback: 3.0,
+		PlayerKickKnockback:  5.0,
+		
+		PunchHitboxWidth:  20,
+		PunchHitboxHeight: 16,
+		KickHitboxWidth:   28,
+		KickHitboxHeight:  20,
+		
+		HitboxLifetime:  10,
+		ChargeBonusRate: 0, // Calculated dynamically in code, but good to have here
+		MaxChargeTime:   60,
+		
+		PlayerInvulnFrames: 30,
+		EnemyInvulnFrames:  30, // Was hardcoded to 15 in some places, 30 in others
+		
+		HealthBarDuration: 180,
+	}
 }

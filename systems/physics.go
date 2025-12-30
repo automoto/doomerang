@@ -7,23 +7,6 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-func init() {
-	cfg.Physics = cfg.PhysicsConfig{
-		// Global physics
-		Gravity:      0.75,
-		MaxFallSpeed: 10.0,
-		MaxRiseSpeed: -10.0,
-
-		// Wall sliding
-		WallSlideSpeed: 1.0,
-
-		// Collision
-		PlatformDropThreshold: 4.0,  // Pixels above platform to allow drop-through
-		CharacterPushback:     2.0,  // Pushback force for character collisions
-		VerticalSpeedClamp:    10.0, // Maximum vertical speed magnitude
-	}
-}
-
 func UpdatePhysics(ecs *ecs.ECS) {
 	components.Physics.Each(ecs.World, func(e *donburi.Entry) {
 		physics := components.Physics.Get(e)

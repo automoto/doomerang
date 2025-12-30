@@ -10,31 +10,6 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-func init() {
-	cfg.Player = cfg.PlayerConfig{
-		// Movement
-		JumpSpeed:    15.0,
-		Acceleration: 0.75,
-		AttackAccel:  0.1,
-		MaxSpeed:     6.0,
-
-		// Combat
-		Health:       100,
-		InvulnFrames: 30,
-
-		// Physics
-		Gravity:        0.75,
-		Friction:       0.5,
-		AttackFriction: 0.2,
-
-		// Dimensions
-		FrameWidth:      96,
-		FrameHeight:     84,
-		CollisionWidth:  16,
-		CollisionHeight: 40,
-	}
-}
-
 func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 	player := archetypes.Player.Spawn(ecs)
 
