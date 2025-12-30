@@ -11,3 +11,11 @@ var (
 	Hitbox           = donburi.NewTag().SetName("Hitbox")
 	Boomerang        = donburi.NewTag().SetName("Boomerang")
 )
+
+// Resolv tags for physics collision
+const (
+	ResolvSolid     = "solid"
+	ResolvPlayer    = "Player"
+	ResolvEnemy     = "Enemy"
+	ResolvBoomerang = "Boomerang"
+)

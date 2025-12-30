@@ -4,11 +4,11 @@ import (
 	"github.com/automoto/doomerang/archetypes"
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
+	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
-
 
 func init() {
 	cfg.Player = cfg.PlayerConfig{
@@ -40,10 +40,12 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 
 	obj := resolv.NewObject(x, y, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight))
 	components.Object.SetValue(player, components.ObjectData{Object: obj})
-	obj.AddTags("character", "Player")
+	obj.AddTags("character", tags.ResolvPlayer)
+	obj.Data = player
 	components.Player.SetValue(player, components.PlayerData{
 		Direction:    components.Vector{X: 1, Y: 0},
 		ComboCounter: 0,
+		InvulnFrames: 0,
 	})
 	components.State.SetValue(player, components.StateData{
 		CurrentState: cfg.Idle,

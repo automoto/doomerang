@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"github.com/automoto/doomerang/archetypes"
 	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/components"
 	"github.com/automoto/doomerang/config"
@@ -26,14 +27,7 @@ func InitializeBoomerangConfig() {
 
 // CreateBoomerang spawns a new boomerang entity.
 func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *donburi.Entry {
-	b := ecs.World.Entry(ecs.Create(
-		config.Default,
-		tags.Boomerang,
-		components.Object,
-		components.Sprite,
-		components.Physics,
-		components.Boomerang,
-	))
+	b := archetypes.Boomerang.Spawn(ecs)
 
 	// Get owner position and facing
 	ownerObj := components.Object.Get(owner).Object
@@ -52,7 +46,8 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 	// Create Physics Object (Hitbox)
 	// Using a smaller hitbox for the boomerang
 	width, height := 12.0, 12.0
-	obj := resolv.NewObject(startX, startY, width, height, "Boomerang")
+	obj := resolv.NewObject(startX, startY, width, height, tags.ResolvBoomerang)
+	obj.Data = b
 	components.Object.Set(b, &components.ObjectData{
 		Object: obj,
 	})
@@ -66,10 +61,10 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 	if chargeRatio > 1.0 {
 		chargeRatio = 1.0
 	}
-	
+
 	// Speed scaling: Base speed + bonus from charge (simple linear for now)
 	speed := config.Boomerang.ThrowSpeed * (1.0 + chargeRatio*0.5)
-	
+
 	velocityX := speed * facingX
 	velocityY := -2.0 // Slight upward toss
 
@@ -83,7 +78,7 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 
 	// Boomerang Logic
 	maxRange := config.Boomerang.BaseRange + (config.Boomerang.MaxChargeRange-config.Boomerang.BaseRange)*chargeRatio
-	
+
 	components.Boomerang.Set(b, &components.BoomerangData{
 		Owner:            owner,
 		State:            components.BoomerangOutbound,
@@ -110,3 +105,4 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 
 	return b
 }
+

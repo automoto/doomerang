@@ -49,6 +49,13 @@ var (
 		tags.Wall,
 		components.Object,
 	)
+	Boomerang = newArchetype(
+		tags.Boomerang,
+		components.Boomerang,
+		components.Object,
+		components.Sprite,
+		components.Physics,
+	)
 	Level = newArchetype(
 		components.Level,
 	)
