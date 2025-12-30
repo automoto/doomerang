@@ -1,6 +1,7 @@
 package scenes
 
 import (
+	"errors"
 	"image/color"
 	"sync"
 
@@ -95,6 +96,11 @@ func (ps *PlatformerScene) configure() {
 		
 			// Determine player spawn position
 			var playerSpawnX, playerSpawnY float64
+
+			if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
+				err := errors.New("No player spawn points defined in Map")
+				panic(err)
+			}
 		
 			// Use the first player spawn point defined in Tiled
 			spawn := levelData.CurrentLevel.PlayerSpawns[0]
