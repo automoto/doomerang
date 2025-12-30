@@ -5,6 +5,12 @@ import (
 	"github.com/yohamta/donburi"
 )
 
+// Vector represents a 2D vector.
+type Vector struct {
+	X, Y float64
+}
+
+
 type PhysicsData struct {
 	SpeedX         float64
 	SpeedY         float64
