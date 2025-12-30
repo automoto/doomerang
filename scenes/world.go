@@ -50,6 +50,7 @@ func (ps *PlatformerScene) configure() {
 	// Add renderers
 	ecs.AddRenderer(cfg.Default, systems.DrawLevel)
 	ecs.AddRenderer(cfg.Default, systems.DrawAnimated)
+	ecs.AddRenderer(cfg.Default, systems.DrawSprites)
 	ecs.AddRenderer(cfg.Default, systems.DrawHealthBars)
 	ecs.AddRenderer(cfg.Default, systems.DrawHitboxes)
 	ecs.AddRenderer(cfg.Default, systems.DrawHUD)

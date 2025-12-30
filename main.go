@@ -9,6 +9,7 @@ import (
 	"github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/automoto/doomerang/scenes"
+	"github.com/automoto/doomerang/systems/factory"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -27,6 +28,7 @@ type Game struct {
 
 func NewGame() *Game {
 	fonts.LoadFont(fonts.Excel, excelFont)
+	factory.InitializeBoomerangConfig()
 
 	g := &Game{
 		bounds: image.Rectangle{},

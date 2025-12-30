@@ -155,3 +155,36 @@ func DrawHealthBars(ecs *ecs.ECS, screen *ebiten.Image) {
 		vector.DrawFilledRect(screen, float32(drawX), float32(drawY), float32(barWidth*healthPercentage), float32(barHeight), cfg.Green, false)
 	})
 }
+
+func DrawSprites(ecs *ecs.ECS, screen *ebiten.Image) {
+	// Get camera
+	cameraEntry, _ := components.Camera.First(ecs.World)
+	camera := components.Camera.Get(cameraEntry)
+	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
+
+	components.Sprite.Each(ecs.World, func(e *donburi.Entry) {
+		sprite := components.Sprite.Get(e)
+		o := components.Object.Get(e)
+
+		drawOp.GeoM.Reset()
+		drawOp.ColorM.Reset()
+
+		// Translate to pivot (center of sprite)
+		drawOp.GeoM.Translate(-sprite.PivotX, -sprite.PivotY)
+
+		// Rotate
+		drawOp.GeoM.Rotate(sprite.Rotation)
+
+		// Translate to object position + center offset
+		// Assuming o.X, o.Y is top-left of hitbox.
+		// We want to draw sprite centered on hitbox center.
+		centerX := o.X + o.W/2
+		centerY := o.Y + o.H/2
+		drawOp.GeoM.Translate(centerX, centerY)
+
+		// Camera
+		drawOp.GeoM.Translate(float64(width)/2-camera.Position.X, float64(height)/2-camera.Position.Y)
+
+		screen.DrawImage(sprite.Image, drawOp)
+	})
+}

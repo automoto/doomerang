@@ -20,7 +20,7 @@ var (
 	//go:embed fonts/excel.ttf
 	excelFontData []byte
 
-	//go:embed all:images/spritesheets
+	//go:embed all:images
 	animationFS embed.FS
 )
 
@@ -96,6 +96,11 @@ func (l *AnimationLoader) MustLoadImage(path string) *ebiten.Image {
 	l.cache[path] = img
 
 	return img
+}
+
+func GetObjectImage(name string) *ebiten.Image {
+	path := fmt.Sprintf("images/objects/%s", name)
+	return animationLoader.MustLoadImage(path)
 }
 
 func (l *LevelLoader) MustLoadLevels() []Level {

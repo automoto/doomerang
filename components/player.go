@@ -5,9 +5,10 @@ import (
 )
 
 type PlayerData struct {
-	Direction    Vector
-	ComboCounter int // For tracking punch/kick sequences
-	InvulnFrames int // Invulnerability frames timer
+	Direction           Vector
+	ComboCounter        int // For tracking punch/kick sequences
+	InvulnFrames        int // Invulnerability frames timer
+	BoomerangChargeTime int
 }
 
 var Player = donburi.NewComponentType[PlayerData]()

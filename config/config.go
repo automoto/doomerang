@@ -153,6 +153,17 @@ type UIConfig struct {
 	DebugFontSize float64
 }
 
+
+type BoomerangConfig struct {
+	ThrowSpeed     float64
+	ReturnSpeed    float64
+	BaseRange      float64
+	MaxChargeRange float64
+	PierceDistance float64
+	Gravity        float64
+	MaxChargeTime  int
+}
+
 // Config holds general game configuration
 type Config struct {
 	Width  int
@@ -167,6 +178,7 @@ var Combat CombatConfig
 var Physics PhysicsConfig
 var Animation AnimationConfig
 var UI UIConfig
+var Boomerang BoomerangConfig
 
 // Shared RGBA color constants
 var (

@@ -9,4 +9,5 @@ var (
 	Wall             = donburi.NewTag().SetName("Wall")
 	Enemy            = donburi.NewTag().SetName("Enemy")
 	Hitbox           = donburi.NewTag().SetName("Hitbox")
+	Boomerang        = donburi.NewTag().SetName("Boomerang")
 )

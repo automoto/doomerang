@@ -4,6 +4,7 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 
 	"github.com/automoto/doomerang/components"
+	"github.com/automoto/doomerang/systems/factory"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/solarlune/resolv"
@@ -32,7 +33,7 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	playerObject := components.Object.Get(playerEntry).Object
 
 	handlePlayerInput(player, physics, melee, components.State.Get(playerEntry), playerObject)
-	updatePlayerState(playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))
+	updatePlayerState(ecs, playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))
 
 	// Decrement invulnerability timer
 	if player.InvulnFrames > 0 {
@@ -63,10 +64,6 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 		if melee.IsCharging && inpututil.IsKeyJustReleased(ebiten.KeyZ) {
 			melee.IsCharging = false
 			melee.IsAttacking = true
-		}
-
-		if ebiten.IsKeyPressed(ebiten.KeyDown) && physics.OnGround != nil { // Guard/Crouch
-			// Logic to be moved to updatePlayerState
 		}
 
 		// Jumping - only allow if not in attack state
@@ -113,7 +110,7 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 	}
 }
 
-func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, animData *components.AnimationData) {
+func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, animData *components.AnimationData) {
 	state.StateTimer++
 
 	// Main state machine logic
@@ -122,6 +119,11 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 		// Transition to charging
 		if melee.IsCharging {
 			state.CurrentState = cfg.StateChargingAttack
+			state.StateTimer = 0
+		} else if ebiten.IsKeyPressed(ebiten.KeySpace) && physics.OnGround != nil {
+			// Start Charging Boomerang
+			state.CurrentState = cfg.StateChargingBoomerang
+			player.BoomerangChargeTime = 0
 			state.StateTimer = 0
 		} else if ebiten.IsKeyPressed(ebiten.KeyDown) && physics.OnGround != nil {
 			state.CurrentState = cfg.Crouch
@@ -148,6 +150,32 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 			}
 		} else {
 			melee.ChargeTime++
+		}
+
+	case cfg.StateChargingBoomerang:
+		// Check for release
+		if !ebiten.IsKeyPressed(ebiten.KeySpace) {
+			// Throw!
+			state.CurrentState = cfg.Throw
+			state.StateTimer = 0
+			
+			// Spawn Boomerang
+			factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
+		} else {
+			if player.BoomerangChargeTime < cfg.Boomerang.MaxChargeTime {
+				player.BoomerangChargeTime++
+			}
+			// Stop movement while charging
+			physics.SpeedX = 0
+		}
+
+	case cfg.Throw:
+		// Stop movement while throwing
+		physics.SpeedX = 0
+		
+		// Wait for animation to finish
+		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
+			transitionToMovementState(playerEntry, player, physics, state)
 		}
 
 	case cfg.StateAttackingPunch, cfg.StateAttackingKick:
@@ -215,7 +243,7 @@ func updatePlayerState(playerEntry *donburi.Entry, player *components.PlayerData
 
 // Helper functions for state management
 func isInLockedState(state cfg.StateID) bool {
-	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback
+	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback || state == cfg.StateChargingBoomerang || state == cfg.Throw
 }
 
 func isInAttackState(state cfg.StateID) bool {
