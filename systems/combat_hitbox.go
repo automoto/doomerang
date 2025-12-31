@@ -1,6 +1,5 @@
 package systems
 
-
 import (
 	"image/color"
 
@@ -15,29 +14,12 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-// Combat damage values
-const (
-	punchDamage    = 15  // Base punch damage
-	kickDamage     = 22  // Kicks do more damage
-	punchKnockback = 3.0 // Punch knockback force
-	kickKnockback  = 5.0 // Kick knockback force
-	invulnFrames   = 30  // 30 frames of invincibility after hit
-)
-
-// Hitbox sizes
-const (
-	punchHitboxWidth  = 20
-	punchHitboxHeight = 16
-	kickHitboxWidth   = 28 // Kicks have larger hitboxes
-	kickHitboxHeight  = 20
-)
-
 type HitboxConfig struct {
-	Width    float64
-	Height   float64
-	OffsetX  float64
-	OffsetY  float64
-	Damage   int
+	Width     float64
+	Height    float64
+	OffsetX   float64
+	OffsetY   float64
+	Damage    int
 	Knockback float64
 }
 
@@ -115,20 +97,56 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 	switch attackType {
 	case "punch":
 		configs = []HitboxConfig{
-			{Width: punchHitboxWidth, Height: punchHitboxHeight, OffsetX: 0, OffsetY: 0, Damage: punchDamage, Knockback: punchKnockback},
+			{
+				Width:     cfg.Combat.PunchHitboxWidth,
+				Height:    cfg.Combat.PunchHitboxHeight,
+				OffsetX:   0,
+				OffsetY:   0,
+				Damage:    cfg.Combat.PlayerPunchDamage,
+				Knockback: cfg.Combat.PlayerPunchKnockback,
+			},
 		}
 	case "kick":
 		configs = []HitboxConfig{
-			{Width: kickHitboxWidth, Height: kickHitboxHeight, OffsetX: 0, OffsetY: 0, Damage: kickDamage, Knockback: kickKnockback},
+			{
+				Width:     cfg.Combat.KickHitboxWidth,
+				Height:    cfg.Combat.KickHitboxHeight,
+				OffsetX:   0,
+				OffsetY:   0,
+				Damage:    cfg.Combat.PlayerKickDamage,
+				Knockback: cfg.Combat.PlayerKickKnockback,
+			},
 		}
 	case "jump_kick":
+		// Jump kick uses kick values but multiple hitboxes
 		configs = []HitboxConfig{
 			// Main horizontal kick
-			{Width: kickHitboxWidth, Height: kickHitboxHeight, OffsetX: 0, OffsetY: 0, Damage: kickDamage, Knockback: kickKnockback},
+			{
+				Width:     cfg.Combat.KickHitboxWidth,
+				Height:    cfg.Combat.KickHitboxHeight,
+				OffsetX:   0,
+				OffsetY:   0,
+				Damage:    cfg.Combat.PlayerKickDamage,
+				Knockback: cfg.Combat.PlayerKickKnockback,
+			},
 			// Diagonal hitbox
-			{Width: 16, Height: 16, OffsetX: 10, OffsetY: 10, Damage: kickDamage, Knockback: kickKnockback},
+			{
+				Width:     16,
+				Height:    16,
+				OffsetX:   10,
+				OffsetY:   10,
+				Damage:    cfg.Combat.PlayerKickDamage,
+				Knockback: cfg.Combat.PlayerKickKnockback,
+			},
 			// Downward hitbox
-			{Width: 12, Height: 24, OffsetX: 0, OffsetY: 20, Damage: kickDamage, Knockback: kickKnockback},
+			{
+				Width:     12,
+				Height:    24,
+				OffsetX:   0,
+				OffsetY:   20,
+				Damage:    cfg.Combat.PlayerKickDamage,
+				Knockback: cfg.Combat.PlayerKickKnockback,
+			},
 		}
 	}
 
@@ -138,7 +156,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 		// Apply charge bonus
 		if isPlayer {
 			melee := components.MeleeAttack.Get(owner)
-			chargeBonus := 1.0 + (melee.ChargeTime / 60.0) // Add 1% bonus for every frame charged
+			chargeBonus := 1.0 + (float64(melee.ChargeTime) / float64(cfg.Combat.MaxChargeTime))
 			config.Damage = int(float64(config.Damage) * chargeBonus)
 			config.Knockback *= chargeBonus
 			config.Width *= chargeBonus
@@ -170,14 +188,20 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 		// Create hitbox object
 		hitboxObject := resolv.NewObject(hitboxX, hitboxY, config.Width, config.Height)
 		hitboxObject.SetShape(resolv.NewRectangle(0, 0, config.Width, config.Height))
+		hitboxObject.Data = hitbox // Linked for O(1) lookup
 		components.Object.SetValue(hitbox, components.ObjectData{Object: hitboxObject})
+
+		// Add to space for collision detection
+		if spaceEntry, ok := components.Space.First(ecs.World); ok {
+			components.Space.Get(spaceEntry).Add(hitboxObject)
+		}
 
 		// Set hitbox data
 		components.Hitbox.SetValue(hitbox, components.HitboxData{
 			OwnerEntity:    owner,
 			Damage:         config.Damage,
 			KnockbackForce: config.Knockback,
-			LifeTime:       10, // Hitbox lasts 10 frames
+			LifeTime:       cfg.Combat.HitboxLifetime,
 			HitEntities:    make(map[*donburi.Entry]bool),
 			AttackType:     attackType,
 		})
@@ -196,7 +220,7 @@ func updateHitboxes(ecs *ecs.ECS) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
 		hitboxObject := components.Object.Get(hitboxEntry).Object
 
-		// Check for collisions with targets
+		// Check for collisions with targets using Resolv space
 		checkHitboxCollisions(ecs, hitboxEntry, hitbox, hitboxObject)
 
 		// Decrease lifetime
@@ -208,20 +232,24 @@ func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *com
 	// Determine if owner is player or enemy
 	isPlayerAttack := hitbox.OwnerEntity.HasComponent(components.Player)
 
-	if isPlayerAttack {
-		// Player hitbox - check collision with enemies
-		tags.Enemy.Each(ecs.World, func(enemyEntry *donburi.Entry) {
-			if shouldHitTarget(hitbox, enemyEntry, hitboxObject, components.Object.Get(enemyEntry).Object) {
-				applyHitToEnemy(enemyEntry, hitbox)
+	targetTag := tags.ResolvEnemy
+	if !isPlayerAttack {
+		targetTag = tags.ResolvPlayer
+	}
+
+	// Efficient collision check using resolv space
+	if check := hitboxObject.Check(0, 0, targetTag); check != nil {
+		for _, obj := range check.Objects {
+			if targetEntry, ok := obj.Data.(*donburi.Entry); ok {
+				if shouldHitTarget(hitbox, targetEntry, hitboxObject, obj) {
+					if isPlayerAttack {
+						applyHitToEnemy(targetEntry, hitbox)
+					} else {
+						applyHitToPlayer(targetEntry, hitbox)
+					}
+				}
 			}
-		})
-	} else {
-		// Enemy hitbox - check collision with player
-		tags.Player.Each(ecs.World, func(playerEntry *donburi.Entry) {
-			if shouldHitTarget(hitbox, playerEntry, hitboxObject, components.Object.Get(playerEntry).Object) {
-				applyHitToPlayer(playerEntry, hitbox)
-			}
-		})
+		}
 	}
 }
 
@@ -238,7 +266,10 @@ func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitbo
 
 	// Don't hit if target is invulnerable
 	if target.HasComponent(components.Player) {
-		// Players don't have invuln frames yet - we'll add this when we integrate with existing combat
+		player := components.Player.Get(target)
+		if player.InvulnFrames > 0 {
+			return false
+		}
 	} else if target.HasComponent(components.Enemy) {
 		enemy := components.Enemy.Get(target)
 		if enemy.InvulnFrames > 0 {
@@ -246,9 +277,7 @@ func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitbo
 		}
 	}
 
-	// Check collision by testing overlap
-	// Check collision by testing overlap
-	return hitboxObject.Shape.Intersection(0, 0, targetObject.Shape) != nil
+	return true
 }
 
 func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
@@ -267,10 +296,11 @@ func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
 	applyKnockback(enemyEntry, hitbox, enemyObject)
 
 	// Set invulnerability frames
-	enemy.InvulnFrames = invulnFrames
+	enemy.InvulnFrames = cfg.Combat.EnemyInvulnFrames
 }
 
 func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData) {
+	player := components.Player.Get(playerEntry)
 	playerObject := components.Object.Get(playerEntry).Object
 
 	// Mark as hit
@@ -284,7 +314,8 @@ func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData)
 	// Apply knockback
 	applyKnockback(playerEntry, hitbox, playerObject)
 
-	// TODO: Set player invulnerability frames (would need to add to PlayerData)
+	// Set player invulnerability frames
+	player.InvulnFrames = cfg.Combat.PlayerInvulnFrames
 }
 
 func applyKnockback(targetEntry *donburi.Entry, hitbox *components.HitboxData, targetObject *resolv.Object) {
@@ -309,7 +340,7 @@ func cleanupHitboxes(ecs *ecs.ECS) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
 		if hitbox.LifeTime <= 0 {
 			toRemove = append(toRemove, hitboxEntry)
-			
+
 			// Clear active hitbox reference on owner
 			owner := hitbox.OwnerEntity
 			if owner != nil && owner.Valid() {
@@ -329,6 +360,11 @@ func cleanupHitboxes(ecs *ecs.ECS) {
 	})
 
 	for _, hitboxEntry := range toRemove {
+		// Remove from resolv space
+		if spaceEntry, ok := components.Space.First(ecs.World); ok {
+			obj := components.Object.Get(hitboxEntry)
+			components.Space.Get(spaceEntry).Remove(obj.Object)
+		}
 		ecs.World.Remove(hitboxEntry.Entity())
 	}
 }
