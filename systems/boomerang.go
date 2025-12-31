@@ -42,7 +42,8 @@ func UpdateBoomerang(ecs *ecs.ECS) {
 }
 
 func updateOutbound(e *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, obj *components.ObjectData) {
-	// Track distance
+	// Track distance - we still need sqrt here for accurate range tracking 
+	// because speed varies, but we could optimize this if needed.
 	speed := math.Sqrt(physics.SpeedX*physics.SpeedX + physics.SpeedY*physics.SpeedY)
 	b.DistanceTraveled += speed
 
@@ -55,7 +56,6 @@ func updateOutbound(e *donburi.Entry, b *components.BoomerangData, physics *comp
 func updateInbound(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, obj *components.ObjectData) {
 	// Homing Logic
 	if b.Owner == nil || !b.Owner.Valid() {
-		// Owner dead or gone? Destroy boomerang
 		destroyBoomerang(ecs, e, obj)
 		return
 	}
@@ -72,9 +72,13 @@ func updateInbound(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, 
 	dx := targetX - currentX
 	dy := targetY - currentY
 
-	// Normalize
-	dist := math.Sqrt(dx*dx + dy*dy)
-	if dist > 0 {
+	// Squared distance for proximity check
+	distSq := dx*dx + dy*dy
+
+	// Only normalize and update velocity if we aren't already "at" the target
+	// and to avoid division by zero.
+	if distSq > 0.01 {
+		dist := math.Sqrt(distSq)
 		dirX := dx / dist
 		dirY := dy / dist
 
@@ -82,6 +86,11 @@ func updateInbound(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, 
 		returnSpeed := config.Boomerang.ReturnSpeed
 		physics.SpeedX = dirX * returnSpeed
 		physics.SpeedY = dirY * returnSpeed
+	} else {
+		// Stop moving if we are exactly at the player center 
+		// (collision check will catch it)
+		physics.SpeedX = 0
+		physics.SpeedY = 0
 	}
 }
 
@@ -91,8 +100,11 @@ func SwitchToInbound(b *components.BoomerangData, physics *components.PhysicsDat
 	}
 	b.State = components.BoomerangInbound
 	physics.Gravity = 0 // Disable gravity for homing return
+	
 	// Reset hit enemies so we can hit them again on return
-	b.HitEnemies = b.HitEnemies[:0]
+	for k := range b.HitEnemies {
+		delete(b.HitEnemies, k)
+	}
 }
 
 func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, obj *components.ObjectData) {
@@ -127,56 +139,48 @@ func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData
 }
 
 func handleEnemyCollision(boomerangEntry *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, enemyObj *resolv.Object) {
-	// Use Data field for O(1) lookup
 	enemyEntry, ok := enemyObj.Data.(*donburi.Entry)
 	if !ok || enemyEntry == nil || !enemyEntry.Valid() {
 		return
 	}
 
-	alreadyHit := false
-	for _, hit := range b.HitEnemies {
-		if hit == enemyEntry {
-			alreadyHit = true
-			break
+	// O(1) map lookup
+	if _, alreadyHit := b.HitEnemies[enemyEntry]; alreadyHit {
+		return
+	}
+
+	// Apply Damage
+	if health := components.Health.Get(enemyEntry); health != nil {
+		health.Current -= b.Damage
+
+		// Knockback (simplified)
+		if enemyPhysics := components.Physics.Get(enemyEntry); enemyPhysics != nil {
+			if b.State == components.BoomerangOutbound {
+				enemyPhysics.SpeedX = 2.0
+			} else {
+				enemyPhysics.SpeedX = -2.0
+			}
 		}
 	}
 
-	if !alreadyHit {
-		// Apply Damage
-		if health := components.Health.Get(enemyEntry); health != nil {
-			health.Current -= b.Damage
+	// Visual Feedback
+	if enemyComp := components.Enemy.Get(enemyEntry); enemyComp != nil {
+		enemyComp.InvulnFrames = 15 
+	}
 
-			// Knockback (simplified)
-			if enemyPhysics := components.Physics.Get(enemyEntry); enemyPhysics != nil {
-				// Knockback away from boomerang
-				if b.State == components.BoomerangOutbound {
-					enemyPhysics.SpeedX = 2.0
-				} else {
-					enemyPhysics.SpeedX = -2.0
-				}
-			}
-		}
+	// Add to hit map
+	b.HitEnemies[enemyEntry] = struct{}{}
 
-		// Visual Feedback
-		if enemyComp := components.Enemy.Get(enemyEntry); enemyComp != nil {
-			enemyComp.InvulnFrames = 15 // Flash for 15 frames
-		}
-
-		// Add to hit list
-		b.HitEnemies = append(b.HitEnemies, enemyEntry)
-
-		// Short Return Rule
-		if b.State == components.BoomerangOutbound {
-			newMax := b.DistanceTraveled + b.PierceDistance
-			if newMax < b.MaxRange {
-				b.MaxRange = newMax
-			}
+	// Short Return Rule
+	if b.State == components.BoomerangOutbound {
+		newMax := b.DistanceTraveled + b.PierceDistance
+		if newMax < b.MaxRange {
+			b.MaxRange = newMax
 		}
 	}
 }
 
 func catchBoomerang(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData) {
-	// Clear active boomerang on player
 	if b.Owner != nil && b.Owner.Valid() {
 		if b.Owner.HasComponent(components.Player) {
 			player := components.Player.Get(b.Owner)
@@ -188,13 +192,10 @@ func catchBoomerang(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData)
 }
 
 func destroyBoomerang(ecs *ecs.ECS, e *donburi.Entry, obj *components.ObjectData) {
-	// Remove from space
 	if spaceEntry, ok := components.Space.First(ecs.World); ok {
 		if obj != nil && obj.Object != nil {
 			components.Space.Get(spaceEntry).Remove(obj.Object)
 		}
 	}
-
-	// Destroy entity
 	ecs.World.Remove(e.Entity())
 }

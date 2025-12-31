@@ -17,7 +17,7 @@ type BoomerangData struct {
 	DistanceTraveled float64
 	MaxRange         float64
 	PierceDistance   float64
-	HitEnemies       []*donburi.Entry
+	HitEnemies       map[*donburi.Entry]struct{}
 	Damage           int
 }
 

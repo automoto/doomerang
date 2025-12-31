@@ -71,7 +71,7 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 		DistanceTraveled: 0,
 		MaxRange:         maxRange,
 		PierceDistance:   config.Boomerang.PierceDistance,
-		HitEnemies:       make([]*donburi.Entry, 0),
+		HitEnemies:       make(map[*donburi.Entry]struct{}),
 		Damage:           20, // Significant damage
 	})
 
