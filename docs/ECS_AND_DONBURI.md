@@ -94,23 +94,26 @@ This makes it easy to create a new player entity with all the necessary componen
 
 ### Factories
 
-Factories, located in the `factory/` directory, are responsible for creating and initializing complex entities. They use archetypes to spawn new entities and then set their initial component values. For example, `factory/player.go` has a `CreatePlayer` function:
+Factories, located in the `systems/factory/` directory, are responsible for creating and initializing complex entities. They use archetypes to spawn new entities and then set their initial component values.
+
+**Key Rule: Factory Ownership**
+A factory function should "own" the entire creation process, including the creation of external physics objects. It should take simple parameters (position, size) rather than pre-created objects.
 
 ```go
-package factory
+// GOOD
+func CreateWall(ecs *ecs.ECS, x, y, w, h float64) *donburi.Entry {
+    // Factory creates the resolv object
+    obj := resolv.NewObject(x, y, w, h, tags.ResolvSolid)
+    // ...
+}
 
-// ...
-
-func CreatePlayer(ecs *ecs.ECS) *donburi.Entry {
-    player := archetypes.Player.Spawn(ecs)
-
-    // ... initialize player components ...
-
-    return player
+// BAD
+func CreateWall(ecs *ecs.ECS, obj *resolv.Object) *donburi.Entry {
+    // Factory relies on caller to create object correctly
 }
 ```
 
-This approach encapsulates the complexity of entity creation and ensures that all entities are properly initialized.
+This approach encapsulates the complexity of entity creation and ensures that all entities are properly initialized with correct tags and data linkages.
 
 ### Game Initialization
 
@@ -120,37 +123,31 @@ The main game scene, `scenes/world.go`, is where everything comes together. In t
 2.  Add all the systems and renderers to the ECS.
 3.  Use factories to create the initial game entities (level, player, camera, etc.).
 
-```go
-package scenes
+## Configuration Management
 
-// ...
+We use a **Centralized Configuration** pattern. All game tuning values (speed, damage, health, dimensions) are stored in `config/config.go`.
 
-func (ps *PlatformerScene) configure() {
-    ecs := ecs.NewECS(donburi.NewWorld())
+*   **Initialization**: All configuration structs are populated in the `init()` function of `config/config.go`.
+*   **Usage**: Systems and factories read directly from `config.Player`, `config.Combat`, etc.
+*   **Avoid**: Do not hardcode values in systems (e.g., `damage := 10`). Do not initialize config values in distributed `init()` functions across different packages.
 
-    // Add systems
-    ecs.AddSystem(systems.UpdatePlayer)
-    ecs.AddSystem(systems.UpdatePhysics)
-    ecs.AddSystem(systems.UpdateCollisions)
-    // ...
+## Physics & Resolv Integration
 
-    // Add renderers
-    ecs.AddRenderer(layers.Default, systems.DrawAnimated)
-    // ...
+We use `solarlune/resolv` for collision detection. To ensure high performance and correct ECS integration:
 
-    ps.ecs = ecs
+1.  **Reverse Lookup (`Data` Field)**: When creating a `resolv.Object`, **ALWAYS** set its `Data` field to point to the `donburi.Entry`.
+    ```go
+    obj := resolv.NewObject(x, y, w, h)
+    obj.Data = entry // Critical for O(1) reverse lookup
+    ```
+2.  **Optimized Collision**: Use `obj.Check(...)` which utilizes the `resolv.Space` spatial partition (O(log N)). Avoid iterating all entities and checking `Shape.Intersection` (O(N)).
+3.  **Tag Constants**: Use defined constants in `tags/tags.go` (e.g., `tags.ResolvEnemy`) instead of string literals like "Enemy" or "solid".
 
-    // Create entities
-    factory.CreateLevel(ps.ecs)
-    factory.CreatePlayer(ps.ecs)
-    // ...
-}
-```
+## Best Practices Checklist
 
-## Best Practices Going Forward
-
-1.  **State Safety**: Always add new character or game states to `config/states.go` as `StateID` constants. Update the `StateToFileName` map if the state requires a new sprite sheet.
+1.  **State Safety**: Always add new character or game states to `config/states.go` as `StateID` constants.
 2.  **Zero Allocation**: Avoid creating new objects (like `ebiten.DrawImageOptions` or `color.RGBA`) inside `Draw` or `Update` loops. Reuse package-level variables.
-3.  **Component Caching**: When iterating over entities in a system, if you need to access multiple components, call `Get` once at the start of the loop body and store the pointer.
-4.  **Pointer Wrappers**: If you integrate a new library that tracks object pointers, use the `ObjectData` pattern (store a pointer inside a struct) to prevent memory invalidation during ECS reallocation.
-5.  **O(1) Relationships**: Instead of searching all entities for a relationship (like "who is the active hitbox for this player?"), store a direct `*donburi.Entry` reference on the parent component.
+3.  **Component Caching**: When iterating over entities in a system, if you need to access multiple components, call `Get` once at the start of the loop body.
+4.  **Pointer Wrappers**: Use `ObjectData` to store pointers to external objects (like `resolv.Object`) to prevent memory invalidation.
+5.  **Factory Integrity**: Factories must fully initialize the entity, including setting `obj.Data` and correct tags.
+6.  **Config Centralization**: All magic numbers belong in `config/config.go`.
