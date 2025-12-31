@@ -232,9 +232,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 		anim = state.CurrentState
 	}
 
-	if animData.CurrentAnimation != animData.Animations[anim] {
-		animData.SetAnimation(anim)
-	}
+	animData.SetAnimation(anim)
 
 	if animData.CurrentAnimation != nil {
 		animData.CurrentAnimation.Update()

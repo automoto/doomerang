@@ -18,13 +18,22 @@ type AnimationData struct {
 }
 
 func (a *AnimationData) SetAnimation(state config.StateID) {
-	if anim, ok := a.Animations[state]; ok {
+	if a.CurrentSheet == state && (a.CurrentAnimation != nil || a.Animations[state] == nil) {
+		return
+	}
+
+	anim, ok := a.Animations[state]
+	if ok {
 		if a.CurrentAnimation != anim {
 			a.CurrentAnimation = anim
 			a.CurrentSheet = state
 			a.CurrentAnimation.Restart()
 			a.CurrentAnimation.Looped = false
 		}
+	} else {
+		// No animation for this state, clear current
+		a.CurrentAnimation = nil
+		a.CurrentSheet = state
 	}
 }
 

@@ -283,9 +283,7 @@ func updateEnemyAnimation(enemy *components.EnemyData, physics *components.Physi
 	}
 
 	// Update animation if changed
-	if animData.CurrentAnimation != animData.Animations[targetState] {
-		animData.SetAnimation(targetState)
-	}
+	animData.SetAnimation(targetState)
 
 	if animData.CurrentAnimation != nil {
 		animData.CurrentAnimation.Update()
