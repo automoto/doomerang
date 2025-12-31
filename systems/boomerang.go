@@ -92,7 +92,7 @@ func SwitchToInbound(b *components.BoomerangData, physics *components.PhysicsDat
 	b.State = components.BoomerangInbound
 	physics.Gravity = 0 // Disable gravity for homing return
 	// Reset hit enemies so we can hit them again on return
-	b.HitEnemies = make([]*donburi.Entry, 0, 4)
+	b.HitEnemies = b.HitEnemies[:0]
 }
 
 func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, obj *components.ObjectData) {

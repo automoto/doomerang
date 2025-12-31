@@ -10,6 +10,7 @@ import (
 type AnimationData struct {
 	CurrentAnimation *animations.Animation
 	SpriteSheets     map[config.StateID]*ebiten.Image
+	CachedFrames     map[config.StateID]map[int]*ebiten.Image // Pre-calculated subimages keyed by sheet index
 	CurrentSheet     config.StateID
 	FrameWidth       int
 	FrameHeight      int

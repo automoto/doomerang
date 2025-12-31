@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+	"image"
 
 	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/assets/animations"
@@ -23,6 +24,7 @@ func GenerateAnimations(key string, frameWidth, frameHeight int) *components.Ani
 	animData := &components.AnimationData{
 		SpriteSheets: make(map[cfg.StateID]*ebiten.Image),
 		Animations:   make(map[cfg.StateID]*animations.Animation),
+		CachedFrames: make(map[cfg.StateID]map[int]*ebiten.Image),
 		FrameWidth:   frameWidth,
 		FrameHeight:  frameHeight,
 		CurrentSheet: cfg.Idle, // Default state
@@ -36,6 +38,21 @@ func GenerateAnimations(key string, frameWidth, frameHeight int) *components.Ani
 
 		// Create Animation Object
 		animData.Animations[state] = animations.NewAnimation(def.First, def.Last, def.Step, def.Speed)
+
+		// Pre-calculate frames
+		frames := make(map[int]*ebiten.Image)
+		step := def.Step
+		if step <= 0 {
+			step = 1
+		}
+
+		for sheetIndex := def.First; sheetIndex <= def.Last; sheetIndex += step {
+			sx := sheetIndex * frameWidth
+			sy := 0
+			srcRect := image.Rect(sx, sy, sx+frameWidth, sy+frameHeight)
+			frames[sheetIndex] = sprite.SubImage(srcRect).(*ebiten.Image)
+		}
+		animData.CachedFrames[state] = frames
 	}
 
 	return animData
