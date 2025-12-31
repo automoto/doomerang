@@ -10,34 +10,6 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-func init() {
-	cfg.Combat = cfg.CombatConfig{
-		// Player damage values
-		PlayerPunchDamage:    10,
-		PlayerKickDamage:     15,
-		PlayerPunchKnockback: 3.0,
-		PlayerKickKnockback:  5.0,
-
-		// Hitbox sizes (these are just examples, adjust as needed)
-		PunchHitboxWidth:  20.0,
-		PunchHitboxHeight: 10.0,
-		KickHitboxWidth:   25.0,
-		KickHitboxHeight:  15.0,
-
-		// Timing
-		HitboxLifetime:  10,  // frames
-		ChargeBonusRate: 0.1, // Bonus per frame charged
-		MaxChargeTime:   30,  // frames
-
-		// Invulnerability
-		PlayerInvulnFrames: 30,
-		EnemyInvulnFrames:  15,
-
-		// Health bar display
-		HealthBarDuration: 120, // frames
-	}
-}
-
 // UpdateCombat handles damage events, debug damage input and keeps health
 // values within their valid range.
 func UpdateCombat(ecs *ecs.ECS) {

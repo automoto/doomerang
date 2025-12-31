@@ -150,6 +150,9 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 		}
 	}
 
+	// Create shared hit map for all hitboxes in this attack
+	sharedHitMap := make(map[*donburi.Entry]bool)
+
 	for _, config := range configs {
 		hitbox := archetypes.Hitbox.Spawn(ecs)
 
@@ -202,7 +205,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 			Damage:         config.Damage,
 			KnockbackForce: config.Knockback,
 			LifeTime:       cfg.Combat.HitboxLifetime,
-			HitEntities:    make(map[*donburi.Entry]bool),
+			HitEntities:    sharedHitMap, // Use shared map
 			AttackType:     attackType,
 		})
 
@@ -300,7 +303,6 @@ func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
 }
 
 func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData) {
-	player := components.Player.Get(playerEntry)
 	playerObject := components.Object.Get(playerEntry).Object
 
 	// Mark as hit
@@ -313,9 +315,6 @@ func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData)
 
 	// Apply knockback
 	applyKnockback(playerEntry, hitbox, playerObject)
-
-	// Set player invulnerability frames
-	player.InvulnFrames = cfg.Combat.PlayerInvulnFrames
 }
 
 func applyKnockback(targetEntry *donburi.Entry, hitbox *components.HitboxData, targetObject *resolv.Object) {

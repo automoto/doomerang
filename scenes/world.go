@@ -11,7 +11,6 @@ import (
 	"github.com/automoto/doomerang/components"
 	"github.com/automoto/doomerang/systems"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -82,47 +81,42 @@ func (ps *PlatformerScene) configure() {
 		width := path.Points[1].X - path.Points[0].X
 		height := path.Points[1].Y - path.Points[0].Y
 
-		// Create a solid wall object
-		wall := factory2.CreateWall(ps.ecs, resolv.NewObject(
+		// Create a solid wall object using the factory
+		factory2.CreateWall(ps.ecs,
 			path.Points[0].X,
 			path.Points[0].Y,
 			width,
 			height,
-			"solid",
-		))
+		)
+	}
 
-		        // Add the wall to the collision space
-				wallObj := components.Object.Get(wall)
-				space.Add(wallObj.Object)
-			}
-		
-			// Determine player spawn position
-			var playerSpawnX, playerSpawnY float64
+	// Determine player spawn position
+	var playerSpawnX, playerSpawnY float64
 
-			if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
-				err := errors.New("No player spawn points defined in Map")
-				panic(err)
-			}
-		
-			// Use the first player spawn point defined in Tiled
-			spawn := levelData.CurrentLevel.PlayerSpawns[0]
-			playerSpawnX = spawn.X
-			playerSpawnY = spawn.Y
-		
-			// Create the player at the determined position
-			player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
-			playerObj := components.Object.Get(player)
-			space.Add(playerObj.Object)
-		
-			// Spawn enemies for the current level
-			for _, spawn := range levelData.CurrentLevel.EnemySpawns {
-				// Use the enemy type from the spawn data, default to "Guard" if not specified
-				enemyType := spawn.EnemyType
-				if enemyType == "" {
-					enemyType = "Guard"
-				}
-				enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath, enemyType)
-				enemyObj := components.Object.Get(enemy)
-				space.Add(enemyObj.Object)
-			}
+	if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
+		err := errors.New("No player spawn points defined in Map")
+		panic(err)
+	}
+
+	// Use the first player spawn point defined in Tiled
+	spawn := levelData.CurrentLevel.PlayerSpawns[0]
+	playerSpawnX = spawn.X
+	playerSpawnY = spawn.Y
+
+	// Create the player at the determined position
+	player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
+	playerObj := components.Object.Get(player)
+	space.Add(playerObj.Object)
+
+	// Spawn enemies for the current level
+	for _, spawn := range levelData.CurrentLevel.EnemySpawns {
+		// Use the enemy type from the spawn data, default to "Guard" if not specified
+		enemyType := spawn.EnemyType
+		if enemyType == "" {
+			enemyType = "Guard"
 		}
+		enemy := factory2.CreateEnemy(ps.ecs, spawn.X, spawn.Y, spawn.PatrolPath, enemyType)
+		enemyObj := components.Object.Get(enemy)
+		space.Add(enemyObj.Object)
+	}
+}
