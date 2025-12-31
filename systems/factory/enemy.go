@@ -29,7 +29,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName st
 
 	// Set enemy data with AI parameters from config
 	enemyData := components.EnemyData{
-		TypeName:         enemyTypeName, // Set the enemy type name
+		TypeName:         enemyTypeName,                  // Set the enemy type name
 		Direction:        components.Vector{X: -1, Y: 0}, // Start facing left
 		PatrolSpeed:      enemyType.PatrolSpeed,
 		ChaseSpeed:       enemyType.ChaseSpeed,

@@ -153,7 +153,6 @@ type UIConfig struct {
 	DebugFontSize float64
 }
 
-
 type BoomerangConfig struct {
 	ThrowSpeed     float64
 	ReturnSpeed    float64
@@ -250,7 +249,7 @@ func init() {
 		Gravity:        0.2,
 		MaxChargeTime:  60,
 	}
-	
+
 	// Enemy Config
 	guardType := EnemyTypeConfig{
 		Name:             "Guard",
@@ -276,7 +275,7 @@ func init() {
 		TintColor:        White,
 		SpriteSheetKey:   "player",
 	}
-	
+
 	lightGuardType := EnemyTypeConfig{
 		Name:             "LightGuard",
 		Health:           40,
@@ -301,7 +300,7 @@ func init() {
 		TintColor:        Yellow,
 		SpriteSheetKey:   "player",
 	}
-	
+
 	heavyGuardType := EnemyTypeConfig{
 		Name:             "HeavyGuard",
 		Health:           100,
@@ -343,19 +342,19 @@ func init() {
 		PlayerKickDamage:     22,
 		PlayerPunchKnockback: 3.0,
 		PlayerKickKnockback:  5.0,
-		
+
 		PunchHitboxWidth:  20,
 		PunchHitboxHeight: 16,
 		KickHitboxWidth:   28,
 		KickHitboxHeight:  20,
-		
+
 		HitboxLifetime:  10,
 		ChargeBonusRate: 0, // Calculated dynamically in code, but good to have here
 		MaxChargeTime:   60,
-		
+
 		PlayerInvulnFrames: 30,
 		EnemyInvulnFrames:  30, // Was hardcoded to 15 in some places, 30 in others
-		
+
 		HealthBarDuration: 180,
 	}
 }

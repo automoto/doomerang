@@ -80,7 +80,7 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 			// Apply camera offset
 			x := obj.X + camX
 			y := obj.Y + camY
-			
+
 			// Determine color based on tags
 			c := color.RGBA{0, 255, 255, 100} // Cyan default
 			if obj.HasTags("solid") {
@@ -94,9 +94,9 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 			}
 
 			// Draw outline
-			ebitenutil.DrawRect(screen, x, y, obj.W, 1, c) // Top
+			ebitenutil.DrawRect(screen, x, y, obj.W, 1, c)         // Top
 			ebitenutil.DrawRect(screen, x, y+obj.H-1, obj.W, 1, c) // Bottom
-			ebitenutil.DrawRect(screen, x, y, 1, obj.H, c) // Left
+			ebitenutil.DrawRect(screen, x, y, 1, obj.H, c)         // Left
 			ebitenutil.DrawRect(screen, x+obj.W-1, y, 1, obj.H, c) // Right
 		}
 	}

@@ -158,7 +158,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 			// Throw!
 			state.CurrentState = cfg.Throw
 			state.StateTimer = 0
-			
+
 			// Spawn Boomerang
 			factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
 		} else {
@@ -172,7 +172,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 	case cfg.Throw:
 		// Stop movement while throwing
 		physics.SpeedX = 0
-		
+
 		// Wait for animation to finish
 		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
 			transitionToMovementState(playerEntry, player, physics, state)

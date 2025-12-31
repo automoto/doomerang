@@ -61,14 +61,14 @@ var StateToFileName = map[StateID]string{
 	Throw:       "throw",
 	Walk:        "walk",
 	WallSlide:   "wallslide",
-	
+
 	// Map combat states to animation files where appropriate
 	StateAttackingPunch:    "punch01",
 	StateAttackingKick:     "kick01",
 	StateAttackingJump:     "kick02", // Jump kick uses kick02 animation
 	StateChargingAttack:    "idle",   // Charging uses idle animation (or maybe a specific one later)
 	StateChargingBoomerang: "throw",  // Use throw animation frame 0 for charging
-	
+
 	// Enemy AI states map to movement animations
 	StatePatrol: "walk",
 	StateChase:  "running",

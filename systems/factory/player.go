@@ -46,4 +46,3 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 
 	return player
 }
-

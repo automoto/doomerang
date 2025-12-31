@@ -91,4 +91,3 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 
 	return b
 }
-

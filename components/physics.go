@@ -10,7 +10,6 @@ type Vector struct {
 	X, Y float64
 }
 
-
 type PhysicsData struct {
 	SpeedX         float64
 	SpeedY         float64

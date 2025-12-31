@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	drawOp        = &ebiten.DrawImageOptions{}
+	drawOp = &ebiten.DrawImageOptions{}
 )
 
 func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
