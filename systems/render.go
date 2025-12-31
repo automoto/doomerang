@@ -16,14 +16,32 @@ var (
 	drawOp = &ebiten.DrawImageOptions{}
 )
 
+// Viewport culling significantly improves performance by skipping the expensive matrix
+// calculations and draw calls for entities that are currently off-screen.
+// A small padding is used to prevent sprites from popping in/out at the edges.
+
+// DrawAnimated renders entities with an Animation component based on their current frame and state.
 func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Get camera
 	cameraEntry, _ := components.Camera.First(ecs.World)
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 
+	// Culling bounds
+	padding := 64.0
+	minX := camera.Position.X - float64(width)/2 - padding
+	maxX := camera.Position.X + float64(width)/2 + padding
+	minY := camera.Position.Y - float64(height)/2 - padding
+	maxY := camera.Position.Y + float64(height)/2 + padding
+
 	components.Animation.Each(ecs.World, func(e *donburi.Entry) {
 		o := components.Object.Get(e)
+
+		// Viewport Culling
+		if o.X+o.W < minX || o.X > maxX || o.Y+o.H < minY || o.Y > maxY {
+			return
+		}
+
 		animData := components.Animation.Get(e)
 
 		if animData.CurrentAnimation != nil && animData.SpriteSheets[animData.CurrentSheet] != nil {
@@ -79,16 +97,7 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 			// Apply enemy type color tinting
 			if e.HasComponent(components.Enemy) {
 				enemy := components.Enemy.Get(e)
-				enemyType, exists := cfg.Enemy.Types[enemy.TypeName]
-				// Check if tint is not white (default)
-				if exists && (enemyType.TintColor.R != 255 || enemyType.TintColor.G != 255 || enemyType.TintColor.B != 255 || enemyType.TintColor.A != 255) {
-					// Apply color tint (normalize RGBA values to 0-1 range)
-					r := float32(enemyType.TintColor.R) / 255.0
-					g := float32(enemyType.TintColor.G) / 255.0
-					b := float32(enemyType.TintColor.B) / 255.0
-					a := float32(enemyType.TintColor.A) / 255.0
-					drawOp.ColorScale.Scale(r, g, b, a)
-				}
+				drawOp.ColorScale.ScaleWithColorScale(enemy.TintColor)
 			}
 
 			// Draw the current frame.
@@ -126,13 +135,26 @@ func DrawHealthBars(ecs *ecs.ECS, screen *ebiten.Image) {
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 
+	// Culling bounds
+	padding := 64.0
+	minX := camera.Position.X - float64(width)/2 - padding
+	maxX := camera.Position.X + float64(width)/2 + padding
+	minY := camera.Position.Y - float64(height)/2 - padding
+	maxY := camera.Position.Y + float64(height)/2 + padding
+
 	// Iterate over entities with Health and HealthBar components
 	components.HealthBar.Each(ecs.World, func(e *donburi.Entry) {
 		if !e.HasComponent(components.Health) {
 			return
 		}
-		hp := components.Health.Get(e)
 		o := components.Object.Get(e)
+
+		// Viewport Culling
+		if o.X+o.W < minX || o.X > maxX || o.Y+o.H < minY || o.Y > maxY {
+			return
+		}
+
+		hp := components.Health.Get(e)
 
 		// Health bar dimensions and position
 		barWidth := 32.0
@@ -162,9 +184,22 @@ func DrawSprites(ecs *ecs.ECS, screen *ebiten.Image) {
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 
+	// Culling bounds
+	padding := 64.0
+	minX := camera.Position.X - float64(width)/2 - padding
+	maxX := camera.Position.X + float64(width)/2 + padding
+	minY := camera.Position.Y - float64(height)/2 - padding
+	maxY := camera.Position.Y + float64(height)/2 + padding
+
 	components.Sprite.Each(ecs.World, func(e *donburi.Entry) {
-		sprite := components.Sprite.Get(e)
 		o := components.Object.Get(e)
+
+		// Viewport Culling
+		if o.X+o.W < minX || o.X > maxX || o.Y+o.H < minY || o.Y > maxY {
+			return
+		}
+
+		sprite := components.Sprite.Get(e)
 
 		drawOp.GeoM.Reset()
 		drawOp.ColorScale.Reset()

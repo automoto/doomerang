@@ -1,12 +1,14 @@
 package components
 
 import (
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
 )
 
 type EnemyData struct {
 	TypeName  string // "Guard", "LightGuard", "HeavyGuard" etc...
 	Direction Vector
+	TintColor ebiten.ColorScale // Cached color tint from enemy type config
 
 	// AI state management
 	PatrolLeft       float64 // Left boundary for patrol

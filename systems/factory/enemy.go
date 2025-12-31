@@ -40,6 +40,16 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName st
 		InvulnFrames:     0,
 	}
 
+	// Pre-calculate and cache color tint
+	enemyData.TintColor.Reset()
+	if enemyType.TintColor.R != 255 || enemyType.TintColor.G != 255 || enemyType.TintColor.B != 255 || enemyType.TintColor.A != 255 {
+		r := float32(enemyType.TintColor.R) / 255.0
+		g := float32(enemyType.TintColor.G) / 255.0
+		b := float32(enemyType.TintColor.B) / 255.0
+		a := float32(enemyType.TintColor.A) / 255.0
+		enemyData.TintColor.Scale(r, g, b, a)
+	}
+
 	// Set patrol boundaries based on whether we have a custom patrol path
 	if patrolPath != "" {
 		// Custom patrol path will be handled in the AI system
