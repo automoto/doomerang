@@ -55,7 +55,6 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddRenderer(cfg.Default, systems.DrawHitboxes)
 	ecs.AddRenderer(cfg.Default, systems.DrawHUD)
 	ecs.AddRenderer(cfg.Default, systems.DrawDebug)
-	// ecs.AddRenderer(layers.Default, systems.DrawHelp)
 
 	ps.ecs = ecs
 
@@ -94,7 +93,7 @@ func (ps *PlatformerScene) configure() {
 	var playerSpawnX, playerSpawnY float64
 
 	if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
-		err := errors.New("No player spawn points defined in Map")
+		err := errors.New("no player spawn points defined in Map")
 		panic(err)
 	}
 

@@ -30,11 +30,11 @@ func UpdateBoomerang(ecs *ecs.ECS) {
 		}
 
 		// 3. Update Position (Manual movement, ignoring standard collision system for now)
-		obj.Object.X += physics.SpeedX
-		obj.Object.Y += physics.SpeedY
+		obj.X += physics.SpeedX
+		obj.Y += physics.SpeedY
 
 		// Update shape position for collision check
-		obj.Object.Update()
+		obj.Update()
 
 		// 4. Collision Check
 		checkCollisions(ecs, e, b, physics, obj)
@@ -60,14 +60,14 @@ func updateInbound(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, 
 		return
 	}
 
-	ownerObj := components.Object.Get(b.Owner).Object
+	ownerObj := components.Object.Get(b.Owner)
 
 	// Target center of owner
 	targetX := ownerObj.X + ownerObj.W/2
 	targetY := ownerObj.Y + ownerObj.H/2
 
-	currentX := obj.Object.X + obj.Object.W/2
-	currentY := obj.Object.Y + obj.Object.H/2
+	currentX := obj.X + obj.W/2
+	currentY := obj.Y + obj.H/2
 
 	dx := targetX - currentX
 	dy := targetY - currentY
@@ -97,7 +97,7 @@ func SwitchToInbound(b *components.BoomerangData, physics *components.PhysicsDat
 
 func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, obj *components.ObjectData) {
 	// Check for collision with anything
-	if check := obj.Object.Check(0, 0, tags.ResolvSolid, tags.ResolvEnemy, tags.ResolvPlayer); check != nil {
+	if check := obj.Check(0, 0, tags.ResolvSolid, tags.ResolvEnemy, tags.ResolvPlayer); check != nil {
 
 		// Wall Collision
 		if solids := check.ObjectsByTags(tags.ResolvSolid); len(solids) > 0 {
@@ -114,9 +114,9 @@ func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData
 		// Player Collision (Catch)
 		if b.State == components.BoomerangInbound {
 			if players := check.ObjectsByTags(tags.ResolvPlayer); len(players) > 0 {
-				ownerObj := components.Object.Get(b.Owner).Object
+				ownerObj := components.Object.Get(b.Owner)
 				for _, pObj := range players {
-					if pObj == ownerObj {
+					if pObj == ownerObj.Object {
 						catchBoomerang(ecs, e, b)
 						return
 					}

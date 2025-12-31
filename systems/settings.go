@@ -13,18 +13,12 @@ func UpdateSettings(ecs *ecs.ECS) {
 	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
 		settings.Debug = !settings.Debug
 	}
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyF2) {
-		settings.ShowHelpText = !settings.ShowHelpText
-	}
 }
 
 func GetOrCreateSettings(ecs *ecs.ECS) *components.SettingsData {
 	if _, ok := components.Settings.First(ecs.World); !ok {
 		ent := ecs.World.Entry(ecs.World.Create(components.Settings))
-		components.Settings.SetValue(ent, components.SettingsData{
-			ShowHelpText: true,
-		})
+		components.Settings.SetValue(ent, components.SettingsData{})
 	}
 
 	ent, _ := components.Settings.First(ecs.World)

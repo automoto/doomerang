@@ -35,7 +35,7 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 
 			// Reset draw options.
 			drawOp.GeoM.Reset()
-			drawOp.ColorM.Reset()
+			drawOp.ColorScale.Reset()
 
 			// Anchor the sprite at its bottom-center so that the feet line up with the
 			// bottom of the collision box.
@@ -66,13 +66,13 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 			if e.HasComponent(components.Enemy) {
 				enemy := components.Enemy.Get(e)
 				if enemy.InvulnFrames > 0 && enemy.InvulnFrames%4 < 2 {
-					drawOp.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
+					drawOp.ColorScale.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
 				}
 			}
 			if e.HasComponent(components.Player) {
 				player := components.Player.Get(e)
 				if player.InvulnFrames > 0 && player.InvulnFrames%4 < 2 {
-					drawOp.ColorM.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
+					drawOp.ColorScale.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
 				}
 			}
 
@@ -83,11 +83,11 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				// Check if tint is not white (default)
 				if exists && (enemyType.TintColor.R != 255 || enemyType.TintColor.G != 255 || enemyType.TintColor.B != 255 || enemyType.TintColor.A != 255) {
 					// Apply color tint (normalize RGBA values to 0-1 range)
-					r := float64(enemyType.TintColor.R) / 255.0
-					g := float64(enemyType.TintColor.G) / 255.0
-					b := float64(enemyType.TintColor.B) / 255.0
-					a := float64(enemyType.TintColor.A) / 255.0
-					drawOp.ColorM.Scale(r, g, b, a)
+					r := float32(enemyType.TintColor.R) / 255.0
+					g := float32(enemyType.TintColor.G) / 255.0
+					b := float32(enemyType.TintColor.B) / 255.0
+					a := float32(enemyType.TintColor.A) / 255.0
+					drawOp.ColorScale.Scale(r, g, b, a)
 				}
 			}
 
@@ -167,7 +167,7 @@ func DrawSprites(ecs *ecs.ECS, screen *ebiten.Image) {
 		o := components.Object.Get(e)
 
 		drawOp.GeoM.Reset()
-		drawOp.ColorM.Reset()
+		drawOp.ColorScale.Reset()
 
 		// Translate to pivot (center of sprite)
 		drawOp.GeoM.Translate(-sprite.PivotX, -sprite.PivotY)

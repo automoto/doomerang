@@ -5,7 +5,7 @@ import (
 
 	"github.com/automoto/doomerang/components"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
 )
 
@@ -44,10 +44,10 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 				}
 
 				// Draw the grid lines directly to the screen in world space.
-				ebitenutil.DrawLine(screen, cx, cy, cx+cw, cy, drawColor)
-				ebitenutil.DrawLine(screen, cx+cw, cy, cx+cw, cy+ch, drawColor)
-				ebitenutil.DrawLine(screen, cx+cw, cy+ch, cx, cy+ch, drawColor)
-				ebitenutil.DrawLine(screen, cx, cy+ch, cx, cy, drawColor)
+				vector.StrokeLine(screen, float32(cx), float32(cy), float32(cx+cw), float32(cy), 1, drawColor, false)
+				vector.StrokeLine(screen, float32(cx+cw), float32(cy), float32(cx+cw), float32(cy+ch), 1, drawColor, false)
+				vector.StrokeLine(screen, float32(cx+cw), float32(cy+ch), float32(cx), float32(cy+ch), 1, drawColor, false)
+				vector.StrokeLine(screen, float32(cx), float32(cy+ch), float32(cx), float32(cy), 1, drawColor, false)
 			}
 		}
 	}
@@ -67,7 +67,7 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 					rectW := float32(p2.X - p1.X)
 					rectH := float32(p2.Y - p1.Y)
 					drawColor := color.RGBA{60, 60, 60, 128} // Semi-transparent grey
-					ebitenutil.DrawRect(screen, float64(rectX), float64(rectY), float64(rectW), float64(rectH), drawColor)
+					vector.DrawFilledRect(screen, rectX, rectY, rectW, rectH, drawColor, false)
 				}
 			}
 		}
@@ -94,10 +94,10 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 			}
 
 			// Draw outline
-			ebitenutil.DrawRect(screen, x, y, obj.W, 1, c)         // Top
-			ebitenutil.DrawRect(screen, x, y+obj.H-1, obj.W, 1, c) // Bottom
-			ebitenutil.DrawRect(screen, x, y, 1, obj.H, c)         // Left
-			ebitenutil.DrawRect(screen, x+obj.W-1, y, 1, obj.H, c) // Right
+			vector.DrawFilledRect(screen, float32(x), float32(y), float32(obj.W), 1, c, false)         // Top
+			vector.DrawFilledRect(screen, float32(x), float32(y+obj.H-1), float32(obj.W), 1, c, false) // Bottom
+			vector.DrawFilledRect(screen, float32(x), float32(y), 1, float32(obj.H), c, false)         // Left
+			vector.DrawFilledRect(screen, float32(x+obj.W-1), float32(y), 1, float32(obj.H), c, false) // Right
 		}
 	}
 }

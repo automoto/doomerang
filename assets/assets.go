@@ -17,8 +17,6 @@ import (
 var (
 	//go:embed all:levels
 	assetFS embed.FS
-	//go:embed fonts/excel.ttf
-	excelFontData []byte
 
 	//go:embed all:images
 	animationFS embed.FS
@@ -143,7 +141,8 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 
 	// Load ground objects from the ground-walls object group
 	for _, og := range levelMap.ObjectGroups {
-		if og.Name == "ground-walls" {
+		switch og.Name {
+		case "ground-walls":
 			for _, o := range og.Objects {
 				// Create a path with two points for each ground object
 				level.Paths[o.ID] = Path{
@@ -154,7 +153,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					},
 				}
 			}
-		} else if og.Name == "EnemySpawn" {
+		case "EnemySpawn":
 			for _, o := range og.Objects {
 				enemyType := o.Properties.GetString("enemyType")
 				patrolPath := o.Properties.GetString("pathName")
@@ -165,7 +164,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					PatrolPath: patrolPath,
 				})
 			}
-		} else if og.Name == "PlayerSpawn" {
+		case "PlayerSpawn":
 			for _, o := range og.Objects {
 				spawnPoint := o.Properties.GetString("spawnPoint")
 				level.PlayerSpawns = append(level.PlayerSpawns, PlayerSpawn{
@@ -174,7 +173,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					SpawnPoint: spawnPoint,
 				})
 			}
-		} else if og.Name == "PatrolPaths" {
+		case "PatrolPaths":
 			// Parse patrol paths from polyline objects
 			for _, o := range og.Objects {
 				if len(o.PolyLines) > 0 {
