@@ -52,6 +52,7 @@ The project has been optimized for high performance and stability:
 -   **Type-Safe States**: All character and game states use the `StateID` enum (defined in `config/states.go`). This prevents typo-related bugs and improves comparison speed.
 -   **Memory Safety**: Physics objects (`resolv.Object`) are stored via a pointer wrapper (`ObjectData`) in ECS components. This ensures that the `resolv.Space` always has valid pointers even when Donburi reallocates component storage.
 -   **O(1) Hitbox Lookup**: Entities maintain a direct reference to their active hitbox, eliminating O(N) searches in hot combat loops.
+-   **ECS Optimization**: Redundant ECS operations are minimized by caching component checks in hot loops, preventing state tag thrashing via change detection, and caching configuration pointers to avoid expensive map lookups.
 
 ## Tags
 

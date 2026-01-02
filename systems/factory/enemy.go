@@ -30,6 +30,7 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName st
 	// Set enemy data with AI parameters from config
 	enemyData := components.EnemyData{
 		TypeName:         enemyTypeName,                  // Set the enemy type name
+		TypeConfig:       &enemyType,                     // Cache the config reference
 		Direction:        components.Vector{X: -1, Y: 0}, // Start facing left
 		PatrolSpeed:      enemyType.PatrolSpeed,
 		ChaseSpeed:       enemyType.ChaseSpeed,
@@ -65,8 +66,9 @@ func CreateEnemy(ecs *ecs.ECS, x, y float64, patrolPath string, enemyTypeName st
 
 	components.Enemy.SetValue(enemy, enemyData)
 	components.State.SetValue(enemy, components.StateData{
-		CurrentState: cfg.StatePatrol,
-		StateTimer:   0,
+		CurrentState:  cfg.StatePatrol,
+		PreviousState: cfg.StateNone,
+		StateTimer:    0,
 	})
 	components.Physics.SetValue(enemy, components.PhysicsData{
 		Gravity:  enemyType.Gravity,

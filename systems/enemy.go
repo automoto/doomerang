@@ -82,13 +82,7 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 		handleAttackState(ecs, enemyEntry)
 	case cfg.Hit:
 		// Stunned for a short period
-		typeName := "Guard"
-		enemyType, ok := cfg.Enemy.Types[typeName]
-		if !ok {
-			enemyType = cfg.Enemy.Types["Guard"]
-		}
-
-		if state.StateTimer > enemyType.HitstunDuration {
+		if state.StateTimer > enemy.TypeConfig.HitstunDuration {
 			state.CurrentState = cfg.StateChase
 			state.StateTimer = 0
 		}
@@ -246,17 +240,11 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	}
 
 	// Attack animation duration (simplified - using timer)
-	typeName := "Guard"
-	enemyType, ok := cfg.Enemy.Types[typeName]
-	if !ok {
-		enemyType = cfg.Enemy.Types["Guard"]
-	}
-
-	if state.StateTimer >= enemyType.AttackDuration {
+	if state.StateTimer >= enemy.TypeConfig.AttackDuration {
 		// Attack finished
 		state.CurrentState = cfg.StateChase
 		state.StateTimer = 0
-		enemy.AttackCooldown = enemyType.AttackCooldown
+		enemy.AttackCooldown = enemy.TypeConfig.AttackCooldown
 		return
 	}
 

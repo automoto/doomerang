@@ -55,6 +55,12 @@ func UpdateCombat(ecs *ecs.ECS) {
 						player := components.Player.Get(e)
 						player.InvulnFrames = cfg.Combat.PlayerInvulnFrames
 					}
+					// Reset melee attack state when hit to prevent getting stuck in charging state
+					if e.HasComponent(components.MeleeAttack) {
+						melee := components.MeleeAttack.Get(e)
+						melee.IsCharging = false
+						melee.IsAttacking = false
+					}
 				}
 				state.StateTimer = 0 // Reset state timer
 			}

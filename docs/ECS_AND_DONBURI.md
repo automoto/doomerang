@@ -145,9 +145,32 @@ We use `solarlune/resolv` for collision detection. To ensure high performance an
 
 ## Best Practices Checklist
 
+
+
 1.  **State Safety**: Always add new character or game states to `config/states.go` as `StateID` constants.
+
 2.  **Zero Allocation**: Avoid creating new objects (like `ebiten.DrawImageOptions` or `color.RGBA`) inside `Draw` or `Update` loops. Reuse package-level variables.
+
 3.  **Component Caching**: When iterating over entities in a system, if you need to access multiple components, call `Get` once at the start of the loop body.
+
 4.  **Pointer Wrappers**: Use `ObjectData` to store pointers to external objects (like `resolv.Object`) to prevent memory invalidation.
+
 5.  **Factory Integrity**: Factories must fully initialize the entity, including setting `obj.Data` and correct tags.
+
 6.  **Config Centralization**: All magic numbers belong in `config/config.go`.
+
+7.  **Component Flag Caching**: In hot loops (like rendering), check `HasComponent` once at the start and store the bool (e.g., `isPlayer := e.HasComponent(...)`). This prevents repeated component map lookups.
+
+8.  **State Change Detection**: Only modify state tags when the state *actually changes*. Store a `PreviousState` to compare against `CurrentState`.
+
+    ```go
+
+    if state.CurrentState == state.PreviousState { return }
+
+    // ... update tags ...
+
+    state.PreviousState = state.CurrentState
+
+    ```
+
+9.  **Config Caching**: If a system needs config data based on an entity type (e.g. `EnemyTypeConfig`), cache the pointer to that config struct in the component during creation. Avoid doing string map lookups (`config.Types[name]`) every frame.

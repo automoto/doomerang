@@ -6,8 +6,9 @@ import (
 )
 
 type StateData struct {
-	CurrentState config.StateID
-	StateTimer   int
+	CurrentState  config.StateID
+	PreviousState config.StateID
+	StateTimer    int
 }
 
 var State = donburi.NewComponentType[StateData]()

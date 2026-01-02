@@ -36,6 +36,8 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	components.Animation.Each(ecs.World, func(e *donburi.Entry) {
 		o := components.Object.Get(e)
+		isPlayer := e.HasComponent(components.Player)
+		isEnemy := e.HasComponent(components.Enemy)
 
 		// Viewport Culling
 		if o.X+o.W < minX || o.X > maxX || o.Y+o.H < minY || o.Y > maxY {
@@ -71,13 +73,13 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
 
 				// Flip the sprite if facing left.
-				if e.HasComponent(components.Player) {
+				if isPlayer {
 					player := components.Player.Get(e)
 					if player.Direction.X < 0 {
 						drawOp.GeoM.Scale(-1, 1)
 					}
 				}
-				if e.HasComponent(components.Enemy) {
+				if isEnemy {
 					enemy := components.Enemy.Get(e)
 					if enemy.Direction.X < 0 {
 						drawOp.GeoM.Scale(-1, 1)
@@ -92,13 +94,13 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				drawOp.GeoM.Translate(float64(width)/2-camera.Position.X, float64(height)/2-camera.Position.Y)
 
 				// Flicker effect if invulnerable
-				if e.HasComponent(components.Enemy) {
+				if isEnemy {
 					enemy := components.Enemy.Get(e)
 					if enemy.InvulnFrames > 0 && enemy.InvulnFrames%4 < 2 {
 						drawOp.ColorScale.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
 					}
 				}
-				if e.HasComponent(components.Player) {
+				if isPlayer {
 					player := components.Player.Get(e)
 					if player.InvulnFrames > 0 && player.InvulnFrames%4 < 2 {
 						drawOp.ColorScale.Scale(1, 0.5, 0.5, 0.8) // Red tint and semi-transparent
@@ -106,7 +108,7 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				}
 
 				// Apply enemy type color tinting
-				if e.HasComponent(components.Enemy) {
+				if isEnemy {
 					enemy := components.Enemy.Get(e)
 					drawOp.ColorScale.ScaleWithColorScale(enemy.TintColor)
 				}
@@ -117,13 +119,13 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 		} else {
 			// Fallback to rectangle if no animation is available
 			var entityColor color.Color
-			if e.HasComponent(components.Player) {
+			if isPlayer {
 				physics := components.Physics.Get(e)
 				entityColor = cfg.Blue
 				if physics.OnGround == nil {
 					entityColor = cfg.Purple
 				}
-			} else if e.HasComponent(components.Enemy) {
+			} else if isEnemy {
 				physics := components.Physics.Get(e)
 				entityColor = cfg.LightRed
 				if physics.OnGround == nil {

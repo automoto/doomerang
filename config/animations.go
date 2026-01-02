@@ -33,5 +33,6 @@ var CharacterAnimations = map[string]map[StateID]AnimationDef{
 		Walk:                   {First: 0, Last: 7, Step: 1, Speed: 5},
 		WallSlide:              {First: 0, Last: 5, Step: 1, Speed: 5},
 		StateChargingBoomerang: {First: 0, Last: 0, Step: 1, Speed: 0},
+		StateChargingAttack:    {First: 0, Last: 0, Step: 1, Speed: 0}, // Use idle frame while charging
 	},
 }

@@ -3,6 +3,8 @@ package config
 type StateID int
 
 const (
+	StateNone StateID = -1
+
 	// Character animation states
 	Idle StateID = iota
 	Crouch

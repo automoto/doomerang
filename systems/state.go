@@ -26,6 +26,10 @@ func UpdateStates(ecs *ecs.ECS) {
 }
 
 func updatePlayerStateTags(e *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, state *components.StateData) {
+	if state.CurrentState == state.PreviousState {
+		return
+	}
+
 	// Remove all state tags
 	removeAllStateTags(e)
 
@@ -47,9 +51,15 @@ func updatePlayerStateTags(e *donburi.Entry, player *components.PlayerData, phys
 	case cfg.Stunned, cfg.Knockback, cfg.Hit:
 		donburi.Add(e, components.Stunned, &components.StunnedState{})
 	}
+
+	state.PreviousState = state.CurrentState
 }
 
 func updateEnemyStateTags(e *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData) {
+	if state.CurrentState == state.PreviousState {
+		return
+	}
+
 	// Remove all state tags
 	removeAllStateTags(e)
 
@@ -64,6 +74,8 @@ func updateEnemyStateTags(e *donburi.Entry, enemy *components.EnemyData, physics
 	case cfg.Stunned, cfg.Hit:
 		donburi.Add(e, components.Stunned, &components.StunnedState{})
 	}
+
+	state.PreviousState = state.CurrentState
 }
 
 func removeAllStateTags(e *donburi.Entry) {

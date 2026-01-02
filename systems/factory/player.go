@@ -23,8 +23,9 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 		InvulnFrames: 0,
 	})
 	components.State.SetValue(player, components.StateData{
-		CurrentState: cfg.Idle,
-		StateTimer:   0,
+		CurrentState:  cfg.Idle,
+		PreviousState: cfg.StateNone,
+		StateTimer:    0,
 	})
 	components.Physics.SetValue(player, components.PhysicsData{
 		Gravity:        cfg.Player.Gravity,
