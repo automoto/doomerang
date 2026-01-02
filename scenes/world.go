@@ -27,6 +27,9 @@ func (ps *PlatformerScene) Update() {
 
 func (ps *PlatformerScene) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{20, 20, 40, 255})
+	if ps.ecs == nil {
+		return // Skip ECS draw until initialized
+	}
 	ps.ecs.Draw(screen)
 }
 

@@ -37,11 +37,15 @@ func UpdateCombat(ecs *ecs.ECS) {
 			})
 		}
 
-		// Apply knockback if the entity has a physics component.
+		// Apply knockback if the entity has a physics component and knockback values are set.
+		// Note: Knockback from hitbox collisions is already applied in applyHitToEnemy/applyHitToPlayer,
+		// so we only apply here if explicit knockback values are provided in the DamageEvent.
 		if e.HasComponent(components.Physics) {
 			physics := components.Physics.Get(e)
-			physics.SpeedX = dmg.KnockbackX
-			physics.SpeedY = dmg.KnockbackY
+			if dmg.KnockbackX != 0 || dmg.KnockbackY != 0 {
+				physics.SpeedX = dmg.KnockbackX
+				physics.SpeedY = dmg.KnockbackY
+			}
 
 			// Set the entity's state to knockback if it has a state component.
 			if e.HasComponent(components.State) {
@@ -60,6 +64,7 @@ func UpdateCombat(ecs *ecs.ECS) {
 						melee := components.MeleeAttack.Get(e)
 						melee.IsCharging = false
 						melee.IsAttacking = false
+						melee.HasSpawnedHitbox = false
 					}
 				}
 				state.StateTimer = 0 // Reset state timer

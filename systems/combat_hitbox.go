@@ -21,6 +21,7 @@ type HitboxConfig struct {
 	OffsetY   float64
 	Damage    int
 	Knockback float64
+	Lifetime  int
 }
 
 func UpdateCombatHitboxes(ecs *ecs.ECS) {
@@ -83,7 +84,8 @@ func createEnemyHitboxes(ecs *ecs.ECS) {
 
 func hasActiveHitbox(ecs *ecs.ECS, owner *donburi.Entry) bool {
 	if owner.HasComponent(components.Player) {
-		return components.MeleeAttack.Get(owner).ActiveHitbox != nil
+		melee := components.MeleeAttack.Get(owner)
+		return melee.ActiveHitbox != nil || melee.HasSpawnedHitbox
 	}
 	if owner.HasComponent(components.Enemy) {
 		return components.Enemy.Get(owner).ActiveHitbox != nil
@@ -104,6 +106,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 				OffsetY:   0,
 				Damage:    cfg.Combat.PlayerPunchDamage,
 				Knockback: cfg.Combat.PlayerPunchKnockback,
+				Lifetime:  cfg.Combat.HitboxLifetime,
 			},
 		}
 	case "kick":
@@ -115,10 +118,11 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 				OffsetY:   0,
 				Damage:    cfg.Combat.PlayerKickDamage,
 				Knockback: cfg.Combat.PlayerKickKnockback,
+				Lifetime:  cfg.Combat.HitboxLifetime,
 			},
 		}
 	case "jump_kick":
-		// Jump kick uses kick values but multiple hitboxes
+		// Jump kick uses kick values but multiple hitboxes with longer lifetime
 		configs = []HitboxConfig{
 			// Main horizontal kick
 			{
@@ -128,6 +132,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 				OffsetY:   0,
 				Damage:    cfg.Combat.PlayerKickDamage,
 				Knockback: cfg.Combat.PlayerKickKnockback,
+				Lifetime:  cfg.Combat.HitboxLifetime * 2,
 			},
 			// Diagonal hitbox
 			{
@@ -137,6 +142,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 				OffsetY:   10,
 				Damage:    cfg.Combat.PlayerKickDamage,
 				Knockback: cfg.Combat.PlayerKickKnockback,
+				Lifetime:  cfg.Combat.HitboxLifetime * 2,
 			},
 			// Downward hitbox
 			{
@@ -146,6 +152,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 				OffsetY:   20,
 				Damage:    cfg.Combat.PlayerKickDamage,
 				Knockback: cfg.Combat.PlayerKickKnockback,
+				Lifetime:  cfg.Combat.HitboxLifetime * 2,
 			},
 		}
 	}
@@ -204,14 +211,16 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 			OwnerEntity:    owner,
 			Damage:         config.Damage,
 			KnockbackForce: config.Knockback,
-			LifeTime:       cfg.Combat.HitboxLifetime,
-			HitEntities:    sharedHitMap, // Use shared map
+			LifeTime:       config.Lifetime,
+			HitEntities:    sharedHitMap,
 			AttackType:     attackType,
 		})
 
 		// Set active hitbox reference on owner
 		if isPlayer {
-			components.MeleeAttack.Get(owner).ActiveHitbox = hitbox
+			melee := components.MeleeAttack.Get(owner)
+			melee.ActiveHitbox = hitbox
+			melee.HasSpawnedHitbox = true
 		} else {
 			components.Enemy.Get(owner).ActiveHitbox = hitbox
 		}
@@ -223,12 +232,47 @@ func updateHitboxes(ecs *ecs.ECS) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
 		hitboxObject := components.Object.Get(hitboxEntry).Object
 
+		// Update hitbox position to follow owner
+		updateHitboxPosition(hitbox, hitboxObject)
+
 		// Check for collisions with targets using Resolv space
 		checkHitboxCollisions(ecs, hitboxEntry, hitbox, hitboxObject)
 
 		// Decrease lifetime
 		hitbox.LifeTime--
 	})
+}
+
+func updateHitboxPosition(hitbox *components.HitboxData, hitboxObject *resolv.Object) {
+	owner := hitbox.OwnerEntity
+	if owner == nil || !owner.Valid() {
+		return
+	}
+
+	ownerObject := components.Object.Get(owner).Object
+
+	// Get facing direction based on owner type
+	var directionX float64
+	switch {
+	case owner.HasComponent(components.Player):
+		directionX = components.Player.Get(owner).Direction.X
+	case owner.HasComponent(components.Enemy):
+		directionX = components.Enemy.Get(owner).Direction.X
+	default:
+		return
+	}
+
+	// Position hitbox in front of owner based on facing direction
+	var hitboxX float64
+	if directionX > 0 {
+		hitboxX = ownerObject.X + ownerObject.W
+	} else {
+		hitboxX = ownerObject.X - hitboxObject.W
+	}
+	hitboxY := ownerObject.Y + (ownerObject.H-hitboxObject.H)/2
+
+	hitboxObject.X = hitboxX
+	hitboxObject.Y = hitboxY
 }
 
 func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *components.HitboxData, hitboxObject *resolv.Object) {

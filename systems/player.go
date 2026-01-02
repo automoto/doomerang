@@ -182,6 +182,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 		// Transition back to movement after attack animation finishes
 		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
 			melee.IsAttacking = false
+			melee.HasSpawnedHitbox = false
 			transitionToMovementState(playerEntry, player, physics, state)
 		}
 
@@ -189,6 +190,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 		// Transition back to jump after attack animation finishes
 		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
 			melee.IsAttacking = false
+			melee.HasSpawnedHitbox = false
 			state.CurrentState = cfg.Jump
 			state.StateTimer = 0
 		}
