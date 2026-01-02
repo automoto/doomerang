@@ -33,4 +33,5 @@ Thumbs.db
 .roo/
 .cursor/
 agent/
-AGENT.md
+.claude/
+CLAUDE.local.md
