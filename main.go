@@ -42,7 +42,6 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Clear()
 	g.scene.Draw(screen)
 }
 

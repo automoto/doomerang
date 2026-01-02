@@ -23,7 +23,10 @@ var (
 // DrawAnimated renders entities with an Animation component based on their current frame and state.
 func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Get camera
-	cameraEntry, _ := components.Camera.First(ecs.World)
+	cameraEntry, ok := components.Camera.First(ecs.World)
+	if !ok {
+		return // No camera yet
+	}
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 
@@ -145,7 +148,10 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 
 func DrawHealthBars(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Get camera for position translation
-	cameraEntry, _ := components.Camera.First(ecs.World)
+	cameraEntry, ok := components.Camera.First(ecs.World)
+	if !ok {
+		return // No camera yet
+	}
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 
@@ -194,7 +200,10 @@ func DrawHealthBars(ecs *ecs.ECS, screen *ebiten.Image) {
 
 func DrawSprites(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Get camera
-	cameraEntry, _ := components.Camera.First(ecs.World)
+	cameraEntry, ok := components.Camera.First(ecs.World)
+	if !ok {
+		return // No camera yet
+	}
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 

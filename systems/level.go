@@ -8,7 +8,10 @@ import (
 
 func DrawLevel(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Get camera
-	cameraEntry, _ := components.Camera.First(ecs.World)
+	cameraEntry, ok := components.Camera.First(ecs.World)
+	if !ok {
+		return // No camera yet
+	}
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 	opts := &ebiten.DrawImageOptions{}
