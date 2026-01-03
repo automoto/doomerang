@@ -169,6 +169,18 @@ type Config struct {
 	Height int
 }
 
+// DebugConfig contains debug visualization settings
+type DebugConfig struct {
+	GridEmpty       color.RGBA
+	GridOccupied    color.RGBA
+	CollisionRect   color.RGBA
+	EntityDefault   color.RGBA
+	EntitySolid     color.RGBA
+	EntityPlayer    color.RGBA
+	EntityEnemy     color.RGBA
+	EntityBoomerang color.RGBA
+}
+
 // Global configuration instances
 var C *Config
 var Player PlayerConfig
@@ -178,6 +190,7 @@ var Physics PhysicsConfig
 var Animation AnimationConfig
 var UI UIConfig
 var Boomerang BoomerangConfig
+var Debug DebugConfig
 
 // Shared RGBA color constants
 var (
@@ -191,6 +204,15 @@ var (
 	Purple      = color.RGBA{R: 128, G: 0, B: 255, A: 255}
 	LightRed    = color.RGBA{R: 255, G: 60, B: 60, A: 255}
 	Magenta     = color.RGBA{R: 255, G: 0, B: 255, A: 255}
+
+	// Debug colors (with alpha for transparency)
+	DarkGray         = color.RGBA{R: 20, G: 20, B: 20, A: 255}
+	GrayTransparent  = color.RGBA{R: 60, G: 60, B: 60, A: 128}
+	Gray             = color.RGBA{R: 100, G: 100, B: 100, A: 100}
+	Cyan             = color.RGBA{R: 0, G: 255, B: 255, A: 100}
+	PureBlue         = color.RGBA{R: 0, G: 0, B: 255, A: 100}
+	RedTransparent   = color.RGBA{R: 255, G: 0, B: 0, A: 100}
+	GreenTransparent = color.RGBA{R: 0, G: 255, B: 0, A: 200}
 )
 
 // Direction constants for player facing
@@ -362,5 +384,17 @@ func init() {
 		EnemyInvulnFrames:  30, // Was hardcoded to 15 in some places, 30 in others
 
 		HealthBarDuration: 180,
+	}
+
+	// Debug Config
+	Debug = DebugConfig{
+		GridEmpty:       DarkGray,
+		GridOccupied:    Yellow,
+		CollisionRect:   GrayTransparent,
+		EntityDefault:   Cyan,
+		EntitySolid:     Gray,
+		EntityPlayer:    PureBlue,
+		EntityEnemy:     RedTransparent,
+		EntityBoomerang: GreenTransparent,
 	}
 }
