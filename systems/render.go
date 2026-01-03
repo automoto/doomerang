@@ -2,7 +2,6 @@ package systems
 
 import (
 	"image"
-	"image/color"
 
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
@@ -149,18 +148,16 @@ func drawAnimatedSprite(e *donburi.Entry, o *components.ObjectData, animData *co
 }
 
 func drawAnimatedFallback(e *donburi.Entry, o *components.ObjectData, rc *renderContext, screen *ebiten.Image) {
-	var entityColor color.Color
+	entityColor := cfg.Debug.EntityDefault
 
 	if e.HasComponent(components.Player) {
-		physics := components.Physics.Get(e)
 		entityColor = cfg.Blue
-		if physics.OnGround == nil {
+		if physics := components.Physics.Get(e); physics.OnGround == nil {
 			entityColor = cfg.Purple
 		}
 	} else if e.HasComponent(components.Enemy) {
-		physics := components.Physics.Get(e)
 		entityColor = cfg.LightRed
-		if physics.OnGround == nil {
+		if physics := components.Physics.Get(e); physics.OnGround == nil {
 			entityColor = cfg.Magenta
 		}
 	}
