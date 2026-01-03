@@ -4,104 +4,147 @@ import (
 	"image/color"
 
 	"github.com/automoto/doomerang/components"
+	cfg "github.com/automoto/doomerang/config"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi/ecs"
 )
 
-// TODO: improve code quality here - colors need to switch to use global config constans and if their missing we should add them, reduce complexity in the drawing nested for loops and break this function up potentially
+type debugCamera struct {
+	offsetX, offsetY float64
+}
+
 func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 	settings := GetOrCreateSettings(ecs)
 	if !settings.Debug {
 		return
 	}
 
-	// Get camera for world-space rendering.
+	cam, ok := getDebugCamera(ecs, screen)
+	if !ok {
+		return
+	}
+
+	drawCollisionGrid(ecs, screen, cam)
+	drawLevelCollisions(ecs, screen, cam)
+	drawEntityCollisions(ecs, screen, cam)
+}
+
+func getDebugCamera(ecs *ecs.ECS, screen *ebiten.Image) (debugCamera, bool) {
 	cameraEntry, ok := components.Camera.First(ecs.World)
 	if !ok {
-		return // No camera yet
+		return debugCamera{}, false
 	}
+
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
-	camX := float64(width)/2 - camera.Position.X
-	camY := float64(height)/2 - camera.Position.Y
 
-	// Draw collision grid
+	return debugCamera{
+		offsetX: float64(width)/2 - camera.Position.X,
+		offsetY: float64(height)/2 - camera.Position.Y,
+	}, true
+}
+
+func drawCollisionGrid(ecs *ecs.ECS, screen *ebiten.Image, cam debugCamera) {
 	spaceEntry, ok := components.Space.First(ecs.World)
-	if ok {
-		space := components.Space.Get(spaceEntry)
-
-		for y := 0; y < space.Height(); y++ {
-			for x := 0; x < space.Width(); x++ {
-				cell := space.Cell(x, y)
-
-				cw := float64(space.CellWidth)
-				ch := float64(space.CellHeight)
-				// Apply camera offset to the cell's position.
-				cx := float64(cell.X)*cw + camX
-				cy := float64(cell.Y)*ch + camY
-
-				drawColor := color.RGBA{20, 20, 20, 255}
-
-				if cell.Occupied() {
-					drawColor = color.RGBA{255, 255, 0, 255}
-				}
-
-				// Draw the grid lines directly to the screen in world space.
-				vector.StrokeLine(screen, float32(cx), float32(cy), float32(cx+cw), float32(cy), 1, drawColor, false)
-				vector.StrokeLine(screen, float32(cx+cw), float32(cy), float32(cx+cw), float32(cy+ch), 1, drawColor, false)
-				vector.StrokeLine(screen, float32(cx+cw), float32(cy+ch), float32(cx), float32(cy+ch), 1, drawColor, false)
-				vector.StrokeLine(screen, float32(cx), float32(cy+ch), float32(cx), float32(cy), 1, drawColor, false)
-			}
-		}
+	if !ok {
+		return
 	}
 
-	// Draw level collision objects
+	space := components.Space.Get(spaceEntry)
+	cw := float64(space.CellWidth)
+	ch := float64(space.CellHeight)
+
+	for y := 0; y < space.Height(); y++ {
+		for x := 0; x < space.Width(); x++ {
+			cell := space.Cell(x, y)
+			cx := float64(cell.X)*cw + cam.offsetX
+			cy := float64(cell.Y)*ch + cam.offsetY
+
+			c := cfg.Debug.GridEmpty
+			if cell.Occupied() {
+				c = cfg.Debug.GridOccupied
+			}
+
+			drawGridCell(screen, cx, cy, cw, ch, c)
+		}
+	}
+}
+
+func drawGridCell(screen *ebiten.Image, x, y, w, h float64, c color.RGBA) {
+	fx, fy := float32(x), float32(y)
+	fw, fh := float32(w), float32(h)
+
+	vector.StrokeLine(screen, fx, fy, fx+fw, fy, 1, c, false)
+	vector.StrokeLine(screen, fx+fw, fy, fx+fw, fy+fh, 1, c, false)
+	vector.StrokeLine(screen, fx+fw, fy+fh, fx, fy+fh, 1, c, false)
+	vector.StrokeLine(screen, fx, fy+fh, fx, fy, 1, c, false)
+}
+
+func drawLevelCollisions(ecs *ecs.ECS, screen *ebiten.Image, cam debugCamera) {
 	levelEntry, ok := components.Level.First(ecs.World)
-	if ok {
-		levelData := components.Level.Get(levelEntry)
-		if levelData.CurrentLevel != nil {
-			for _, path := range levelData.CurrentLevel.Paths {
-				if len(path.Points) >= 2 {
-					p1 := path.Points[0]
-					p2 := path.Points[1]
-					// Apply camera transformation to collision rectangles
-					rectX := float32(p1.X + camX)
-					rectY := float32(p1.Y + camY)
-					rectW := float32(p2.X - p1.X)
-					rectH := float32(p2.Y - p1.Y)
-					drawColor := color.RGBA{60, 60, 60, 128} // Semi-transparent grey
-					vector.DrawFilledRect(screen, rectX, rectY, rectW, rectH, drawColor, false)
-				}
-			}
-		}
+	if !ok {
+		return
 	}
 
-	// Draw all collision objects in the space (Entities)
-	if ok { // reusing spaceEntry check from above
-		space := components.Space.Get(spaceEntry)
-		for _, obj := range space.Objects() {
-			// Apply camera offset
-			x := obj.X + camX
-			y := obj.Y + camY
-
-			// Determine color based on tags
-			c := color.RGBA{0, 255, 255, 100} // Cyan default
-			if obj.HasTags("solid") {
-				c = color.RGBA{100, 100, 100, 100} // Grey
-			} else if obj.HasTags("Player") {
-				c = color.RGBA{0, 0, 255, 100} // Blue
-			} else if obj.HasTags("Enemy") {
-				c = color.RGBA{255, 0, 0, 100} // Red
-			} else if obj.HasTags("Boomerang") {
-				c = color.RGBA{0, 255, 0, 200} // Green, more opaque
-			}
-
-			// Draw outline
-			vector.DrawFilledRect(screen, float32(x), float32(y), float32(obj.W), 1, c, false)         // Top
-			vector.DrawFilledRect(screen, float32(x), float32(y+obj.H-1), float32(obj.W), 1, c, false) // Bottom
-			vector.DrawFilledRect(screen, float32(x), float32(y), 1, float32(obj.H), c, false)         // Left
-			vector.DrawFilledRect(screen, float32(x+obj.W-1), float32(y), 1, float32(obj.H), c, false) // Right
-		}
+	levelData := components.Level.Get(levelEntry)
+	if levelData.CurrentLevel == nil {
+		return
 	}
+
+	for _, path := range levelData.CurrentLevel.Paths {
+		if len(path.Points) < 2 {
+			continue
+		}
+
+		p1, p2 := path.Points[0], path.Points[1]
+		rectX := float32(p1.X + cam.offsetX)
+		rectY := float32(p1.Y + cam.offsetY)
+		rectW := float32(p2.X - p1.X)
+		rectH := float32(p2.Y - p1.Y)
+
+		vector.DrawFilledRect(screen, rectX, rectY, rectW, rectH, cfg.Debug.CollisionRect, false)
+	}
+}
+
+func drawEntityCollisions(ecs *ecs.ECS, screen *ebiten.Image, cam debugCamera) {
+	spaceEntry, ok := components.Space.First(ecs.World)
+	if !ok {
+		return
+	}
+
+	space := components.Space.Get(spaceEntry)
+	for _, obj := range space.Objects() {
+		x := obj.X + cam.offsetX
+		y := obj.Y + cam.offsetY
+		c := getEntityDebugColor(obj)
+
+		drawRectOutline(screen, x, y, obj.W, obj.H, c)
+	}
+}
+
+func getEntityDebugColor(obj *resolv.Object) color.RGBA {
+	switch {
+	case obj.HasTags("solid"):
+		return cfg.Debug.EntitySolid
+	case obj.HasTags("Player"):
+		return cfg.Debug.EntityPlayer
+	case obj.HasTags("Enemy"):
+		return cfg.Debug.EntityEnemy
+	case obj.HasTags("Boomerang"):
+		return cfg.Debug.EntityBoomerang
+	default:
+		return cfg.Debug.EntityDefault
+	}
+}
+
+func drawRectOutline(screen *ebiten.Image, x, y, w, h float64, c color.RGBA) {
+	fx, fy := float32(x), float32(y)
+	fw, fh := float32(w), float32(h)
+
+	vector.DrawFilledRect(screen, fx, fy, fw, 1, c, false)       // Top
+	vector.DrawFilledRect(screen, fx, fy+fh-1, fw, 1, c, false)  // Bottom
+	vector.DrawFilledRect(screen, fx, fy, 1, fh, c, false)       // Left
+	vector.DrawFilledRect(screen, fx+fw-1, fy, 1, fh, c, false)  // Right
 }
