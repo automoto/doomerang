@@ -193,6 +193,12 @@ var (
 	Magenta     = color.RGBA{R: 255, G: 0, B: 255, A: 255}
 )
 
+// Direction constants for player facing
+const (
+	DirectionLeft  = -1.0
+	DirectionRight = 1.0
+)
+
 func init() {
 	C = &Config{
 		Width:  640,
