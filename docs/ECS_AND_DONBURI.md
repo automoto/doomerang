@@ -48,6 +48,23 @@ type StateData struct {
 }
 ```
 
+#### Input Abstraction (`InputData`)
+Player input is decoupled from raw key polling via an `InputData` component. This component stores the state of logical actions rather than raw keys:
+
+```go
+type ActionState struct {
+	Pressed      bool // Currently held down
+	JustPressed  bool // Pressed this frame
+	JustReleased bool // Released this frame
+}
+
+type InputData struct {
+	Actions map[config.ActionID]ActionState
+}
+```
+
+The `UpdateInput` system (runs first) polls raw input and populates `InputData`. Other systems read from this component instead of calling `ebiten.IsKeyPressed` directly.
+
 ### Systems
 
 Systems contain the game's logic and are located in the `systems/` directory. A system is a function that takes an `*ecs.ECS` instance as an argument. For example, `systems/physics.go` defines the `UpdatePhysics` system:
@@ -131,6 +148,30 @@ We use a **Centralized Configuration** pattern. All game tuning values (speed, d
 *   **Usage**: Systems and factories read directly from `config.Player`, `config.Combat`, etc.
 *   **Avoid**: Do not hardcode values in systems (e.g., `damage := 10`). Do not initialize config values in distributed `init()` functions across different packages.
 
+### Input Configuration
+
+Input bindings are defined in `config/input.go`. Each logical action (`ActionID`) maps to one or more keys/gamepad buttons:
+
+```go
+var Input = InputConfig{
+    Bindings: map[ActionID]InputBinding{
+        ActionJump: {
+            Keys: []ebiten.Key{ebiten.KeyX, ebiten.KeyW},
+            GamepadButtons: []GamepadBinding{
+                {GamepadID: 0, Button: ebiten.GamepadButton0},
+            },
+        },
+        ActionAttack: {Keys: []ebiten.Key{ebiten.KeyZ}},
+        // ...
+    },
+}
+```
+
+To add a new action:
+1. Add the `ActionID` constant in `config/input.go`
+2. Add the binding in `config.Input.Bindings`
+3. Read it in systems via `input.Actions[cfg.ActionMyAction]`
+
 ## Physics & Resolv Integration
 
 We use `solarlune/resolv` for collision detection. To ensure high performance and correct ECS integration:
@@ -174,3 +215,14 @@ We use `solarlune/resolv` for collision detection. To ensure high performance an
     ```
 
 9.  **Config Caching**: If a system needs config data based on an entity type (e.g. `EnemyTypeConfig`), cache the pointer to that config struct in the component during creation. Avoid doing string map lookups (`config.Types[name]`) every frame.
+
+10. **Input Abstraction**: Never call `ebiten.IsKeyPressed` or `inpututil.*` directly in game systems. Read from the `InputData` component instead. This enables key remapping and multi-input support.
+
+    ```go
+    // GOOD - Read from InputData
+    jumpAction := input.Actions[cfg.ActionJump]
+    if jumpAction.JustPressed { ... }
+
+    // BAD - Direct input polling in game logic
+    if inpututil.IsKeyJustPressed(ebiten.KeyX) { ... }
+    ```

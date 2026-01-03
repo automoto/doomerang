@@ -5,8 +5,6 @@ import (
 
 	"github.com/automoto/doomerang/components"
 	"github.com/automoto/doomerang/systems/factory"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
@@ -27,13 +25,16 @@ func UpdatePlayer(ecs *ecs.ECS) {
 		return
 	}
 
+	// Get input state
+	input := getOrCreateInput(ecs)
+
 	player := components.Player.Get(playerEntry)
 	physics := components.Physics.Get(playerEntry)
 	melee := components.MeleeAttack.Get(playerEntry)
 	playerObject := components.Object.Get(playerEntry).Object
 
-	handlePlayerInput(player, physics, melee, components.State.Get(playerEntry), playerObject)
-	updatePlayerState(ecs, playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))
+	handlePlayerInput(input, player, physics, melee, components.State.Get(playerEntry), playerObject)
+	updatePlayerState(ecs, input, playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))
 
 	// Decrement invulnerability timer
 	if player.InvulnFrames > 0 {
@@ -41,12 +42,19 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	}
 }
 
-func handlePlayerInput(player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, playerObject *resolv.Object) {
+func handlePlayerInput(input *components.InputData, player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, playerObject *resolv.Object) {
+	// Get action states from input component
+	attackAction := input.Actions[cfg.ActionAttack]
+	jumpAction := input.Actions[cfg.ActionJump]
+	crouchAction := input.Actions[cfg.ActionCrouch]
+	moveLeftAction := input.Actions[cfg.ActionMoveLeft]
+	moveRightAction := input.Actions[cfg.ActionMoveRight]
+
 	// Only allow new actions if not in a locked state
 	if !isInLockedState(state.CurrentState) {
 		// Combat inputs
 		// Melee attack
-		if inpututil.IsKeyJustPressed(ebiten.KeyZ) {
+		if attackAction.JustPressed {
 			if physics.OnGround == nil {
 				// if in the air, and not already attacking, do a jump attack
 				if !isInAttackState(state.CurrentState) {
@@ -61,15 +69,15 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 		}
 
 		// Attack release
-		if melee.IsCharging && inpututil.IsKeyJustReleased(ebiten.KeyZ) {
+		if melee.IsCharging && attackAction.JustReleased {
 			melee.IsCharging = false
 			melee.IsAttacking = true
 		}
 
 		// Jumping - only allow if not in attack state
 		if !isInAttackState(state.CurrentState) {
-			if inpututil.IsKeyJustPressed(ebiten.KeyX) || ebiten.IsGamepadButtonPressed(0, 0) || ebiten.IsGamepadButtonPressed(1, 0) {
-				isTryingToDrop := ebiten.IsKeyPressed(ebiten.KeyDown)
+			if jumpAction.JustPressed {
+				isTryingToDrop := crouchAction.Pressed
 				canDropDown := physics.OnGround != nil && physics.OnGround.HasTags("platform")
 
 				if isTryingToDrop && canDropDown {
@@ -99,19 +107,23 @@ func handlePlayerInput(player *components.PlayerData, physics *components.Physic
 	}
 
 	if physics.WallSliding == nil {
-		if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		if moveRightAction.Pressed {
 			physics.SpeedX += accel
 			player.Direction.X = 1
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+		if moveLeftAction.Pressed {
 			physics.SpeedX -= accel
 			player.Direction.X = -1
 		}
 	}
 }
 
-func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, animData *components.AnimationData) {
+func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, animData *components.AnimationData) {
 	state.StateTimer++
+
+	// Get action states from input component
+	boomerangAction := input.Actions[cfg.ActionBoomerang]
+	crouchAction := input.Actions[cfg.ActionCrouch]
 
 	// Main state machine logic
 	switch state.CurrentState {
@@ -120,12 +132,12 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 		if melee.IsCharging {
 			state.CurrentState = cfg.StateChargingAttack
 			state.StateTimer = 0
-		} else if ebiten.IsKeyPressed(ebiten.KeySpace) && physics.OnGround != nil && player.ActiveBoomerang == nil {
+		} else if boomerangAction.Pressed && physics.OnGround != nil && player.ActiveBoomerang == nil {
 			// Start Charging Boomerang
 			state.CurrentState = cfg.StateChargingBoomerang
 			player.BoomerangChargeTime = 0
 			state.StateTimer = 0
-		} else if ebiten.IsKeyPressed(ebiten.KeyDown) && physics.OnGround != nil {
+		} else if crouchAction.Pressed && physics.OnGround != nil {
 			state.CurrentState = cfg.Crouch
 			state.StateTimer = 0
 		} else {
@@ -154,7 +166,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 
 	case cfg.StateChargingBoomerang:
 		// Check for release
-		if !ebiten.IsKeyPressed(ebiten.KeySpace) {
+		if !boomerangAction.Pressed {
 			// Throw!
 			state.CurrentState = cfg.Throw
 			state.StateTimer = 0
@@ -203,7 +215,7 @@ func updatePlayerState(ecs *ecs.ECS, playerEntry *donburi.Entry, player *compone
 
 	case cfg.Crouch:
 		// Transition back to movement when down key is released
-		if !ebiten.IsKeyPressed(ebiten.KeyDown) {
+		if !crouchAction.Pressed {
 			transitionToMovementState(playerEntry, player, physics, state)
 		}
 

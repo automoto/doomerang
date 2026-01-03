@@ -37,6 +37,7 @@ func (ps *PlatformerScene) configure() {
 	ecs := ecs.NewECS(donburi.NewWorld())
 
 	// Add systems
+	ecs.AddSystem(systems.UpdateInput)
 	ecs.AddSystem(systems.UpdatePlayer)
 	ecs.AddSystem(systems.UpdateEnemies)
 	ecs.AddSystem(systems.UpdateStates)

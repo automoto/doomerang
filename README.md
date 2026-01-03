@@ -17,12 +17,13 @@ systems.
 `PlayerData` holds state for the player character, and `AnimationData` holds    
 animation state.                                                                
                                                                                 
--   `/systems`: Contains the logic that operates on entities with specific      
+-   `/systems`: Contains the logic that operates on entities with specific
 components.
-    - `/factory`: Provides functions to create game entities (like the player,    
-platforms, enemies) using the defined archetypes. This encapsulates the         
-complexity of entity creation.                                                                      
-    -   `player.go`: Handles player input and state changes.
+    - `/factory`: Provides functions to create game entities (like the player,
+platforms, enemies) using the defined archetypes. This encapsulates the
+complexity of entity creation.
+    -   `input.go`: Polls raw input (keyboard/gamepad) and updates the `InputData` component with logical action states.
+    -   `player.go`: Reads from `InputData` to handle player actions and state changes.
     -   `enemy.go`: Handles enemy AI and state changes.
     -   `physics.go`: Handles physics calculations for all entities.
     -   `collision.go`: Handles collision detection and resolution for all entities.
@@ -41,7 +42,7 @@ physics, and player-specific components).
     -   `/fonts`: Font files.                                                   
     -   `assets.go`: Handles asset loading with built-in **caching** to prevent redundant decoding.
 
--   `/config`: Holds global configuration values, constants, and the type-safe `StateID` system.
+-   `/config`: Holds global configuration values, constants, the type-safe `StateID` system, and input bindings (`input.go`).
 
 ## Performance & Architecture
 
@@ -53,6 +54,7 @@ The project has been optimized for high performance and stability:
 -   **Memory Safety**: Physics objects (`resolv.Object`) are stored via a pointer wrapper (`ObjectData`) in ECS components. This ensures that the `resolv.Space` always has valid pointers even when Donburi reallocates component storage.
 -   **O(1) Hitbox Lookup**: Entities maintain a direct reference to their active hitbox, eliminating O(N) searches in hot combat loops.
 -   **ECS Optimization**: Redundant ECS operations are minimized by caching component checks in hot loops, preventing state tag thrashing via change detection, and caching configuration pointers to avoid expensive map lookups.
+-   **Input Abstraction**: Raw input polling is decoupled from game logic via an `InputData` component. The `UpdateInput` system maps keys/buttons to logical actions (`ActionJump`, `ActionAttack`, etc.), allowing easy remapping and multi-input support.
 
 ## Tags
 
