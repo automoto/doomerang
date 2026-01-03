@@ -87,6 +87,37 @@ func UpdatePhysics(ecs *ecs.ECS) {
 
 Systems query the ECS world for entities that have the components they're interested in and then perform operations on that data.
 
+### Tags
+
+In Donburi, tags are special components used to label and identify entities without attaching complex data. They are defined in `tags/tags.go`.
+
+**Why use tags?**
+- **Lightweight Identification**: Tags act as flags (e.g., `Player`, `Enemy`, `Platform`) to categorize entities without storing data.
+- **Filtering Queries**: They allow systems to efficiently query for specific groups of entities.
+
+**Defining Tags:**
+```go
+// In tags/tags.go
+var Player = donburi.NewTag().SetName("Player")
+var Enemy = donburi.NewTag().SetName("Enemy")
+```
+
+**Adding to Entities:**
+Tags are added during entity creation, typically within archetypes (see below).
+
+**Querying with Tags:**
+```go
+// Iterate over all entities with a specific tag
+tags.Player.Each(ecs.World, func(e *donburi.Entry) {
+    // Logic for player entity
+})
+
+// Check if an entity has a tag
+if e.HasComponent(tags.Enemy) {
+    // Logic for enemy entity
+}
+```
+
 ### Archetypes
 
 To simplify the creation of entities, we use archetypes, which are defined in `archetypes/archetypes.go`. An archetype is a pre-defined set of components that represents a type of entity. For example, the `Player` archetype is defined as:
