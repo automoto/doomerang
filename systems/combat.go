@@ -10,86 +10,114 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-// TODO: refactor this to potentially reduce nesting, break this up into multiple functions and get rid of the "press H to hurt player"
 // UpdateCombat handles damage events, debug damage input and keeps health
 // values within their valid range.
 func UpdateCombat(ecs *ecs.ECS) {
-	// --------------------------------------------------------------------
-	// 1. Process queued damage events (generic for any entity with Health)
-	// --------------------------------------------------------------------
+	processDamageEvents(ecs)
+	handleDebugCombatInput(ecs)
+	clampHealthValues(ecs)
+}
+
+func processDamageEvents(ecs *ecs.ECS) {
 	for e := range components.DamageEvent.Iter(ecs.World) {
 		dmg := components.DamageEvent.Get(e)
-		// If the entity is the player, check for invulnerability.
-		if e.HasComponent(components.Player) {
-			player := components.Player.Get(e)
-			if player.InvulnFrames > 0 {
-				donburi.Remove[components.DamageEventData](e, components.DamageEvent)
-				continue // Skip the rest of the loop for this entity
-			}
+
+		if isPlayerInvulnerable(e) {
+			donburi.Remove[components.DamageEventData](e, components.DamageEvent)
+			continue
 		}
 
-		hp := components.Health.Get(e)
-		hp.Current -= dmg.Amount
+		applyDamage(e, dmg)
+		showEnemyHealthBar(e)
+		applyKnockbackAndState(e, dmg)
 
-		// If the entity is an enemy, show the health bar.
-		if e.HasComponent(tags.Enemy) {
-			donburi.Add(e, components.HealthBar, &components.HealthBarData{
-				TimeToLive: cfg.Combat.HealthBarDuration,
-			})
-		}
-
-		// Apply knockback if the entity has a physics component and knockback values are set.
-		// Note: Knockback from hitbox collisions is already applied in applyHitToEnemy/applyHitToPlayer,
-		// so we only apply here if explicit knockback values are provided in the DamageEvent.
-		if e.HasComponent(components.Physics) {
-			physics := components.Physics.Get(e)
-			if dmg.KnockbackX != 0 || dmg.KnockbackY != 0 {
-				physics.SpeedX = dmg.KnockbackX
-				physics.SpeedY = dmg.KnockbackY
-			}
-
-			// Set the entity's state to knockback if it has a state component.
-			if e.HasComponent(components.State) {
-				state := components.State.Get(e)
-				if e.HasComponent(tags.Enemy) {
-					// Enemies have a specific hit state
-					state.CurrentState = cfg.Hit
-				} else {
-					state.CurrentState = cfg.Stunned
-					if e.HasComponent(components.Player) {
-						player := components.Player.Get(e)
-						player.InvulnFrames = cfg.Combat.PlayerInvulnFrames
-					}
-					// Reset melee attack state when hit to prevent getting stuck in charging state
-					if e.HasComponent(components.MeleeAttack) {
-						melee := components.MeleeAttack.Get(e)
-						melee.IsCharging = false
-						melee.IsAttacking = false
-						melee.HasSpawnedHitbox = false
-					}
-				}
-				state.StateTimer = 0 // Reset state timer
-			}
-		}
-
-		// Remove the damage event component so it is processed only once.
 		donburi.Remove[components.DamageEventData](e, components.DamageEvent)
 	}
+}
 
-	// --------------------------------------------------------------------
-	// 2. Debug: press H to hurt the player by 10 HP
-	// --------------------------------------------------------------------
-	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
-		tags.Player.Each(ecs.World, func(e *donburi.Entry) {
-			donburi.Add(e, components.DamageEvent, &components.DamageEventData{Amount: 10})
-		})
+func isPlayerInvulnerable(e *donburi.Entry) bool {
+	if !e.HasComponent(components.Player) {
+		return false
+	}
+	return components.Player.Get(e).InvulnFrames > 0
+}
+
+func applyDamage(e *donburi.Entry, dmg *components.DamageEventData) {
+	hp := components.Health.Get(e)
+	hp.Current -= dmg.Amount
+}
+
+func showEnemyHealthBar(e *donburi.Entry) {
+	if !e.HasComponent(tags.Enemy) {
+		return
+	}
+	donburi.Add(e, components.HealthBar, &components.HealthBarData{
+		TimeToLive: cfg.Combat.HealthBarDuration,
+	})
+}
+
+func applyKnockbackAndState(e *donburi.Entry, dmg *components.DamageEventData) {
+	if !e.HasComponent(components.Physics) {
+		return
 	}
 
-	// --------------------------------------------------------------------
-	// 3. Clamp health ranges (0..Max)
-	// --------------------------------------------------------------------
+	physics := components.Physics.Get(e)
+	if dmg.KnockbackX != 0 || dmg.KnockbackY != 0 {
+		physics.SpeedX = dmg.KnockbackX
+		physics.SpeedY = dmg.KnockbackY
+	}
+
+	applyHitState(e)
+}
+
+func applyHitState(e *donburi.Entry) {
+	if !e.HasComponent(components.State) {
+		return
+	}
+
+	state := components.State.Get(e)
+	state.StateTimer = 0
+
+	if e.HasComponent(tags.Enemy) {
+		state.CurrentState = cfg.Hit
+		return
+	}
+
+	state.CurrentState = cfg.Stunned
+	setPlayerInvulnFrames(e)
+	resetMeleeAttackState(e)
+}
+
+func setPlayerInvulnFrames(e *donburi.Entry) {
+	if !e.HasComponent(components.Player) {
+		return
+	}
+	components.Player.Get(e).InvulnFrames = cfg.Combat.PlayerInvulnFrames
+}
+
+func resetMeleeAttackState(e *donburi.Entry) {
+	if !e.HasComponent(components.MeleeAttack) {
+		return
+	}
+	melee := components.MeleeAttack.Get(e)
+	melee.IsCharging = false
+	melee.IsAttacking = false
+	melee.HasSpawnedHitbox = false
+}
+
+func handleDebugCombatInput(ecs *ecs.ECS) {
+	if !inpututil.IsKeyJustPressed(ebiten.KeyH) {
+		return
+	}
+	tags.Player.Each(ecs.World, func(e *donburi.Entry) {
+		donburi.Add(e, components.DamageEvent, &components.DamageEventData{Amount: 10})
+	})
+}
+
+func clampHealthValues(ecs *ecs.ECS) {
 	for e := range components.Health.Iter(ecs.World) {
 		hp := components.Health.Get(e)
+
 		if hp.Current < 0 {
 			hp.Current = 0
 		}
@@ -97,16 +125,10 @@ func UpdateCombat(ecs *ecs.ECS) {
 			hp.Current = hp.Max
 		}
 
-		// Trigger death sequence if HP reached 0 and not already dying.
-		if hp.Current == 0 && !hbEntryHasDeathComponent(e) {
+		if hp.Current == 0 && !e.HasComponent(components.Death) {
 			startDeathSequence(e)
 		}
 	}
-}
-
-// hbEntryHasDeathComponent is a small helper to avoid duplicate death components.
-func hbEntryHasDeathComponent(e *donburi.Entry) bool {
-	return e.HasComponent(components.Death)
 }
 
 func startDeathSequence(e *donburi.Entry) {

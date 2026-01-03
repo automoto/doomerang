@@ -31,7 +31,6 @@ func UpdateCollisions(ecs *ecs.ECS) {
 	})
 }
 
-// TODO: update for code quality. Potentially reduce code nesting.
 // resolveObjectHorizontalCollision handles horizontal movement and wall collision for any object
 func resolveObjectHorizontalCollision(physics *components.PhysicsData, object *resolv.Object, allowWallSlide bool) {
 	dx := physics.SpeedX
@@ -45,36 +44,36 @@ func resolveObjectHorizontalCollision(physics *components.PhysicsData, object *r
 		return
 	}
 
-	// Debug collision detection if enabled
 	debugHorizontalCollision(dx, object, check)
 
-	// Check for collisions with solid objects (walls)
 	if shouldStopHorizontalMovement(object, check) {
 		physics.SpeedX = 0
 		if allowWallSlide {
 			setWallSlidingIfAirborne(physics, check)
 		}
-		dx = 0 // Stop movement
+		dx = 0
 	}
 
-	// Check for collisions with other characters
-	if characters := check.ObjectsByTags("character"); len(characters) > 0 {
-		// Gentle push-back instead of a hard stop
-		contact := check.ContactWithObject(characters[0])
-		if contact.X() != 0 { // If there is penetration
-			// Apply a small, fixed pushback
-			if dx > 0 {
-				dx = -1
-			} else {
-				dx = 1
-			}
-		} else {
-			// If just touching, use the contact point to slide along the other character
-			dx = contact.X()
-		}
-	}
-
+	dx = handleCharacterCollision(check, dx)
 	object.X += dx
+}
+
+func handleCharacterCollision(check *resolv.Collision, dx float64) float64 {
+	characters := check.ObjectsByTags("character")
+	if len(characters) == 0 {
+		return dx
+	}
+
+	contact := check.ContactWithObject(characters[0])
+	if contact.X() == 0 {
+		return contact.X()
+	}
+
+	// Apply small fixed pushback in opposite direction
+	if dx > 0 {
+		return -1
+	}
+	return 1
 }
 
 // resolveObjectVerticalCollision handles vertical movement and ground/platform collision for any object
