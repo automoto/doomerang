@@ -32,6 +32,4 @@ func DrawLevel(ecs *ecs.ECS, screen *ebiten.Image) {
 	if levelData.CurrentLevel.Background != nil {
 		screen.DrawImage(levelData.CurrentLevel.Background, opts)
 	}
-
-	// Ground objects are now drawn in the debug system when F1 debug mode is enabled
 }

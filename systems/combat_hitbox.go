@@ -175,25 +175,9 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 		}
 
 		// Position hitbox in front of attacker
-		var hitboxX, hitboxY float64
-
-		if isPlayer {
-			player := components.Player.Get(owner)
-			if player.Direction.X > 0 {
-				hitboxX = ownerObject.X + ownerObject.W + config.OffsetX
-			} else {
-				hitboxX = ownerObject.X - config.Width - config.OffsetX
-			}
-		} else {
-			enemy := components.Enemy.Get(owner)
-			if enemy.Direction.X > 0 {
-				hitboxX = ownerObject.X + ownerObject.W + config.OffsetX
-			} else {
-				hitboxX = ownerObject.X - config.Width - config.OffsetX
-			}
-		}
-
-		hitboxY = ownerObject.Y + (ownerObject.H-config.Height)/2 + config.OffsetY // Center vertically
+		directionX, _ := getEntityDirection(owner)
+		hitboxX := calcHitboxX(ownerObject, config.Width, config.OffsetX, directionX)
+		hitboxY := ownerObject.Y + (ownerObject.H-config.Height)/2 + config.OffsetY
 
 		// Create hitbox object
 		hitboxObject := resolv.NewObject(hitboxX, hitboxY, config.Width, config.Height)
@@ -249,34 +233,34 @@ func updateHitboxPosition(hitbox *components.HitboxData, hitboxObject *resolv.Ob
 		return
 	}
 
-	ownerObject := components.Object.Get(owner).Object
-
-	// Get facing direction based on owner type
-	var directionX float64
-	switch {
-	case owner.HasComponent(components.Player):
-		directionX = components.Player.Get(owner).Direction.X
-	case owner.HasComponent(components.Enemy):
-		directionX = components.Enemy.Get(owner).Direction.X
-	default:
+	directionX, ok := getEntityDirection(owner)
+	if !ok {
 		return
 	}
 
-	// Position hitbox in front of owner based on facing direction
-	var hitboxX float64
-	if directionX > 0 {
-		hitboxX = ownerObject.X + ownerObject.W
-	} else {
-		hitboxX = ownerObject.X - hitboxObject.W
-	}
-	hitboxY := ownerObject.Y + (ownerObject.H-hitboxObject.H)/2
+	ownerObject := components.Object.Get(owner).Object
+	hitboxObject.X = calcHitboxX(ownerObject, hitboxObject.W, 0, directionX)
+	hitboxObject.Y = ownerObject.Y + (ownerObject.H-hitboxObject.H)/2
+}
 
-	hitboxObject.X = hitboxX
-	hitboxObject.Y = hitboxY
+func getEntityDirection(entry *donburi.Entry) (float64, bool) {
+	if entry.HasComponent(components.Player) {
+		return components.Player.Get(entry).Direction.X, true
+	}
+	if entry.HasComponent(components.Enemy) {
+		return components.Enemy.Get(entry).Direction.X, true
+	}
+	return 0, false
+}
+
+func calcHitboxX(ownerObject *resolv.Object, hitboxWidth, offsetX, directionX float64) float64 {
+	if directionX > 0 {
+		return ownerObject.X + ownerObject.W + offsetX
+	}
+	return ownerObject.X - hitboxWidth - offsetX
 }
 
 func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *components.HitboxData, hitboxObject *resolv.Object) {
-	// Determine if owner is player or enemy
 	isPlayerAttack := hitbox.OwnerEntity.HasComponent(components.Player)
 
 	targetTag := tags.ResolvEnemy
@@ -284,24 +268,29 @@ func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *com
 		targetTag = tags.ResolvPlayer
 	}
 
-	// Efficient collision check using resolv space
-	if check := hitboxObject.Check(0, 0, targetTag); check != nil {
-		for _, obj := range check.Objects {
-			if targetEntry, ok := obj.Data.(*donburi.Entry); ok {
-				if shouldHitTarget(hitbox, targetEntry, hitboxObject, obj) {
-					if isPlayerAttack {
-						applyHitToEnemy(targetEntry, hitbox)
-					} else {
-						applyHitToPlayer(targetEntry, hitbox)
-					}
-				}
-			}
+	check := hitboxObject.Check(0, 0, targetTag)
+	if check == nil {
+		return
+	}
+
+	for _, obj := range check.Objects {
+		targetEntry, ok := obj.Data.(*donburi.Entry)
+		if !ok {
+			continue
+		}
+		if !shouldHitTarget(hitbox, targetEntry) {
+			continue
+		}
+		if isPlayerAttack {
+			applyHitToEnemy(targetEntry, hitbox)
+		} else {
+			applyHitToPlayer(targetEntry, hitbox)
 		}
 	}
 }
 
-func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitboxObject, targetObject *resolv.Object) bool {
-	// Don't hit the owner of the hitbox
+func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry) bool {
+	// Don't hit the owner
 	if hitbox.OwnerEntity == target {
 		return false
 	}
@@ -311,20 +300,18 @@ func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitbo
 		return false
 	}
 
-	// Don't hit if target is invulnerable
-	if target.HasComponent(components.Player) {
-		player := components.Player.Get(target)
-		if player.InvulnFrames > 0 {
-			return false
-		}
-	} else if target.HasComponent(components.Enemy) {
-		enemy := components.Enemy.Get(target)
-		if enemy.InvulnFrames > 0 {
-			return false
-		}
-	}
+	// Check invulnerability
+	return !isInvulnerable(target)
+}
 
-	return true
+func isInvulnerable(entry *donburi.Entry) bool {
+	if entry.HasComponent(components.Player) {
+		return components.Player.Get(entry).InvulnFrames > 0
+	}
+	if entry.HasComponent(components.Enemy) {
+		return components.Enemy.Get(entry).InvulnFrames > 0
+	}
+	return false
 }
 
 func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
@@ -381,34 +368,44 @@ func cleanupHitboxes(ecs *ecs.ECS) {
 
 	tags.Hitbox.Each(ecs.World, func(hitboxEntry *donburi.Entry) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
-		if hitbox.LifeTime <= 0 {
-			toRemove = append(toRemove, hitboxEntry)
-
-			// Clear active hitbox reference on owner
-			owner := hitbox.OwnerEntity
-			if owner != nil && owner.Valid() {
-				if owner.HasComponent(components.Player) {
-					melee := components.MeleeAttack.Get(owner)
-					if melee.ActiveHitbox == hitboxEntry {
-						melee.ActiveHitbox = nil
-					}
-				} else if owner.HasComponent(components.Enemy) {
-					enemy := components.Enemy.Get(owner)
-					if enemy.ActiveHitbox == hitboxEntry {
-						enemy.ActiveHitbox = nil
-					}
-				}
-			}
+		if hitbox.LifeTime > 0 {
+			return
 		}
+
+		toRemove = append(toRemove, hitboxEntry)
+		clearOwnerHitboxRef(hitbox.OwnerEntity, hitboxEntry)
 	})
 
+	// Get space once for batch removal
+	spaceEntry, hasSpace := components.Space.First(ecs.World)
+
 	for _, hitboxEntry := range toRemove {
-		// Remove from resolv space
-		if spaceEntry, ok := components.Space.First(ecs.World); ok {
+		if hasSpace {
 			obj := components.Object.Get(hitboxEntry)
 			components.Space.Get(spaceEntry).Remove(obj.Object)
 		}
 		ecs.World.Remove(hitboxEntry.Entity())
+	}
+}
+
+func clearOwnerHitboxRef(owner *donburi.Entry, hitboxEntry *donburi.Entry) {
+	if owner == nil || !owner.Valid() {
+		return
+	}
+
+	if owner.HasComponent(components.Player) {
+		melee := components.MeleeAttack.Get(owner)
+		if melee.ActiveHitbox == hitboxEntry {
+			melee.ActiveHitbox = nil
+		}
+		return
+	}
+
+	if owner.HasComponent(components.Enemy) {
+		enemy := components.Enemy.Get(owner)
+		if enemy.ActiveHitbox == hitboxEntry {
+			enemy.ActiveHitbox = nil
+		}
 	}
 }
 
