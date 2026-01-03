@@ -9,6 +9,7 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
+// TODO: improve code quality here - colors need to switch to use global config constans and if their missing we should add them, reduce complexity in the drawing nested for loops and break this function up potentially
 func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 	settings := GetOrCreateSettings(ecs)
 	if !settings.Debug {

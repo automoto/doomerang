@@ -31,6 +31,7 @@ func UpdateCollisions(ecs *ecs.ECS) {
 	})
 }
 
+// TODO: update for code quality. Potentially reduce code nesting.
 // resolveObjectHorizontalCollision handles horizontal movement and wall collision for any object
 func resolveObjectHorizontalCollision(physics *components.PhysicsData, object *resolv.Object, allowWallSlide bool) {
 	dx := physics.SpeedX

@@ -10,6 +10,7 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
+// TODO: refactor this to potentially reduce nesting, break this up into multiple functions and get rid of the "press H to hurt player"
 // UpdateCombat handles damage events, debug damage input and keeps health
 // values within their valid range.
 func UpdateCombat(ecs *ecs.ECS) {
