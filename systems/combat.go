@@ -4,17 +4,13 @@ import (
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
 
-// UpdateCombat handles damage events, debug damage input and keeps health
-// values within their valid range.
+// UpdateCombat handles damage events and keeps health values within their valid range.
 func UpdateCombat(ecs *ecs.ECS) {
 	processDamageEvents(ecs)
-	handleDebugCombatInput(ecs)
 	clampHealthValues(ecs)
 }
 
@@ -103,15 +99,6 @@ func resetMeleeAttackState(e *donburi.Entry) {
 	melee.IsCharging = false
 	melee.IsAttacking = false
 	melee.HasSpawnedHitbox = false
-}
-
-func handleDebugCombatInput(ecs *ecs.ECS) {
-	if !inpututil.IsKeyJustPressed(ebiten.KeyH) {
-		return
-	}
-	tags.Player.Each(ecs.World, func(e *donburi.Entry) {
-		donburi.Add(e, components.DamageEvent, &components.DamageEventData{Amount: 10})
-	})
 }
 
 func clampHealthValues(ecs *ecs.ECS) {
