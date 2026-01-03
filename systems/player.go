@@ -52,71 +52,92 @@ func handlePlayerInput(input *components.InputData, player *components.PlayerDat
 	moveLeftAction := input.Actions[cfg.ActionMoveLeft]
 	moveRightAction := input.Actions[cfg.ActionMoveRight]
 
-	// Only allow new actions if not in a locked state
+	// Process combat and jump inputs only if not in a locked state
 	if !isInLockedState(state.CurrentState) {
-		// Combat inputs
-		// Melee attack
-		if attackAction.JustPressed {
-			if physics.OnGround == nil {
-				// if in the air, and not already attacking, do a jump attack
-				if !isInAttackState(state.CurrentState) {
-					state.CurrentState = cfg.StateAttackingJump
-					state.StateTimer = 0
-					melee.IsAttacking = true
-				}
-			} else {
-				melee.IsCharging = true
-				melee.ChargeTime = 0
-			}
-		}
+		handleMeleeInput(attackAction, physics, melee, state)
 
-		// Attack release
-		if melee.IsCharging && attackAction.JustReleased {
-			melee.IsCharging = false
-			melee.IsAttacking = true
-		}
-
-		// Jumping - only allow if not in attack state
 		if !isInAttackState(state.CurrentState) {
-			if jumpAction.JustPressed {
-				isTryingToDrop := crouchAction.Pressed
-				canDropDown := physics.OnGround != nil && physics.OnGround.HasTags("platform")
-
-				if isTryingToDrop && canDropDown {
-					physics.IgnorePlatform = physics.OnGround
-				} else {
-					if physics.OnGround != nil {
-						physics.SpeedY = -cfg.Player.JumpSpeed
-					} else if physics.WallSliding != nil {
-						// Wall-jumping
-						physics.SpeedY = -cfg.Player.JumpSpeed
-						if physics.WallSliding.X > playerObject.X {
-							physics.SpeedX = -physics.MaxSpeed
-						} else {
-							physics.SpeedX = physics.MaxSpeed
-						}
-						physics.WallSliding = nil
-					}
-				}
-			}
+			handleJumpInput(jumpAction, crouchAction, physics, playerObject)
 		}
 	}
 
-	// Horizontal movement
+	// Horizontal movement (always processed)
+	handleMovementInput(moveLeftAction, moveRightAction, player, physics, state)
+}
+
+func handleMeleeInput(attackAction components.ActionState, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData) {
+	// Attack release
+	if melee.IsCharging && attackAction.JustReleased {
+		melee.IsCharging = false
+		melee.IsAttacking = true
+	}
+
+	if !attackAction.JustPressed {
+		return
+	}
+
+	// On ground - start charging
+	if physics.OnGround != nil {
+		melee.IsCharging = true
+		melee.ChargeTime = 0
+		return
+	}
+
+	// In air - jump attack if not already attacking
+	if !isInAttackState(state.CurrentState) {
+		state.CurrentState = cfg.StateAttackingJump
+		state.StateTimer = 0
+		melee.IsAttacking = true
+	}
+}
+
+func handleJumpInput(jumpAction, crouchAction components.ActionState, physics *components.PhysicsData, playerObject *resolv.Object) {
+	if !jumpAction.JustPressed {
+		return
+	}
+
+	// Drop-through platform
+	if crouchAction.Pressed && physics.OnGround != nil && physics.OnGround.HasTags("platform") {
+		physics.IgnorePlatform = physics.OnGround
+		return
+	}
+
+	// Normal jump from ground
+	if physics.OnGround != nil {
+		physics.SpeedY = -cfg.Player.JumpSpeed
+		return
+	}
+
+	// Wall jump
+	if physics.WallSliding == nil {
+		return
+	}
+	physics.SpeedY = -cfg.Player.JumpSpeed
+	if physics.WallSliding.X > playerObject.X {
+		physics.SpeedX = -physics.MaxSpeed
+	} else {
+		physics.SpeedX = physics.MaxSpeed
+	}
+	physics.WallSliding = nil
+}
+
+func handleMovementInput(moveLeftAction, moveRightAction components.ActionState, player *components.PlayerData, physics *components.PhysicsData, state *components.StateData) {
+	if physics.WallSliding != nil {
+		return
+	}
+
 	accel := cfg.Player.Acceleration
 	if isInAttackState(state.CurrentState) {
 		accel = cfg.Player.AttackAccel
 	}
 
-	if physics.WallSliding == nil {
-		if moveRightAction.Pressed {
-			physics.SpeedX += accel
-			player.Direction.X = cfg.DirectionRight
-		}
-		if moveLeftAction.Pressed {
-			physics.SpeedX -= accel
-			player.Direction.X = cfg.DirectionLeft
-		}
+	if moveRightAction.Pressed {
+		physics.SpeedX += accel
+		player.Direction.X = cfg.DirectionRight
+	}
+	if moveLeftAction.Pressed {
+		physics.SpeedX -= accel
+		player.Direction.X = cfg.DirectionLeft
 	}
 }
 
