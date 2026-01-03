@@ -11,8 +11,8 @@ import (
 )
 
 func UpdatePlayer(ecs *ecs.ECS) {
-	playerEntry, _ := components.Player.First(ecs.World)
-	if playerEntry == nil {
+	playerEntry, ok := components.Player.First(ecs.World)
+	if !ok {
 		return
 	}
 
@@ -31,10 +31,12 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	player := components.Player.Get(playerEntry)
 	physics := components.Physics.Get(playerEntry)
 	melee := components.MeleeAttack.Get(playerEntry)
+	state := components.State.Get(playerEntry)
+	animData := components.Animation.Get(playerEntry)
 	playerObject := components.Object.Get(playerEntry).Object
 
-	handlePlayerInput(input, player, physics, melee, components.State.Get(playerEntry), playerObject)
-	updatePlayerState(ecs, input, playerEntry, player, physics, melee, components.State.Get(playerEntry), components.Animation.Get(playerEntry))
+	handlePlayerInput(input, player, physics, melee, state, playerObject)
+	updatePlayerState(ecs, input, playerEntry, player, physics, melee, state, animData)
 
 	// Decrement invulnerability timer
 	if player.InvulnFrames > 0 {
@@ -109,11 +111,11 @@ func handlePlayerInput(input *components.InputData, player *components.PlayerDat
 	if physics.WallSliding == nil {
 		if moveRightAction.Pressed {
 			physics.SpeedX += accel
-			player.Direction.X = 1
+			player.Direction.X = cfg.DirectionRight
 		}
 		if moveLeftAction.Pressed {
 			physics.SpeedX -= accel
-			player.Direction.X = -1
+			player.Direction.X = cfg.DirectionLeft
 		}
 	}
 }
@@ -141,66 +143,64 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 			state.CurrentState = cfg.Crouch
 			state.StateTimer = 0
 		} else {
-			transitionToMovementState(playerEntry, player, physics, state)
+			transitionToMovementState(player, physics, state)
 		}
 
 	case cfg.StateChargingAttack:
-		// Transition to attacking when charge is released
-		if !melee.IsCharging {
-			if melee.IsAttacking {
-				if melee.ComboStep == 0 {
-					melee.ComboStep = 1
-					state.CurrentState = cfg.StateAttackingPunch
-				} else {
-					melee.ComboStep = 0
-					state.CurrentState = cfg.StateAttackingKick
-				}
-				state.StateTimer = 0
-			} else {
-				// If button is released without attacking (e.g. interrupted)
-				transitionToMovementState(playerEntry, player, physics, state)
-			}
-		} else {
+		// Still charging - increment and continue
+		if melee.IsCharging {
 			melee.ChargeTime++
+			break
 		}
+		// Released but not attacking (interrupted)
+		if !melee.IsAttacking {
+			transitionToMovementState(player, physics, state)
+			break
+		}
+		// Execute attack based on combo step
+		if melee.ComboStep == 0 {
+			melee.ComboStep = 1
+			state.CurrentState = cfg.StateAttackingPunch
+		} else {
+			melee.ComboStep = 0
+			state.CurrentState = cfg.StateAttackingKick
+		}
+		state.StateTimer = 0
 
 	case cfg.StateChargingBoomerang:
-		// Check for release
-		if !boomerangAction.Pressed {
-			// Throw!
-			state.CurrentState = cfg.Throw
-			state.StateTimer = 0
-
-			// Spawn Boomerang
-			factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
-		} else {
+		// Still charging
+		if boomerangAction.Pressed {
 			if player.BoomerangChargeTime < cfg.Boomerang.MaxChargeTime {
 				player.BoomerangChargeTime++
 			}
-			// Stop movement while charging
 			physics.SpeedX = 0
+			break
 		}
+		// Released - throw!
+		state.CurrentState = cfg.Throw
+		state.StateTimer = 0
+		factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
 
 	case cfg.Throw:
 		// Stop movement while throwing
 		physics.SpeedX = 0
 
 		// Wait for animation to finish
-		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
-			transitionToMovementState(playerEntry, player, physics, state)
+		if animationLooped(animData) {
+			transitionToMovementState(player, physics, state)
 		}
 
 	case cfg.StateAttackingPunch, cfg.StateAttackingKick:
 		// Transition back to movement after attack animation finishes
-		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
+		if animationLooped(animData) {
 			melee.IsAttacking = false
 			melee.HasSpawnedHitbox = false
-			transitionToMovementState(playerEntry, player, physics, state)
+			transitionToMovementState(player, physics, state)
 		}
 
 	case cfg.StateAttackingJump:
 		// Transition back to jump after attack animation finishes
-		if animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped {
+		if animationLooped(animData) {
 			melee.IsAttacking = false
 			melee.HasSpawnedHitbox = false
 			state.CurrentState = cfg.Jump
@@ -210,19 +210,19 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 	case cfg.Hit, cfg.Stunned, cfg.Knockback:
 		// Transition back to movement after hitstun/knockback duration
 		if state.StateTimer > cfg.Player.InvulnFrames {
-			transitionToMovementState(playerEntry, player, physics, state)
+			transitionToMovementState(player, physics, state)
 		}
 
 	case cfg.Crouch:
 		// Transition back to movement when down key is released
 		if !crouchAction.Pressed {
-			transitionToMovementState(playerEntry, player, physics, state)
+			transitionToMovementState(player, physics, state)
 		}
 
 	case cfg.Jump:
 		// Transition to idle/running when landing on the ground
 		if physics.OnGround != nil {
-			transitionToMovementState(playerEntry, player, physics, state)
+			transitionToMovementState(player, physics, state)
 		} else if physics.WallSliding != nil {
 			state.CurrentState = cfg.WallSlide
 			state.StateTimer = 0
@@ -230,10 +230,30 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 
 	default:
 		// Default to movement state for any unhandled cases
-		transitionToMovementState(playerEntry, player, physics, state)
+		transitionToMovementState(player, physics, state)
 	}
 
-	// --- Animation Update ---
+	updatePlayerAnimation(state, animData)
+}
+
+// Helper functions for state management
+func isInLockedState(state cfg.StateID) bool {
+	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback || state == cfg.StateChargingBoomerang || state == cfg.Throw
+}
+
+func isInAttackState(state cfg.StateID) bool {
+	return state == cfg.StateAttackingPunch || state == cfg.StateAttackingKick || state == cfg.StateAttackingJump
+}
+
+func animationLooped(animData *components.AnimationData) bool {
+	return animData != nil && animData.CurrentAnimation != nil && animData.CurrentAnimation.Looped
+}
+
+func updatePlayerAnimation(state *components.StateData, animData *components.AnimationData) {
+	if animData == nil {
+		return
+	}
+
 	var anim cfg.StateID
 	switch state.CurrentState {
 	case cfg.StateAttackingPunch:
@@ -253,30 +273,11 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 	}
 }
 
-// Helper functions for state management
-func isInLockedState(state cfg.StateID) bool {
-	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback || state == cfg.StateChargingBoomerang || state == cfg.Throw
-}
-
-func isInAttackState(state cfg.StateID) bool {
-	return state == cfg.StateAttackingPunch || state == cfg.StateAttackingKick || state == cfg.StateAttackingJump
-}
-
-func transitionToMovementState(e *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, state *components.StateData) {
+func transitionToMovementState(player *components.PlayerData, physics *components.PhysicsData, state *components.StateData) {
 	if physics.WallSliding != nil {
 		state.CurrentState = cfg.WallSlide
 	} else if physics.OnGround == nil {
-		if physics.SpeedY > 0 {
-			state.CurrentState = cfg.Jump // There is no falling animation yet
-		} else {
-			state.CurrentState = cfg.Jump
-		}
-	} else if state.CurrentState == cfg.Jump {
-		if physics.SpeedX != 0 {
-			state.CurrentState = cfg.Running
-		} else {
-			state.CurrentState = cfg.Idle
-		}
+		state.CurrentState = cfg.Jump
 	} else if physics.SpeedX != 0 {
 		state.CurrentState = cfg.Running
 	} else {
