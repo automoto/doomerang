@@ -36,11 +36,15 @@ echo "Game is running"
 echo ""
 
 # Step 4: Focus game window and test movement
-echo "[4/6] Testing input (walk right + jump)..."
+echo "[4/6] Testing input (start game, walk right + jump)..."
 osascript <<'EOF'
 tell application "System Events"
     set frontmost of process "doomerang" to true
     delay 0.5
+
+    -- Press Enter to start game from main menu
+    key code 36  -- return/enter key
+    delay 1
 
     -- Walk right for 2 seconds using rapid key press loop
     set endTime to (current date) + 2

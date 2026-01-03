@@ -13,6 +13,10 @@ const (
 	ActionAttack
 	ActionCrouch
 	ActionBoomerang
+	ActionPause
+	ActionMenuUp
+	ActionMenuDown
+	ActionMenuSelect
 )
 
 // GamepadBinding represents a gamepad button on a specific gamepad
@@ -59,6 +63,18 @@ func init() {
 			},
 			ActionBoomerang: {
 				Keys: []ebiten.Key{ebiten.KeySpace},
+			},
+			ActionPause: {
+				Keys: []ebiten.Key{ebiten.KeyEscape, ebiten.KeyP},
+			},
+			ActionMenuUp: {
+				Keys: []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
+			},
+			ActionMenuDown: {
+				Keys: []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+			},
+			ActionMenuSelect: {
+				Keys: []ebiten.Key{ebiten.KeyEnter},
 			},
 		},
 	}

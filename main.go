@@ -25,13 +25,20 @@ type Game struct {
 	scene  Scene
 }
 
+// ChangeScene switches to a new scene
+func (g *Game) ChangeScene(scene interface{}) {
+	g.scene = scene.(Scene)
+}
+
 func NewGame() *Game {
 	fonts.LoadFont(fonts.Excel, excelFont)
+	fonts.LoadFontWithSize(fonts.ExcelBold, excelFont, 20)
+	fonts.LoadFontWithSize(fonts.ExcelTitle, excelFont, 32)
 
 	g := &Game{
 		bounds: image.Rectangle{},
-		scene:  &scenes.PlatformerScene{},
 	}
+	g.scene = scenes.NewMenuScene(g)
 
 	return g
 }

@@ -163,6 +163,29 @@ type BoomerangConfig struct {
 	MaxChargeTime  int
 }
 
+// PauseConfig contains pause menu configuration values
+type PauseConfig struct {
+	OverlayColor      color.RGBA
+	TextColorNormal   color.RGBA
+	TextColorSelected color.RGBA
+	MenuItemHeight    float64
+	MenuItemGap       float64
+	MenuOptions       []string
+}
+
+// MenuConfig contains main menu configuration values
+type MenuConfig struct {
+	BackgroundColor   color.RGBA
+	TitleColor        color.RGBA
+	TextColorNormal   color.RGBA
+	TextColorSelected color.RGBA
+	TitleY            float64
+	MenuStartY        float64
+	MenuItemHeight    float64
+	MenuItemGap       float64
+	MenuOptions       []string
+}
+
 // Config holds general game configuration
 type Config struct {
 	Width  int
@@ -178,19 +201,24 @@ var Physics PhysicsConfig
 var Animation AnimationConfig
 var UI UIConfig
 var Boomerang BoomerangConfig
+var Pause PauseConfig
+var Menu MenuConfig
 
 // Shared RGBA color constants
 var (
-	White       = color.RGBA{R: 255, G: 255, B: 255, A: 255}
-	Yellow      = color.RGBA{R: 255, G: 255, B: 0, A: 255}
-	Orange      = color.RGBA{R: 255, G: 165, B: 0, A: 255}
-	Red         = color.RGBA{R: 255, G: 0, B: 0, A: 255}
-	Green       = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-	BrightGreen = color.RGBA{R: 0, G: 255, B: 60, A: 255}
-	Blue        = color.RGBA{R: 0, G: 100, B: 255, A: 255}
-	Purple      = color.RGBA{R: 128, G: 0, B: 255, A: 255}
-	LightRed    = color.RGBA{R: 255, G: 60, B: 60, A: 255}
-	Magenta     = color.RGBA{R: 255, G: 0, B: 255, A: 255}
+	White        = color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	Yellow       = color.RGBA{R: 255, G: 255, B: 0, A: 255}
+	BrightYellow = color.RGBA{R: 255, G: 255, B: 100, A: 255}
+	Orange       = color.RGBA{R: 255, G: 165, B: 0, A: 255}
+	Red          = color.RGBA{R: 255, G: 0, B: 0, A: 255}
+	Green        = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+	BrightGreen  = color.RGBA{R: 0, G: 255, B: 60, A: 255}
+	LightGreen   = color.RGBA{R: 100, G: 255, B: 100, A: 255}
+	Blue         = color.RGBA{R: 0, G: 100, B: 255, A: 255}
+	Purple       = color.RGBA{R: 128, G: 0, B: 255, A: 255}
+	LightRed     = color.RGBA{R: 255, G: 60, B: 60, A: 255}
+	Magenta      = color.RGBA{R: 255, G: 0, B: 255, A: 255}
+	BlackOverlay = color.RGBA{R: 0, G: 0, B: 0, A: 180}
 )
 
 // Direction constants for player facing
@@ -362,5 +390,28 @@ func init() {
 		EnemyInvulnFrames:  30, // Was hardcoded to 15 in some places, 30 in others
 
 		HealthBarDuration: 180,
+	}
+
+	// Pause Config
+	Pause = PauseConfig{
+		OverlayColor:      BlackOverlay,
+		TextColorNormal:   BrightYellow,
+		TextColorSelected: LightGreen,
+		MenuItemHeight:    30,
+		MenuItemGap:       15,
+		MenuOptions:       []string{"Resume", "Settings", "Exit"},
+	}
+
+	// Menu Config
+	Menu = MenuConfig{
+		BackgroundColor:   color.RGBA{R: 20, G: 20, B: 40, A: 255},
+		TitleColor:        White,
+		TextColorNormal:   BrightYellow,
+		TextColorSelected: LightGreen,
+		TitleY:            50,
+		MenuStartY:        100,
+		MenuItemHeight:    30,
+		MenuItemGap:       12,
+		MenuOptions:       []string{"Start", "Continue", "Level Select", "Settings", "Exit"},
 	}
 }

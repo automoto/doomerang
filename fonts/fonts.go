@@ -10,7 +10,9 @@ import (
 type FontName string
 
 const (
-	Excel FontName = "excel"
+	Excel      FontName = "excel"
+	ExcelBold  FontName = "excel-bold"
+	ExcelTitle FontName = "excel-title"
 )
 
 func (f FontName) Get() font.Face {
@@ -22,8 +24,12 @@ var (
 )
 
 func LoadFont(name FontName, ttf []byte) {
+	LoadFontWithSize(name, ttf, 10)
+}
+
+func LoadFontWithSize(name FontName, ttf []byte, size float64) {
 	fontData, _ := truetype.Parse(ttf)
-	fonts[name] = truetype.NewFace(fontData, &truetype.Options{Size: 10})
+	fonts[name] = truetype.NewFace(fontData, &truetype.Options{Size: size})
 }
 
 func getFont(name FontName) font.Face {

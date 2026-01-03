@@ -16,8 +16,14 @@ import (
 )
 
 type PlatformerScene struct {
-	ecs  *ecs.ECS
-	once sync.Once
+	ecs          *ecs.ECS
+	sceneChanger SceneChanger
+	once         sync.Once
+}
+
+// NewPlatformerScene creates a new platformer scene
+func NewPlatformerScene(sc SceneChanger) *PlatformerScene {
+	return &PlatformerScene{sceneChanger: sc}
 }
 
 func (ps *PlatformerScene) Update() {
@@ -36,20 +42,25 @@ func (ps *PlatformerScene) Draw(screen *ebiten.Image) {
 func (ps *PlatformerScene) configure() {
 	ecs := ecs.NewECS(donburi.NewWorld())
 
-	// Add systems
+	// Systems that always run
 	ecs.AddSystem(systems.UpdateInput)
-	ecs.AddSystem(systems.UpdatePlayer)
-	ecs.AddSystem(systems.UpdateEnemies)
-	ecs.AddSystem(systems.UpdateStates)
-	ecs.AddSystem(systems.UpdatePhysics)
-	ecs.AddSystem(systems.UpdateCollisions)
-	ecs.AddSystem(systems.UpdateObjects)
-	ecs.AddSystem(systems.UpdateBoomerang)
-	ecs.AddSystem(systems.UpdateCombat)
-	ecs.AddSystem(systems.UpdateCombatHitboxes)
-	ecs.AddSystem(systems.UpdateDeaths)
+	ecs.AddSystem(systems.UpdatePause)
+
+	// Game systems wrapped with pause check
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdatePlayer))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEnemies))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateStates))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdatePhysics))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCollisions))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateObjects))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateBoomerang))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombat))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombatHitboxes))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateDeaths))
+
+	// Systems that run even when paused
 	ecs.AddSystem(systems.UpdateSettings)
-	ecs.AddSystem(systems.UpdateCamera)
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCamera))
 
 	// Add renderers
 	ecs.AddRenderer(cfg.Default, systems.DrawLevel)
@@ -59,6 +70,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddRenderer(cfg.Default, systems.DrawHitboxes)
 	ecs.AddRenderer(cfg.Default, systems.DrawHUD)
 	ecs.AddRenderer(cfg.Default, systems.DrawDebug)
+	ecs.AddRenderer(cfg.Default, systems.DrawPause)
 
 	ps.ecs = ecs
 
