@@ -2,6 +2,7 @@ package scenes
 
 import (
 	"errors"
+	"image/color"
 	"sync"
 
 	cfg "github.com/automoto/doomerang/config"
@@ -55,6 +56,10 @@ func (ps *PlatformerScene) Draw(screen *ebiten.Image) {
 	if ps.ecs == nil {
 		return // Skip ECS draw until initialized
 	}
+	
+	// Clear screen to black to prevent white flashes from OS window background
+	screen.Fill(color.Black)
+	
 	ps.ecs.Draw(screen)
 }
 
@@ -139,6 +144,13 @@ func (ps *PlatformerScene) configure() {
 	player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
 	playerObj := components.Object.Get(player)
 	space.Add(playerObj.Object)
+
+	// Snap camera to player start position to prevent panning from (0,0)
+	if cameraEntry, ok := components.Camera.First(ps.ecs.World); ok {
+		camera := components.Camera.Get(cameraEntry)
+		camera.Position.X = playerSpawnX
+		camera.Position.Y = playerSpawnY
+	}
 
 	// Spawn enemies for the current level
 	for _, spawn := range levelData.CurrentLevel.EnemySpawns {

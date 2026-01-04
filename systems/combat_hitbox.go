@@ -430,6 +430,7 @@ func DrawHitboxes(ecs *ecs.ECS, screen *ebiten.Image) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
 		o := components.Object.Get(hitboxEntry).Object
 
+		// TODO: switch these colors to use the constants we defined in config
 		// Different colors for different attack types
 		var hitboxColor color.RGBA
 		switch hitbox.AttackType {
@@ -440,7 +441,7 @@ func DrawHitboxes(ecs *ecs.ECS, screen *ebiten.Image) {
 		case "jump_kick":
 			hitboxColor = color.RGBA{0, 255, 0, 100} // Green
 		default:
-			hitboxColor = color.RGBA{255, 255, 255, 100} // White
+			hitboxColor = color.RGBA{255, 0, 255, 100} // Magenta (Debug)
 		}
 
 		// Apply camera offset
