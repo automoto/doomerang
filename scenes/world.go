@@ -110,7 +110,11 @@ func (ps *PlatformerScene) configure() {
 
 	// Create collision objects from solid tiles
 	for _, tile := range levelData.CurrentLevel.SolidTiles {
-		factory2.CreateWall(ps.ecs, tile.X, tile.Y, tile.Width, tile.Height)
+		if tile.SlopeType != "" {
+			factory2.CreateSlopeWall(ps.ecs, tile.X, tile.Y, tile.Width, tile.Height, tile.SlopeType)
+		} else {
+			factory2.CreateWall(ps.ecs, tile.X, tile.Y, tile.Width, tile.Height)
+		}
 	}
 
 	// Create dead zones from the level

@@ -12,6 +12,10 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
+// slopeSurfaceOffset is a small offset to keep the player slightly above the slope surface
+// to prevent z-fighting and ensure stable ground detection
+const slopeSurfaceOffset = 0.1
+
 func UpdateCollisions(ecs *ecs.ECS) {
 	tags.Player.Each(ecs.World, func(e *donburi.Entry) {
 		player := components.Player.Get(e)
@@ -34,6 +38,12 @@ func UpdateCollisions(ecs *ecs.ECS) {
 
 		resolveObjectHorizontalCollision(physics, obj.Object, false)
 		resolveObjectVerticalCollision(physics, obj.Object)
+
+		// Kill enemy if they hit a dead zone
+		if checkDeadZone(obj.Object) {
+			health := components.Health.Get(e)
+			health.Current = 0
+		}
 	})
 }
 
@@ -42,6 +52,25 @@ func resolveObjectHorizontalCollision(physics *components.PhysicsData, object *r
 	dx := physics.SpeedX
 	if dx == 0 {
 		return
+	}
+
+	// Check for ramp collision in front (walking uphill)
+	if rampCheck := object.Check(dx, 0, tags.ResolvRamp); rampCheck != nil {
+		if ramps := rampCheck.ObjectsByTags(tags.ResolvRamp); len(ramps) > 0 {
+			object.X += dx
+			snapToSlopeSurface(physics, object, ramps[0])
+			return
+		}
+	}
+
+	// Check for ramp below (walking downhill or staying on slope)
+	// Use a small downward check to detect ramps we're standing on or walking down
+	if rampCheck := object.Check(dx, 1, tags.ResolvRamp); rampCheck != nil {
+		if ramps := rampCheck.ObjectsByTags(tags.ResolvRamp); len(ramps) > 0 {
+			object.X += dx
+			snapToSlopeSurface(physics, object, ramps[0])
+			return
+		}
 	}
 
 	check := object.Check(dx, 0, "solid", "character")
@@ -194,21 +223,67 @@ func handleDownwardCollision(physics *components.PhysicsData, object *resolv.Obj
 }
 
 func tryRampCollision(physics *components.PhysicsData, object *resolv.Object, check *resolv.Collision, dy float64) (float64, bool) {
-	ramps := check.ObjectsByTags("ramp")
+	ramps := check.ObjectsByTags(tags.ResolvRamp)
 	if len(ramps) == 0 {
 		return dy, false
 	}
 
 	ramp := ramps[0]
-	contactSet := object.Shape.Intersection(0, 8, ramp.Shape)
 
-	if dy >= 0 && contactSet != nil {
+	// Only handle when falling or stationary (dy >= 0)
+	if dy < 0 {
+		return dy, false
+	}
+
+	surfaceY := getSlopeSurfaceY(object, ramp)
+	playerBottom := object.Y + object.H
+
+	if playerBottom+dy >= surfaceY {
 		physics.OnGround = ramp
 		physics.SpeedY = 0
-		return contactSet.TopmostPoint()[1] - object.Bottom() + 0.1, true
+		return surfaceY - playerBottom + slopeSurfaceOffset, true
 	}
 
 	return dy, false
+}
+
+// snapToSlopeSurface adjusts object Y position to stay on slope surface.
+// Always snaps to surface when called - the Check() that triggers this
+// already ensures we're close enough to the ramp to be walking on it.
+func snapToSlopeSurface(physics *components.PhysicsData, object *resolv.Object, ramp *resolv.Object) {
+	surfaceY := getSlopeSurfaceY(object, ramp)
+	object.Y = surfaceY - object.H + slopeSurfaceOffset
+	physics.OnGround = ramp
+	physics.SpeedY = 0
+}
+
+// getSlopeSurfaceY calculates the slope surface Y at the object's center X position
+func getSlopeSurfaceY(object *resolv.Object, ramp *resolv.Object) float64 {
+	playerCenterX := object.X + object.W/2
+	relativeX := clampFloat(playerCenterX-ramp.X, 0, ramp.W)
+	slope := relativeX / ramp.W
+
+	switch {
+	case ramp.HasTags(tags.Slope45UpRight):
+		// Surface rises from left (Y+H) to right (Y)
+		return ramp.Y + ramp.H*(1-slope)
+	case ramp.HasTags(tags.Slope45UpLeft):
+		// Surface falls from left (Y) to right (Y+H)
+		return ramp.Y + ramp.H*slope
+	default:
+		return ramp.Y
+	}
+}
+
+// clampFloat constrains a value to the range [min, max]
+func clampFloat(value, min, max float64) float64 {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
 }
 
 func tryPlatformCollision(physics *components.PhysicsData, object *resolv.Object, check *resolv.Collision) (float64, bool) {

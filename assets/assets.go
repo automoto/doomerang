@@ -43,6 +43,7 @@ type Level struct {
 // SolidTile represents a solid collision tile
 type SolidTile struct {
 	X, Y, Width, Height float64
+	SlopeType           string // "", "45_up_right", "45_up_left"
 }
 
 type EnemySpawn struct {
@@ -221,11 +222,19 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 				if tile.IsNil() {
 					continue
 				}
+
+				// Get slope type from tileset tile properties
+				var slopeType string
+				if tilesetTile, err := tile.Tileset.GetTilesetTile(tile.ID); err == nil {
+					slopeType = tilesetTile.Properties.GetString("slope")
+				}
+
 				level.SolidTiles = append(level.SolidTiles, SolidTile{
-					X:      float64(x) * tileW,
-					Y:      float64(y) * tileH,
-					Width:  tileW,
-					Height: tileH,
+					X:         float64(x) * tileW,
+					Y:         float64(y) * tileH,
+					Width:     tileW,
+					Height:    tileH,
+					SlopeType: slopeType,
 				})
 			}
 		}

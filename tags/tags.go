@@ -15,8 +15,13 @@ var (
 // Resolv tags for physics collision
 const (
 	ResolvSolid     = "solid"
+	ResolvRamp      = "ramp"
 	ResolvPlayer    = "Player"
 	ResolvEnemy     = "Enemy"
 	ResolvBoomerang = "Boomerang"
 	ResolvDeadZone  = "deadzone"
+
+	// Slope type tags
+	Slope45UpRight = "45_up_right"
+	Slope45UpLeft  = "45_up_left"
 )
