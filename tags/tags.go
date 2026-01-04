@@ -18,4 +18,5 @@ const (
 	ResolvPlayer    = "Player"
 	ResolvEnemy     = "Enemy"
 	ResolvBoomerang = "Boomerang"
+	ResolvDeadZone  = "deadzone"
 )

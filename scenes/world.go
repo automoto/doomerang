@@ -2,7 +2,6 @@ package scenes
 
 import (
 	"errors"
-	"image/color"
 	"sync"
 
 	cfg "github.com/automoto/doomerang/config"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/automoto/doomerang/components"
 	"github.com/automoto/doomerang/systems"
+	"github.com/automoto/doomerang/tags"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
@@ -29,10 +29,29 @@ func NewPlatformerScene(sc SceneChanger) *PlatformerScene {
 func (ps *PlatformerScene) Update() {
 	ps.once.Do(ps.configure)
 	ps.ecs.Update()
+
+	// Check for game over (player has 0 lives)
+	if ps.checkGameOver() {
+		ps.sceneChanger.ChangeScene(NewGameOverScene(ps.sceneChanger))
+	}
+}
+
+// checkGameOver returns true if the player has 0 or fewer lives
+func (ps *PlatformerScene) checkGameOver() bool {
+	if ps.ecs == nil {
+		return false
+	}
+
+	playerEntry, ok := tags.Player.First(ps.ecs.World)
+	if !ok {
+		return false
+	}
+
+	lives := components.Lives.Get(playerEntry)
+	return lives.Lives <= 0
 }
 
 func (ps *PlatformerScene) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{20, 20, 40, 255})
 	if ps.ecs == nil {
 		return // Skip ECS draw until initialized
 	}
@@ -89,20 +108,14 @@ func (ps *PlatformerScene) configure() {
 	// Create camera
 	factory2.CreateCamera(ps.ecs)
 
-	// Create collision objects from the level
-	for _, path := range levelData.CurrentLevel.Paths {
-		// Create a wall object for each ground object
-		// The path points represent the top-left and bottom-right corners
-		width := path.Points[1].X - path.Points[0].X
-		height := path.Points[1].Y - path.Points[0].Y
+	// Create collision objects from solid tiles
+	for _, tile := range levelData.CurrentLevel.SolidTiles {
+		factory2.CreateWall(ps.ecs, tile.X, tile.Y, tile.Width, tile.Height)
+	}
 
-		// Create a solid wall object using the factory
-		factory2.CreateWall(ps.ecs,
-			path.Points[0].X,
-			path.Points[0].Y,
-			width,
-			height,
-		)
+	// Create dead zones from the level
+	for _, dz := range levelData.CurrentLevel.DeadZones {
+		factory2.CreateDeadZone(ps.ecs, dz.X, dz.Y, dz.Width, dz.Height)
 	}
 
 	// Determine player spawn position

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/automoto/doomerang/components"
+	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -20,6 +21,11 @@ func UpdateCollisions(ecs *ecs.ECS) {
 		resolveObjectHorizontalCollision(physics, obj.Object, true)
 		resolveObjectVerticalCollision(physics, obj.Object)
 		updateWallSliding(player, physics, obj.Object)
+
+		// Check for dead zone collision
+		if checkDeadZone(obj.Object) {
+			handleDeadZoneHit(ecs, e, player, physics, obj.Object)
+		}
 	})
 
 	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
@@ -258,4 +264,57 @@ func clearGroundedState(physics *components.PhysicsData) {
 		physics.WallSliding = nil
 		physics.IgnorePlatform = nil
 	}
+}
+
+// checkDeadZone returns true if the object is colliding with a dead zone
+func checkDeadZone(obj *resolv.Object) bool {
+	check := obj.Check(0, 0, tags.ResolvDeadZone)
+	return check != nil
+}
+
+// handleDeadZoneHit decrements lives and respawns player or triggers game over
+func handleDeadZoneHit(ecs *ecs.ECS, e *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, obj *resolv.Object) {
+	lives := components.Lives.Get(e)
+	lives.Lives--
+
+	if lives.Lives <= 0 {
+		// Game over - lives will be checked by scene to trigger transition
+		return
+	}
+
+	// Respawn player at level start
+	levelEntry, ok := components.Level.First(ecs.World)
+	if !ok {
+		return
+	}
+	levelData := components.Level.Get(levelEntry)
+
+	if len(levelData.CurrentLevel.PlayerSpawns) == 0 {
+		return
+	}
+
+	spawn := levelData.CurrentLevel.PlayerSpawns[0]
+
+	// Reset position
+	obj.X = spawn.X
+	obj.Y = spawn.Y
+
+	// Reset physics
+	physics.SpeedX = 0
+	physics.SpeedY = 0
+	physics.OnGround = nil
+	physics.WallSliding = nil
+	physics.IgnorePlatform = nil
+
+	// Grant invulnerability
+	player.InvulnFrames = cfg.Player.RespawnInvulnFrames
+
+	// Reset state
+	state := components.State.Get(e)
+	state.CurrentState = cfg.Idle
+	state.StateTimer = 0
+
+	// Reset health to full
+	health := components.Health.Get(e)
+	health.Current = health.Max
 }

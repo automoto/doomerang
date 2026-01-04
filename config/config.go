@@ -14,6 +14,10 @@ type PlayerConfig struct {
 	Health       int
 	InvulnFrames int
 
+	// Lives
+	StartingLives       int
+	RespawnInvulnFrames int
+
 	// Physics
 	Gravity        float64
 	Friction       float64
@@ -186,6 +190,19 @@ type MenuConfig struct {
 	MenuOptions       []string
 }
 
+// GameOverConfig contains game over screen configuration values
+type GameOverConfig struct {
+	BackgroundColor   color.RGBA
+	TitleColor        color.RGBA
+	TextColorNormal   color.RGBA
+	TextColorSelected color.RGBA
+	TitleY            float64
+	MenuStartY        float64
+	MenuItemHeight    float64
+	MenuItemGap       float64
+	MenuOptions       []string
+}
+
 // Config holds general game configuration
 type Config struct {
 	Width  int
@@ -203,6 +220,7 @@ var UI UIConfig
 var Boomerang BoomerangConfig
 var Pause PauseConfig
 var Menu MenuConfig
+var GameOver GameOverConfig
 
 // Shared RGBA color constants
 var (
@@ -260,6 +278,10 @@ func init() {
 		// Combat
 		Health:       100,
 		InvulnFrames: 30,
+
+		// Lives
+		StartingLives:       3,
+		RespawnInvulnFrames: 60,
 
 		// Physics
 		Gravity:        0.75,
@@ -413,5 +435,18 @@ func init() {
 		MenuItemHeight:    30,
 		MenuItemGap:       12,
 		MenuOptions:       []string{"Start", "Continue", "Level Select", "Settings", "Exit"},
+	}
+
+	// Game Over Config
+	GameOver = GameOverConfig{
+		BackgroundColor:   color.RGBA{R: 40, G: 10, B: 10, A: 255},
+		TitleColor:        LightRed,
+		TextColorNormal:   BrightYellow,
+		TextColorSelected: LightGreen,
+		TitleY:            100,
+		MenuStartY:        160,
+		MenuItemHeight:    30,
+		MenuItemGap:       15,
+		MenuOptions:       []string{"Retry", "Main Menu"},
 	}
 }

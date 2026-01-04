@@ -55,27 +55,6 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 		}
 	}
 
-	// Draw level collision objects
-	levelEntry, ok := components.Level.First(ecs.World)
-	if ok {
-		levelData := components.Level.Get(levelEntry)
-		if levelData.CurrentLevel != nil {
-			for _, path := range levelData.CurrentLevel.Paths {
-				if len(path.Points) >= 2 {
-					p1 := path.Points[0]
-					p2 := path.Points[1]
-					// Apply camera transformation to collision rectangles
-					rectX := float32(p1.X + camX)
-					rectY := float32(p1.Y + camY)
-					rectW := float32(p2.X - p1.X)
-					rectH := float32(p2.Y - p1.Y)
-					drawColor := color.RGBA{60, 60, 60, 128} // Semi-transparent grey
-					vector.DrawFilledRect(screen, rectX, rectY, rectW, rectH, drawColor, false)
-				}
-			}
-		}
-	}
-
 	// Draw all collision objects in the space (Entities)
 	if ok { // reusing spaceEntry check from above
 		space := components.Space.Get(spaceEntry)

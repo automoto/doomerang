@@ -30,13 +30,19 @@ type PlayerSpawn struct {
 
 type Level struct {
 	Background   *ebiten.Image
-	Paths        map[uint32]Path
+	SolidTiles   []SolidTile           // Collision tiles from wg-tiles layer
 	PatrolPaths  map[string]PatrolPath // New field for patrol paths
 	EnemySpawns  []EnemySpawn
 	PlayerSpawns []PlayerSpawn
+	DeadZones    []DeadZone
 	Name         string
 	Width        int
 	Height       int
+}
+
+// SolidTile represents a solid collision tile
+type SolidTile struct {
+	X, Y, Width, Height float64
 }
 
 type EnemySpawn struct {
@@ -44,6 +50,10 @@ type EnemySpawn struct {
 	Y          float64
 	EnemyType  string
 	PatrolPath string
+}
+
+type DeadZone struct {
+	X, Y, Width, Height float64
 }
 
 type LevelLoader struct {
@@ -130,29 +140,19 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 	}
 
 	level := Level{
-		Paths:        make(map[uint32]Path),
-		PatrolPaths:  make(map[string]PatrolPath), // Initialize patrol paths map
+		SolidTiles:   []SolidTile{},
+		PatrolPaths:  make(map[string]PatrolPath),
 		EnemySpawns:  []EnemySpawn{},
 		PlayerSpawns: []PlayerSpawn{},
+		DeadZones:    []DeadZone{},
 		Name:         levelPath,
 		Width:        levelMap.Width * levelMap.TileWidth,
 		Height:       levelMap.Height * levelMap.TileHeight,
 	}
 
-	// Load ground objects from the ground-walls object group
+	// Parse object groups for spawns, paths, and dead zones
 	for _, og := range levelMap.ObjectGroups {
 		switch og.Name {
-		case "ground-walls":
-			for _, o := range og.Objects {
-				// Create a path with two points for each ground object
-				level.Paths[o.ID] = Path{
-					Loops: false,
-					Points: []math.Vec2{
-						{X: o.X, Y: o.Y},
-						{X: o.X + o.Width, Y: o.Y + o.Height},
-					},
-				}
-			}
 		case "EnemySpawn":
 			for _, o := range og.Objects {
 				enemyType := o.Properties.GetString("enemyType")
@@ -195,11 +195,72 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					}
 				}
 			}
+		case "DeadZones":
+			for _, o := range og.Objects {
+				level.DeadZones = append(level.DeadZones, DeadZone{
+					X:      o.X,
+					Y:      o.Y,
+					Width:  o.Width,
+					Height: o.Height,
+				})
+			}
 		}
+	}
+
+	// Parse solid tiles from wg-tiles layer for collision
+	tileW := float64(levelMap.TileWidth)
+	tileH := float64(levelMap.TileHeight)
+	for _, layer := range levelMap.Layers {
+		if layer.Name != "wg-tiles" {
+			continue
+		}
+		for y := 0; y < levelMap.Height; y++ {
+			for x := 0; x < levelMap.Width; x++ {
+				tileIndex := y*levelMap.Width + x
+				tile := layer.Tiles[tileIndex]
+				if tile.IsNil() {
+					continue
+				}
+				level.SolidTiles = append(level.SolidTiles, SolidTile{
+					X:      float64(x) * tileW,
+					Y:      float64(y) * tileH,
+					Width:  tileW,
+					Height: tileH,
+				})
+			}
+		}
+		break
 	}
 
 	// Create a new image for the background
 	level.Background = ebiten.NewImage(levelMap.Width*levelMap.TileWidth, levelMap.Height*levelMap.TileHeight)
+
+	// Render image layers first (backgrounds)
+	for _, imgLayer := range levelMap.ImageLayers {
+		shouldRender := imgLayer.Properties.GetBool("render")
+		if !shouldRender || imgLayer.Image == nil {
+			continue
+		}
+
+		// Load image from embedded filesystem
+		imgPath := filepath.Join("levels", imgLayer.Image.Source)
+		imgBytes, err := assetFS.ReadFile(imgPath)
+		if err != nil {
+			fmt.Printf("Warning: Failed to load image layer %s: %v\n", imgLayer.Name, err)
+			continue
+		}
+
+		img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(imgBytes))
+		if err != nil {
+			fmt.Printf("Warning: Failed to decode image layer %s: %v\n", imgLayer.Name, err)
+			continue
+		}
+
+		// Draw the image at its offset position
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(imgLayer.OffsetX), float64(imgLayer.OffsetY))
+		level.Background.DrawImage(img, op)
+	}
 
 	// Create a renderer that uses the embedded filesystem
 	renderer, err := render.NewRendererWithFileSystem(levelMap, assetFS)
@@ -207,7 +268,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		panic(fmt.Sprintf("Failed to create renderer: %v", err))
 	}
 
-	// Render all visible layers
+	// Render all visible tile layers
 	for i, layer := range levelMap.Layers {
 		// Use "render" custom property to determine visibility
 		shouldRender := layer.Properties.GetBool("render")

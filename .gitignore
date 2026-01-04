@@ -20,6 +20,7 @@ vendor/
 
 # Build output
 bin/
+test/*
 
 # IDE specific files
 .idea/
@@ -35,3 +36,6 @@ Thumbs.db
 agent/
 .claude/
 CLAUDE.local.md
+
+# assets
+assets/art-archive/asset-pack-raw

@@ -37,6 +37,10 @@ func CreatePlayer(ecs *ecs.ECS, x, y float64) *donburi.Entry {
 		Current: cfg.Player.Health,
 		Max:     cfg.Player.Health,
 	})
+	components.Lives.SetValue(player, components.LivesData{
+		Lives:    cfg.Player.StartingLives,
+		MaxLives: cfg.Player.StartingLives,
+	})
 
 	obj.SetShape(resolv.NewRectangle(0, 0, float64(cfg.Player.CollisionWidth), float64(cfg.Player.CollisionHeight)))
 

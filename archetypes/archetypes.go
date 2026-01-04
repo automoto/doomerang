@@ -27,6 +27,7 @@ var (
 		components.Physics,
 		components.State,
 		components.MeleeAttack,
+		components.Lives,
 	)
 	Enemy = newArchetype(
 		tags.Enemy,
