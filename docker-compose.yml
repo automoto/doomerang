@@ -1,0 +1,14 @@
+services:
+  build-linux:
+    image: golang:trixie
+    working_dir: /app
+    volumes:
+      - .:/app
+      - go-cache:/go/pkg/mod
+    command: go build -o dist/linux/doomerang .
+    environment:
+      - GOOS=linux
+      - GOARCH=amd64
+
+volumes:
+  go-cache:

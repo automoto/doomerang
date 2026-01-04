@@ -20,6 +20,7 @@ vendor/
 
 # Build output
 bin/
+dist/
 test/*
 
 # IDE specific files
