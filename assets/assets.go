@@ -57,14 +57,10 @@ type DeadZone struct {
 	X, Y, Width, Height float64
 }
 
-type LevelLoader struct {
-	Tilesets map[string]*tiled.Tileset
-}
+type LevelLoader struct{}
 
 func NewLevelLoader() *LevelLoader {
-	return &LevelLoader{
-		Tilesets: make(map[string]*tiled.Tileset),
-	}
+	return &LevelLoader{}
 }
 
 type Path struct {
@@ -265,10 +261,18 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 			continue
 		}
 
-		// Draw the image at its offset position
+		// Draw the image at its offset position with opacity
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(imgLayer.OffsetX), float64(imgLayer.OffsetY))
+		// Apply layer opacity (default to 1.0 if not set, since go-tiled defaults to 0)
+		opacity := imgLayer.Opacity
+		if opacity == 0 {
+			opacity = 1.0
+		}
+		op.ColorScale.ScaleAlpha(float32(opacity))
 		level.Background.DrawImage(img, op)
+		// Dispose temporary image to free GPU memory
+		img.Dispose()
 	}
 
 	// Create a renderer that uses the embedded filesystem
@@ -288,17 +292,18 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 				fmt.Printf("Warning: Failed to render layer %d: %v\n", i, err)
 				continue
 			}
-			// Convert the rendered layer to an Ebiten image and draw it
+			// Convert the rendered layer to an Ebiten image and draw it with opacity
 			layerImage := ebiten.NewImageFromImage(renderer.Result)
 			op := &ebiten.DrawImageOptions{}
+			// Apply layer opacity (default to 1.0 if not set, since go-tiled defaults to 0)
+			opacity := layer.Opacity
+			if opacity == 0 {
+				opacity = 1.0
+			}
+			op.ColorScale.ScaleAlpha(float32(opacity))
 			level.Background.DrawImage(layerImage, op)
-		}
-	}
-
-	// Cache tilesets for future use
-	for _, ts := range levelMap.Tilesets {
-		if _, ok := l.Tilesets[ts.Class]; !ok {
-			l.Tilesets[ts.Class] = ts
+			// Dispose temporary image to free GPU memory
+			layerImage.Dispose()
 		}
 	}
 

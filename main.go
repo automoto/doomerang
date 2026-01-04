@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-
 	"image"
 	"log"
 
@@ -58,6 +57,15 @@ func (g *Game) Layout(width, height int) (int, int) {
 }
 
 func main() {
+	// Start pprof server for memory profiling
+	// Usage: go tool pprof http://localhost:6060/debug/pprof/heap
+	// go func() {
+	// 	log.Println("pprof server running on http://localhost:6060/debug/pprof/")
+	// 	if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+	// 		log.Printf("pprof server error: %v", err)
+	// 	}
+	// }()
+
 	ebiten.SetWindowSize(config.C.Width, config.C.Height)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	if err := ebiten.RunGame(NewGame()); err != nil {
