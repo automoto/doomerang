@@ -67,7 +67,8 @@ func main() {
 	// }()
 
 	ebiten.SetWindowSize(config.C.Width, config.C.Height)
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeOnlyFullscreenEnabled)
+
 	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatal(err)
 	}

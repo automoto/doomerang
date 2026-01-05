@@ -1,6 +1,7 @@
 package scenes
 
 import (
+	"image/color"
 	"sync"
 
 	cfg "github.com/automoto/doomerang/config"
@@ -28,6 +29,9 @@ func (gs *GameOverScene) Update() {
 }
 
 func (gs *GameOverScene) Draw(screen *ebiten.Image) {
+	// Always clear screen to prevent white flashes from OS window background
+	screen.Fill(color.Black)
+
 	if gs.ecs == nil {
 		return
 	}

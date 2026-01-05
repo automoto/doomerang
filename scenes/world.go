@@ -49,13 +49,12 @@ func (ps *PlatformerScene) checkGameOver() bool {
 }
 
 func (ps *PlatformerScene) Draw(screen *ebiten.Image) {
-	if ps.ecs == nil {
-		return // Skip ECS draw until initialized
-	}
-	
-	// Clear screen to black to prevent white flashes from OS window background
+	// Always clear screen to prevent white flashes from OS window background
 	screen.Fill(color.Black)
-	
+
+	if ps.ecs == nil {
+		return
+	}
 	ps.ecs.Draw(screen)
 }
 

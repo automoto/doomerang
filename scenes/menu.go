@@ -1,6 +1,7 @@
 package scenes
 
 import (
+	"image/color"
 	"sync"
 
 	cfg "github.com/automoto/doomerang/config"
@@ -33,6 +34,9 @@ func (ms *MenuScene) Update() {
 }
 
 func (ms *MenuScene) Draw(screen *ebiten.Image) {
+	// Always clear screen to prevent white flashes from OS window background
+	screen.Fill(color.Black)
+
 	if ms.ecs == nil {
 		return
 	}
