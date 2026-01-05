@@ -52,8 +52,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(width, height int) (int, int) {
-	g.bounds = image.Rect(0, 0, width, height)
-	return width, height
+	g.bounds = image.Rect(0, 0, config.C.Width, config.C.Height)
+	return config.C.Width, config.C.Height
 }
 
 func main() {
