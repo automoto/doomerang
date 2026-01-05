@@ -3,9 +3,11 @@ package systems
 import (
 	"image/color"
 
+	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/components"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
 
@@ -13,9 +15,12 @@ const (
 	hudBarWidth  = 200
 	hudBarHeight = 20
 	hudMargin    = 10
+	livesMargin  = 5
 )
 
-// DrawHUD renders the player's health bar in the top-left corner.
+var heartIcon *ebiten.Image
+
+// DrawHUD renders the player's health bar and lives counter in the top-left corner.
 func DrawHUD(ecs *ecs.ECS, screen *ebiten.Image) {
 	playerEntry, ok := components.Player.First(ecs.World)
 	if !ok {
@@ -35,4 +40,25 @@ func DrawHUD(ecs *ecs.ECS, screen *ebiten.Image) {
 		float32(hudMargin), float32(hudMargin),
 		float32(hudBarWidth)*ratio, float32(hudBarHeight),
 		color.RGBA{220, 40, 40, 255}, false)
+
+	// Draw lives counter
+	drawLives(playerEntry, screen)
+}
+
+func drawLives(playerEntry *donburi.Entry, screen *ebiten.Image) {
+	lives := components.Lives.Get(playerEntry)
+
+	// Lazy load heart icon
+	if heartIcon == nil {
+		heartIcon = assets.GetIconImage("icon_heart.png")
+	}
+
+	heartWidth := heartIcon.Bounds().Dx()
+	livesY := float64(hudMargin + hudBarHeight + livesMargin)
+
+	for i := 0; i < lives.Lives; i++ {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(hudMargin)+float64(i)*float64(heartWidth+livesMargin), livesY)
+		screen.DrawImage(heartIcon, op)
+	}
 }

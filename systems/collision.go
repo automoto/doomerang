@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/automoto/doomerang/components"
-	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -28,7 +27,7 @@ func UpdateCollisions(ecs *ecs.ECS) {
 
 		// Check for dead zone collision
 		if checkDeadZone(obj.Object) {
-			handleDeadZoneHit(ecs, e, player, physics, obj.Object)
+			handleDeadZoneHit(ecs, e)
 		}
 	})
 
@@ -348,48 +347,20 @@ func checkDeadZone(obj *resolv.Object) bool {
 }
 
 // handleDeadZoneHit decrements lives and respawns player or triggers game over
-func handleDeadZoneHit(ecs *ecs.ECS, e *donburi.Entry, player *components.PlayerData, physics *components.PhysicsData, obj *resolv.Object) {
+func handleDeadZoneHit(ecs *ecs.ECS, e *donburi.Entry) {
 	lives := components.Lives.Get(e)
 	lives.Lives--
 
 	if lives.Lives <= 0 {
-		// Game over - lives will be checked by scene to trigger transition
+		// Game over - remove player from world to trigger scene transition
+		spaceEntry, _ := components.Space.First(e.World)
+		space := components.Space.Get(spaceEntry)
+		if obj := components.Object.Get(e); obj != nil {
+			space.Remove(obj.Object)
+		}
+		ecs.World.Remove(e.Entity())
 		return
 	}
 
-	// Respawn player at level start
-	levelEntry, ok := components.Level.First(ecs.World)
-	if !ok {
-		return
-	}
-	levelData := components.Level.Get(levelEntry)
-
-	if len(levelData.CurrentLevel.PlayerSpawns) == 0 {
-		return
-	}
-
-	spawn := levelData.CurrentLevel.PlayerSpawns[0]
-
-	// Reset position
-	obj.X = spawn.X
-	obj.Y = spawn.Y
-
-	// Reset physics
-	physics.SpeedX = 0
-	physics.SpeedY = 0
-	physics.OnGround = nil
-	physics.WallSliding = nil
-	physics.IgnorePlatform = nil
-
-	// Grant invulnerability
-	player.InvulnFrames = cfg.Player.RespawnInvulnFrames
-
-	// Reset state
-	state := components.State.Get(e)
-	state.CurrentState = cfg.Idle
-	state.StateTimer = 0
-
-	// Reset health to full
-	health := components.Health.Get(e)
-	health.Current = health.Max
+	RespawnPlayer(ecs, e)
 }

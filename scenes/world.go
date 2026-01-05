@@ -37,19 +37,15 @@ func (ps *PlatformerScene) Update() {
 	}
 }
 
-// checkGameOver returns true if the player has 0 or fewer lives
+// checkGameOver returns true if the player entity has been removed (after death sequence completes)
 func (ps *PlatformerScene) checkGameOver() bool {
 	if ps.ecs == nil {
 		return false
 	}
 
-	playerEntry, ok := tags.Player.First(ps.ecs.World)
-	if !ok {
-		return false
-	}
-
-	lives := components.Lives.Get(playerEntry)
-	return lives.Lives <= 0
+	// Player entity is removed when game over delay expires
+	_, ok := tags.Player.First(ps.ecs.World)
+	return !ok
 }
 
 func (ps *PlatformerScene) Draw(screen *ebiten.Image) {

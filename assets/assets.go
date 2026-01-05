@@ -108,6 +108,11 @@ func GetObjectImage(name string) *ebiten.Image {
 	return animationLoader.MustLoadImage(path)
 }
 
+func GetIconImage(name string) *ebiten.Image {
+	path := fmt.Sprintf("images/icons/%s", name)
+	return animationLoader.MustLoadImage(path)
+}
+
 func (l *LevelLoader) MustLoadLevels() []Level {
 	entries, err := assetFS.ReadDir("levels")
 	if err != nil {

@@ -119,6 +119,10 @@ func startDeathSequence(ecs *ecs.ECS, e *donburi.Entry) {
 	if e.HasComponent(components.Animation) {
 		anim := components.Animation.Get(e)
 		anim.SetAnimation(cfg.Die)
+		// Freeze on last frame of death animation instead of looping
+		if anim.CurrentAnimation != nil {
+			anim.CurrentAnimation.FreezeOnComplete = true
+		}
 	}
 
 	// Zero out movement if it has PlayerData.
