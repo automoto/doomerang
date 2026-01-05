@@ -45,10 +45,16 @@ func (gs *GameOverScene) configure() {
 		return NewMenuScene(gs.sceneChanger)
 	}
 
+	// Audio system
+	gs.ecs.AddSystem(systems.UpdateAudio)
+
 	// Minimal systems for game over
 	gs.ecs.AddSystem(systems.UpdateInput)
 	gs.ecs.AddSystem(systems.NewUpdateGameOver(gs.sceneChanger, createPlatformerScene, createMenuScene))
 
 	// Renderer
 	gs.ecs.AddRenderer(cfg.Default, systems.DrawGameOver)
+
+	// Play menu music on game over screen
+	systems.PlayMusic(gs.ecs, cfg.Sound.MenuMusic)
 }

@@ -36,11 +36,13 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 		// Navigate menu with wrap-around using modulo arithmetic
 		numOptions := int(components.MainMenuExit) + 1
 		if upAction.JustPressed {
+			PlaySFX(e, cfg.SoundMenuNavigate)
 			menu.SelectedOption = components.MainMenuOption(
 				(int(menu.SelectedOption) - 1 + numOptions) % numOptions,
 			)
 		}
 		if downAction.JustPressed {
+			PlaySFX(e, cfg.SoundMenuNavigate)
 			menu.SelectedOption = components.MainMenuOption(
 				(int(menu.SelectedOption) + 1) % numOptions,
 			)
@@ -48,8 +50,10 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 
 		// Handle selection
 		if selectAction.JustPressed {
+			PlaySFX(e, cfg.SoundMenuSelect)
 			switch menu.SelectedOption {
 			case components.MainMenuStart:
+				FadeOutMusic(e)
 				sceneChanger.ChangeScene(createPlatformerScene())
 			case components.MainMenuContinue:
 				log.Println("Continue clicked")

@@ -47,10 +47,16 @@ func (ms *MenuScene) configure() {
 		return NewPlatformerScene(ms.sceneChanger)
 	}
 
+	// Audio system (runs first to initialize audio context)
+	ms.ecs.AddSystem(systems.UpdateAudio)
+
 	// Minimal systems for menu
 	ms.ecs.AddSystem(systems.UpdateInput)
 	ms.ecs.AddSystem(systems.NewUpdateMenu(ms.sceneChanger, createPlatformerScene))
 
 	// Renderer
 	ms.ecs.AddRenderer(cfg.Default, systems.DrawMenu)
+
+	// Start menu music
+	systems.PlayMusic(ms.ecs, cfg.Sound.MenuMusic)
 }

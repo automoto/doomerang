@@ -94,6 +94,16 @@ func hasActiveHitbox(ecs *ecs.ECS, owner *donburi.Entry) bool {
 }
 
 func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object, attackType string, isPlayer bool) {
+	// Play attack sound for player attacks
+	if isPlayer {
+		switch attackType {
+		case "punch":
+			PlaySFX(ecs, cfg.SoundPunch)
+		case "kick", "jump_kick":
+			PlaySFX(ecs, cfg.SoundKick)
+		}
+	}
+
 	var configs []HitboxConfig
 
 	switch attackType {
@@ -290,9 +300,9 @@ func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *com
 			if targetEntry, ok := obj.Data.(*donburi.Entry); ok {
 				if shouldHitTarget(hitbox, targetEntry, hitboxObject, obj) {
 					if isPlayerAttack {
-						applyHitToEnemy(targetEntry, hitbox)
+						applyHitToEnemy(ecs, targetEntry, hitbox)
 					} else {
-						applyHitToPlayer(targetEntry, hitbox)
+						applyHitToPlayer(ecs, targetEntry, hitbox)
 					}
 				}
 			}
@@ -327,12 +337,15 @@ func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitbo
 	return true
 }
 
-func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
+func applyHitToEnemy(ecs *ecs.ECS, enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
 	enemy := components.Enemy.Get(enemyEntry)
 	enemyObject := components.Object.Get(enemyEntry).Object
 
 	// Mark as hit
 	hitbox.HitEntities[enemyEntry] = true
+
+	// Play hit sound
+	PlaySFX(ecs, cfg.SoundHit)
 
 	// Apply damage
 	donburi.Add(enemyEntry, components.DamageEvent, &components.DamageEventData{
@@ -346,11 +359,14 @@ func applyHitToEnemy(enemyEntry *donburi.Entry, hitbox *components.HitboxData) {
 	enemy.InvulnFrames = cfg.Combat.EnemyInvulnFrames
 }
 
-func applyHitToPlayer(playerEntry *donburi.Entry, hitbox *components.HitboxData) {
+func applyHitToPlayer(ecs *ecs.ECS, playerEntry *donburi.Entry, hitbox *components.HitboxData) {
 	playerObject := components.Object.Get(playerEntry).Object
 
 	// Mark as hit
 	hitbox.HitEntities[playerEntry] = true
+
+	// Play hit sound
+	PlaySFX(ecs, cfg.SoundHit)
 
 	// Apply damage
 	donburi.Add(playerEntry, components.DamageEvent, &components.DamageEventData{

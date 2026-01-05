@@ -35,7 +35,7 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	animData := components.Animation.Get(playerEntry)
 	playerObject := components.Object.Get(playerEntry).Object
 
-	handlePlayerInput(input, player, physics, melee, state, playerObject)
+	handlePlayerInput(ecs, input, player, physics, melee, state, playerObject)
 	updatePlayerState(ecs, input, playerEntry, player, physics, melee, state, animData)
 
 	// Decrement invulnerability timer
@@ -44,7 +44,7 @@ func UpdatePlayer(ecs *ecs.ECS) {
 	}
 }
 
-func handlePlayerInput(input *components.InputData, player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, playerObject *resolv.Object) {
+func handlePlayerInput(e *ecs.ECS, input *components.InputData, player *components.PlayerData, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, playerObject *resolv.Object) {
 	// Get action states from input component
 	attackAction := input.Actions[cfg.ActionAttack]
 	jumpAction := input.Actions[cfg.ActionJump]
@@ -57,7 +57,7 @@ func handlePlayerInput(input *components.InputData, player *components.PlayerDat
 		handleMeleeInput(attackAction, physics, melee, state)
 
 		if !isInAttackState(state.CurrentState) {
-			handleJumpInput(jumpAction, crouchAction, physics, playerObject)
+			handleJumpInput(e, jumpAction, crouchAction, physics, playerObject)
 		}
 	}
 
@@ -91,7 +91,7 @@ func handleMeleeInput(attackAction components.ActionState, physics *components.P
 	}
 }
 
-func handleJumpInput(jumpAction, crouchAction components.ActionState, physics *components.PhysicsData, playerObject *resolv.Object) {
+func handleJumpInput(e *ecs.ECS, jumpAction, crouchAction components.ActionState, physics *components.PhysicsData, playerObject *resolv.Object) {
 	if !jumpAction.JustPressed {
 		return
 	}
@@ -105,6 +105,7 @@ func handleJumpInput(jumpAction, crouchAction components.ActionState, physics *c
 	// Normal jump from ground
 	if physics.OnGround != nil {
 		physics.SpeedY = -cfg.Player.JumpSpeed
+		PlaySFX(e, cfg.SoundJump)
 		return
 	}
 
@@ -113,6 +114,7 @@ func handleJumpInput(jumpAction, crouchAction components.ActionState, physics *c
 		return
 	}
 	physics.SpeedY = -cfg.Player.JumpSpeed
+	PlaySFX(e, cfg.SoundJump)
 	if physics.WallSliding.X > playerObject.X {
 		physics.SpeedX = -physics.MaxSpeed
 	} else {
@@ -200,6 +202,7 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		// Released - throw!
 		state.CurrentState = cfg.Throw
 		state.StateTimer = 0
+		PlaySFX(ecs, cfg.SoundBoomerangThrow)
 		factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
 
 	case cfg.Throw:
@@ -243,6 +246,7 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 	case cfg.Jump:
 		// Transition to idle/running when landing on the ground
 		if physics.OnGround != nil {
+			PlaySFX(ecs, cfg.SoundLand)
 			transitionToMovementState(player, physics, state)
 		} else if physics.WallSliding != nil {
 			state.CurrentState = cfg.WallSlide

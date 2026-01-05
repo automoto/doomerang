@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/automoto/doomerang/components"
-	"github.com/automoto/doomerang/config"
+	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -83,7 +83,7 @@ func updateInbound(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, 
 		dirY := dy / dist
 
 		// Apply Return Speed
-		returnSpeed := config.Boomerang.ReturnSpeed
+		returnSpeed := cfg.Boomerang.ReturnSpeed
 		physics.SpeedX = dirX * returnSpeed
 		physics.SpeedY = dirY * returnSpeed
 	} else {
@@ -119,7 +119,7 @@ func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData
 		// Enemy Collision
 		if enemies := check.ObjectsByTags(tags.ResolvEnemy); len(enemies) > 0 {
 			for _, enemyObj := range enemies {
-				handleEnemyCollision(e, b, physics, enemyObj)
+				handleEnemyCollision(ecs, e, b, physics, enemyObj)
 			}
 		}
 
@@ -138,7 +138,7 @@ func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData
 	}
 }
 
-func handleEnemyCollision(boomerangEntry *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, enemyObj *resolv.Object) {
+func handleEnemyCollision(ecs *ecs.ECS, boomerangEntry *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, enemyObj *resolv.Object) {
 	enemyEntry, ok := enemyObj.Data.(*donburi.Entry)
 	if !ok || enemyEntry == nil || !enemyEntry.Valid() {
 		return
@@ -148,6 +148,9 @@ func handleEnemyCollision(boomerangEntry *donburi.Entry, b *components.Boomerang
 	if _, alreadyHit := b.HitEnemies[enemyEntry]; alreadyHit {
 		return
 	}
+
+	// Play impact sound
+	PlaySFX(ecs, cfg.SoundBoomerangImpact)
 
 	// Apply Damage
 	if health := components.Health.Get(enemyEntry); health != nil {
@@ -181,6 +184,9 @@ func handleEnemyCollision(boomerangEntry *donburi.Entry, b *components.Boomerang
 }
 
 func catchBoomerang(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData) {
+	// Play catch sound
+	PlaySFX(ecs, cfg.SoundBoomerangCatch)
+
 	if b.Owner != nil && b.Owner.Valid() {
 		if b.Owner.HasComponent(components.Player) {
 			player := components.Player.Get(b.Owner)

@@ -66,6 +66,9 @@ func (ps *PlatformerScene) Draw(screen *ebiten.Image) {
 func (ps *PlatformerScene) configure() {
 	ecs := ecs.NewECS(donburi.NewWorld())
 
+	// Audio system (runs first, even when paused for menu sounds)
+	ecs.AddSystem(systems.UpdateAudio)
+
 	// Systems that always run
 	ecs.AddSystem(systems.UpdateInput)
 	ecs.AddSystem(systems.UpdatePause)
@@ -163,4 +166,7 @@ func (ps *PlatformerScene) configure() {
 		enemyObj := components.Object.Get(enemy)
 		space.Add(enemyObj.Object)
 	}
+
+	// Start level music
+	systems.PlayLevelMusic(ps.ecs, levelData.CurrentLevel.Name)
 }

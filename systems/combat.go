@@ -98,7 +98,7 @@ func UpdateCombat(ecs *ecs.ECS) {
 
 		// Trigger death sequence if HP reached 0 and not already dying.
 		if hp.Current == 0 && !hbEntryHasDeathComponent(e) {
-			startDeathSequence(e)
+			startDeathSequence(ecs, e)
 		}
 	}
 }
@@ -108,7 +108,10 @@ func hbEntryHasDeathComponent(e *donburi.Entry) bool {
 	return e.HasComponent(components.Death)
 }
 
-func startDeathSequence(e *donburi.Entry) {
+func startDeathSequence(ecs *ecs.ECS, e *donburi.Entry) {
+	// Play death sound
+	PlaySFX(ecs, cfg.SoundDeath)
+
 	// Add DeathData component with a 60-frame timer.
 	donburi.Add(e, components.Death, &components.DeathData{Timer: 60})
 
