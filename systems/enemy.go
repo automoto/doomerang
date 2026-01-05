@@ -233,11 +233,7 @@ func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *res
 func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	enemy := components.Enemy.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
-	enemyObject := components.Object.Get(enemyEntry)
-	// Create a hitbox on the first frame of the attack
-	if state.StateTimer == 1 {
-		CreateHitbox(ecs, enemyEntry, enemyObject.Object, "punch", false)
-	}
+	// Hitbox creation is handled by combat_hitbox.go
 
 	// Attack animation duration (simplified - using timer)
 	if state.StateTimer >= enemy.TypeConfig.AttackDuration {

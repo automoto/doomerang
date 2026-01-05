@@ -94,14 +94,12 @@ func hasActiveHitbox(ecs *ecs.ECS, owner *donburi.Entry) bool {
 }
 
 func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object, attackType string, isPlayer bool) {
-	// Play attack sound for player attacks
-	if isPlayer {
-		switch attackType {
-		case "punch":
-			PlaySFX(ecs, cfg.SoundPunch)
-		case "kick", "jump_kick":
-			PlaySFX(ecs, cfg.SoundKick)
-		}
+	// Play attack sound
+	switch attackType {
+	case "punch":
+		PlaySFX(ecs, cfg.SoundPunch)
+	case "kick", "jump_kick":
+		PlaySFX(ecs, cfg.SoundKick)
 	}
 
 	var configs []HitboxConfig

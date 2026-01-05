@@ -47,15 +47,18 @@ func UpdatePause(ecs *ecs.ECS) {
 		pause.SelectedOption = components.PauseMenuOption(
 			(int(pause.SelectedOption) - 1 + numOptions) % numOptions,
 		)
+		PlaySFX(ecs, cfg.SoundMenuNavigate)
 	}
 	if downAction.JustPressed {
 		pause.SelectedOption = components.PauseMenuOption(
 			(int(pause.SelectedOption) + 1) % numOptions,
 		)
+		PlaySFX(ecs, cfg.SoundMenuNavigate)
 	}
 
 	// Handle selection
 	if selectAction.JustPressed {
+		PlaySFX(ecs, cfg.SoundMenuSelect)
 		switch pause.SelectedOption {
 		case components.MenuResume:
 			pause.IsPaused = false
