@@ -1,0 +1,169 @@
+/* DOOMERANG - Cyberpunk Theme for itch.io */
+/* Paste this into: Edit Game > Theme > Custom CSS */
+
+:root {
+  --neon-pink: #ff2a6d;
+  --neon-cyan: #05d9e8;
+  --neon-purple: #d300c5;
+  --dark-bg: #0d0221;
+  --darker-bg: #05010d;
+  --grid-color: rgba(5, 217, 232, 0.1);
+}
+
+/* Page background with grid effect */
+body, .index_page, .view_game_page {
+  background: var(--dark-bg) !important;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important;
+  background-size: 50px 50px !important;
+}
+
+/* Main content area */
+.inner_column {
+  background: linear-gradient(180deg, var(--darker-bg) 0%, var(--dark-bg) 100%) !important;
+  border: 1px solid var(--neon-cyan) !important;
+  box-shadow:
+    0 0 20px rgba(5, 217, 232, 0.3),
+    inset 0 0 60px rgba(5, 217, 232, 0.05) !important;
+}
+
+/* Game title */
+.game_title, h1 {
+  color: var(--neon-cyan) !important;
+  text-shadow:
+    0 0 10px var(--neon-cyan),
+    0 0 20px var(--neon-cyan),
+    0 0 40px var(--neon-cyan) !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 4px !important;
+}
+
+/* Headers */
+h2, h3 {
+  color: var(--neon-pink) !important;
+  text-shadow: 0 0 10px var(--neon-pink) !important;
+  font-family: 'Courier New', monospace !important;
+  border-bottom: 1px solid var(--neon-pink) !important;
+  padding-bottom: 8px !important;
+}
+
+/* Body text */
+p, li, td, th {
+  color: #b0b0b0 !important;
+  font-family: 'Courier New', monospace !important;
+}
+
+/* Links */
+a {
+  color: var(--neon-cyan) !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+}
+
+a:hover {
+  color: var(--neon-pink) !important;
+  text-shadow: 0 0 10px var(--neon-pink) !important;
+}
+
+/* Buttons */
+.button, .buy_btn, .download_btn {
+  background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-purple) 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  box-shadow:
+    0 0 20px rgba(255, 42, 109, 0.5),
+    inset 0 0 20px rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.button:hover, .buy_btn:hover, .download_btn:hover {
+  box-shadow:
+    0 0 30px rgba(255, 42, 109, 0.8),
+    0 0 60px rgba(211, 0, 197, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Tables (for controls) */
+table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 20px 0 !important;
+}
+
+th {
+  background: rgba(255, 42, 109, 0.2) !important;
+  color: var(--neon-pink) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  padding: 12px !important;
+  border: 1px solid var(--neon-pink) !important;
+}
+
+td {
+  padding: 10px 12px !important;
+  border: 1px solid rgba(5, 217, 232, 0.3) !important;
+}
+
+tr:hover td {
+  background: rgba(5, 217, 232, 0.1) !important;
+}
+
+/* Horizontal rules */
+hr {
+  border: none !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent) !important;
+  margin: 30px 0 !important;
+}
+
+/* Game embed / iframe area */
+.game_frame, .embed_wrapper {
+  border: 2px solid var(--neon-cyan) !important;
+  box-shadow: 0 0 30px rgba(5, 217, 232, 0.4) !important;
+}
+
+/* Screenshot images */
+.screenshot_list a {
+  border: 1px solid var(--neon-purple) !important;
+  transition: all 0.3s ease !important;
+}
+
+.screenshot_list a:hover {
+  border-color: var(--neon-pink) !important;
+  box-shadow: 0 0 20px rgba(255, 42, 109, 0.5) !important;
+}
+
+/* Info panel / sidebar */
+.info_panel_wrapper {
+  background: rgba(13, 2, 33, 0.8) !important;
+  border: 1px solid var(--neon-purple) !important;
+}
+
+/* More information section */
+.more_information_toggle {
+  color: var(--neon-cyan) !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--darker-bg) !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-pink) !important;
+  border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan) !important;
+}
