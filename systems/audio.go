@@ -173,6 +173,20 @@ func StopMusic(e *ecs.ECS) {
 	globalFadeTimer = 0
 }
 
+// PauseMusic pauses the current music playback
+func PauseMusic(e *ecs.ECS) {
+	if globalMusicPlayer != nil {
+		globalMusicPlayer.Pause()
+	}
+}
+
+// ResumeMusic resumes paused music playback
+func ResumeMusic(e *ecs.ECS) {
+	if globalMusicPlayer != nil {
+		globalMusicPlayer.Play()
+	}
+}
+
 // PlaySFX queues a sound effect to be played
 func PlaySFX(e *ecs.ECS, sound cfg.SoundID) {
 	initGlobalAudio()

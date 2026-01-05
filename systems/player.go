@@ -251,6 +251,13 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		} else if physics.WallSliding != nil {
 			state.CurrentState = cfg.WallSlide
 			state.StateTimer = 0
+			PlaySFX(ecs, cfg.SoundWallAttach)
+		}
+
+	case cfg.WallSlide:
+		// Transition when no longer wall sliding
+		if physics.WallSliding == nil {
+			transitionToMovementState(player, physics, state)
 		}
 
 	default:

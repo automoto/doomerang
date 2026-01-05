@@ -13,6 +13,7 @@ const (
 	// Movement sounds
 	SoundJump
 	SoundLand
+	SoundWallAttach
 	// Boomerang sounds
 	SoundBoomerangThrow
 	SoundBoomerangCatch
@@ -56,6 +57,7 @@ func init() {
 			SoundDeath:           "audio/sfx/death.wav",
 			SoundJump:            "audio/sfx/jump.wav",
 			SoundLand:            "audio/sfx/land.wav",
+			SoundWallAttach:      "audio/sfx/wall_attach.wav",
 			SoundBoomerangThrow:  "audio/sfx/boomerang_throw.wav",
 			SoundBoomerangCatch:  "audio/sfx/boomerang_catch.wav",
 			SoundBoomerangImpact: "audio/sfx/boomerang_impact.wav",

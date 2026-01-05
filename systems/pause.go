@@ -24,9 +24,11 @@ func UpdatePause(ecs *ecs.ECS) {
 	// Toggle pause on ESC or P
 	if pauseAction.JustPressed {
 		pause.IsPaused = !pause.IsPaused
-		// Reset menu selection when opening pause menu
 		if pause.IsPaused {
 			pause.SelectedOption = components.MenuResume
+			PauseMusic(ecs)
+		} else {
+			ResumeMusic(ecs)
 		}
 	}
 
@@ -57,6 +59,7 @@ func UpdatePause(ecs *ecs.ECS) {
 		switch pause.SelectedOption {
 		case components.MenuResume:
 			pause.IsPaused = false
+			ResumeMusic(ecs)
 		case components.MenuSettings:
 			log.Println("Settings clicked")
 		case components.MenuExit:
