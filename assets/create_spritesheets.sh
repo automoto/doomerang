@@ -2,9 +2,9 @@
 
 set -e
 
-BASE_DIR="art"
-INPUT_DIR="$BASE_DIR/art-raw"
-OUTPUT_DIR="$BASE_DIR/spritesheets"
+BASE_DIR="art-archive"
+INPUT_DIR="art-archive/art-raw"
+OUTPUT_DIR="art-archive/spritesheets/player"
 
 mkdir -p "$OUTPUT_DIR"
 

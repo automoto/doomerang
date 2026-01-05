@@ -23,6 +23,14 @@ type PlayerConfig struct {
 	Friction       float64
 	AttackFriction float64
 
+	// Slide mechanics
+	SlideSpeedThreshold float64 // Minimum speed required to initiate slide
+	SlideFriction       float64 // Friction applied during slide
+	SlideHitboxHeight   float64 // Reduced hitbox height during slide
+	SlideMinSpeed       float64 // Speed below which slide ends
+	SlideRecoveryFrames int     // Delay before standing up after slide
+	SlideRotation       float64 // Radians to rotate sprite during slide
+
 	// Dimensions
 	FrameWidth      int
 	FrameHeight     int
@@ -96,6 +104,12 @@ type CombatConfig struct {
 	// Invulnerability
 	PlayerInvulnFrames int
 	EnemyInvulnFrames  int
+
+	// Knockback
+	KnockbackUpwardForce float64 // Upward velocity applied on knockback
+
+	// Jump kick
+	JumpKickRotation float64 // Radians to rotate sprite during jump kick
 
 	// Health bar display
 	HealthBarDuration int // frames
@@ -288,6 +302,14 @@ func init() {
 		Friction:       0.5,
 		AttackFriction: 0.2,
 
+		// Slide mechanics
+		SlideSpeedThreshold: 4.0,  // Must be moving at least this fast to slide
+		SlideFriction:       0.08, // Gradual slowdown during slide (lower = longer slide)
+		SlideHitboxHeight:   20.0, // Reduced height during slide (normal is 40)
+		SlideMinSpeed:       0.3,  // Stop sliding when speed drops below this
+		SlideRecoveryFrames: 8,    // Frames of delay before standing up
+		SlideRotation:       -0.35, // Rotate sprite for ground slide look
+
 		// Dimensions
 		FrameWidth:      96,
 		FrameHeight:     84,
@@ -394,13 +416,15 @@ func init() {
 
 	// Combat Config (Populated with default values matching the previous constants)
 	Combat = CombatConfig{
-		PlayerPunchDamage:    15,
+		// Normalized: punch and kick now have identical values
+		PlayerPunchDamage:    22,
 		PlayerKickDamage:     22,
-		PlayerPunchKnockback: 3.0,
+		PlayerPunchKnockback: 5.0,
 		PlayerKickKnockback:  5.0,
 
-		PunchHitboxWidth:  20,
-		PunchHitboxHeight: 16,
+		// Normalized: punch and kick hitboxes are now the same size
+		PunchHitboxWidth:  28,
+		PunchHitboxHeight: 20,
 		KickHitboxWidth:   28,
 		KickHitboxHeight:  20,
 
@@ -408,8 +432,15 @@ func init() {
 		ChargeBonusRate: 0, // Calculated dynamically in code, but good to have here
 		MaxChargeTime:   60,
 
-		PlayerInvulnFrames: 30,
-		EnemyInvulnFrames:  30, // Was hardcoded to 15 in some places, 30 in others
+		// Extended from 30 to prevent stun-lock
+		PlayerInvulnFrames: 45,
+		EnemyInvulnFrames:  30,
+
+		// Knockback tuning - increased for better ledge knockback
+		KnockbackUpwardForce: -4.0,
+
+		// Jump kick rotation in radians (~20 degrees)
+		JumpKickRotation: 0.35,
 
 		HealthBarDuration: 180,
 	}

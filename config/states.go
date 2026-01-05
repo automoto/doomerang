@@ -35,6 +35,9 @@ const (
 	StateAttackingJump
 	StateChargingBoomerang
 
+	// Movement states
+	StateSliding
+
 	// Enemy AI states
 	StatePatrol
 	StateChase
@@ -70,6 +73,9 @@ var StateToFileName = map[StateID]string{
 	StateAttackingJump:     "kick02", // Jump kick uses kick02 animation
 	StateChargingAttack:    "idle",   // Charging uses idle animation (or maybe a specific one later)
 	StateChargingBoomerang: "throw",  // Use throw animation frame 0 for charging
+
+	// Movement states
+	StateSliding: "slide", // Custom slide animation
 
 	// Enemy AI states map to movement animations
 	StatePatrol: "walk",

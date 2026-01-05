@@ -54,7 +54,7 @@ func handlePlayerInput(e *ecs.ECS, input *components.InputData, player *componen
 
 	// Process combat and jump inputs only if not in a locked state
 	if !isInLockedState(state.CurrentState) {
-		handleMeleeInput(attackAction, physics, melee, state)
+		handleMeleeInput(attackAction, physics, melee, state, player, playerObject)
 
 		if !isInAttackState(state.CurrentState) {
 			handleJumpInput(e, jumpAction, crouchAction, physics, playerObject)
@@ -65,7 +65,16 @@ func handlePlayerInput(e *ecs.ECS, input *components.InputData, player *componen
 	handleMovementInput(moveLeftAction, moveRightAction, player, physics, state)
 }
 
-func handleMeleeInput(attackAction components.ActionState, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData) {
+func handleMeleeInput(attackAction components.ActionState, physics *components.PhysicsData, melee *components.MeleeAttackData, state *components.StateData, player *components.PlayerData, playerObject *resolv.Object) {
+	// Wall kick: attack during wall slide = wall jump + kick away from wall
+	if physics.WallSliding != nil {
+		if !attackAction.JustPressed || isInAttackState(state.CurrentState) {
+			return
+		}
+		performWallKick(physics, player, playerObject, state, melee)
+		return
+	}
+
 	// Attack release
 	if melee.IsCharging && attackAction.JustReleased {
 		melee.IsCharging = false
@@ -128,6 +137,24 @@ func handleMovementInput(moveLeftAction, moveRightAction components.ActionState,
 		return
 	}
 
+	// Block movement input during slide - friction is applied in state machine
+	if state.CurrentState == cfg.StateSliding {
+		return
+	}
+
+	// Apply friction when crouching - gradually slow down
+	if state.CurrentState == cfg.Crouch {
+		friction := cfg.Player.Friction * 2.0
+		if physics.SpeedX > friction {
+			physics.SpeedX -= friction
+		} else if physics.SpeedX < -friction {
+			physics.SpeedX += friction
+		} else {
+			physics.SpeedX = 0
+		}
+		return // No acceleration while crouching
+	}
+
 	accel := cfg.Player.Acceleration
 	if isInAttackState(state.CurrentState) {
 		accel = cfg.Player.AttackAccel
@@ -150,6 +177,9 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 	boomerangAction := input.Actions[cfg.ActionBoomerang]
 	crouchAction := input.Actions[cfg.ActionCrouch]
 
+	// Get player object for hitbox modifications
+	playerObject := components.Object.Get(playerEntry).Object
+
 	// Main state machine logic
 	switch state.CurrentState {
 	case cfg.Idle, cfg.Running:
@@ -157,14 +187,21 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		if melee.IsCharging {
 			state.CurrentState = cfg.StateChargingAttack
 			state.StateTimer = 0
-		} else if boomerangAction.Pressed && physics.OnGround != nil && player.ActiveBoomerang == nil {
-			// Start Charging Boomerang
+		} else if boomerangAction.Pressed && player.ActiveBoomerang == nil {
+			// Start Charging Boomerang (allowed in air too)
 			state.CurrentState = cfg.StateChargingBoomerang
 			player.BoomerangChargeTime = 0
 			state.StateTimer = 0
-		} else if crouchAction.Pressed && physics.OnGround != nil {
+		} else if crouchAction.JustPressed && physics.OnGround != nil {
+			// Slide if moving fast enough, otherwise crouch
+			if absFloat(physics.SpeedX) >= cfg.Player.SlideSpeedThreshold {
+				enterSlideState(state, playerObject)
+			} else {
+				state.CurrentState = cfg.Crouch
+				state.StateTimer = 0
+			}
+		} else if crouchAction.Pressed && physics.OnGround != nil && state.CurrentState != cfg.Running {
 			state.CurrentState = cfg.Crouch
-			state.StateTimer = 0
 		} else {
 			transitionToMovementState(player, physics, state)
 		}
@@ -196,7 +233,8 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 			if player.BoomerangChargeTime < cfg.Boomerang.MaxChargeTime {
 				player.BoomerangChargeTime++
 			}
-			physics.SpeedX = 0
+			// Apply friction instead of instant stop for smoother feel
+			applyThrowFriction(physics)
 			break
 		}
 		// Released - throw!
@@ -206,8 +244,8 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
 
 	case cfg.Throw:
-		// Stop movement while throwing
-		physics.SpeedX = 0
+		// Apply friction instead of instant stop for smoother feel
+		applyThrowFriction(physics)
 
 		// Wait for animation to finish
 		if animationLooped(animData) {
@@ -243,7 +281,30 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 			transitionToMovementState(player, physics, state)
 		}
 
+	case cfg.StateSliding:
+		// Friction is handled by physics system with cfg.Player.SlideFriction
+		speed := absFloat(physics.SpeedX)
+		canStandUp := !crouchAction.Pressed && state.StateTimer > cfg.Player.SlideRecoveryFrames
+		slideStopped := speed < cfg.Player.SlideMinSpeed
+
+		if !slideStopped && !canStandUp {
+			break
+		}
+		restoreSlideHitbox(playerObject)
+		if slideStopped && crouchAction.Pressed {
+			state.CurrentState = cfg.Crouch
+		} else {
+			transitionToMovementState(player, physics, state)
+		}
+
 	case cfg.Jump:
+		// Allow boomerang throw while jumping
+		if boomerangAction.Pressed && player.ActiveBoomerang == nil {
+			state.CurrentState = cfg.StateChargingBoomerang
+			player.BoomerangChargeTime = 0
+			state.StateTimer = 0
+			break
+		}
 		// Transition to idle/running when landing on the ground
 		if physics.OnGround != nil {
 			PlaySFX(ecs, cfg.SoundLand)
@@ -270,7 +331,7 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 
 // Helper functions for state management
 func isInLockedState(state cfg.StateID) bool {
-	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback || state == cfg.StateChargingBoomerang || state == cfg.Throw
+	return state == cfg.Hit || state == cfg.Stunned || state == cfg.Knockback || state == cfg.StateChargingBoomerang || state == cfg.Throw || state == cfg.StateSliding
 }
 
 func isInAttackState(state cfg.StateID) bool {
@@ -317,4 +378,61 @@ func transitionToMovementState(player *components.PlayerData, physics *component
 	}
 	state.StateTimer = 0
 	player.ComboCounter = 0
+}
+
+// applyThrowFriction applies gradual friction during boomerang throw instead of instant stop
+func applyThrowFriction(physics *components.PhysicsData) {
+	// Use moderate friction for gradual slowdown during throw
+	friction := cfg.Player.Friction * 1.0
+	if physics.SpeedX > friction {
+		physics.SpeedX -= friction
+	} else if physics.SpeedX < -friction {
+		physics.SpeedX += friction
+	} else {
+		physics.SpeedX = 0
+	}
+}
+
+// restoreSlideHitbox restores the player hitbox to normal height after sliding
+func restoreSlideHitbox(playerObject *resolv.Object) {
+	normalHeight := float64(cfg.Player.CollisionHeight)
+	if playerObject.H >= normalHeight {
+		return
+	}
+	heightDiff := normalHeight - playerObject.H
+	playerObject.H = normalHeight
+	playerObject.Y -= heightDiff
+}
+
+func absFloat(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func performWallKick(physics *components.PhysicsData, player *components.PlayerData, playerObject *resolv.Object, state *components.StateData, melee *components.MeleeAttackData) {
+	wallCenterX := physics.WallSliding.X + physics.WallSliding.W/2
+	playerCenterX := playerObject.X + playerObject.W/2
+
+	physics.SpeedY = -cfg.Player.JumpSpeed
+	if wallCenterX > playerCenterX {
+		physics.SpeedX = -physics.MaxSpeed
+		player.Direction.X = cfg.DirectionLeft
+	} else {
+		physics.SpeedX = physics.MaxSpeed
+		player.Direction.X = cfg.DirectionRight
+	}
+	physics.WallSliding = nil
+	state.CurrentState = cfg.StateAttackingJump
+	state.StateTimer = 0
+	melee.IsAttacking = true
+}
+
+func enterSlideState(state *components.StateData, playerObject *resolv.Object) {
+	state.CurrentState = cfg.StateSliding
+	state.StateTimer = 0
+	heightDiff := playerObject.H - cfg.Player.SlideHitboxHeight
+	playerObject.H = cfg.Player.SlideHitboxHeight
+	playerObject.Y += heightDiff
 }

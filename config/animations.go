@@ -34,5 +34,6 @@ var CharacterAnimations = map[string]map[StateID]AnimationDef{
 		WallSlide:              {First: 0, Last: 5, Step: 1, Speed: 5},
 		StateChargingBoomerang: {First: 0, Last: 0, Step: 1, Speed: 0},
 		StateChargingAttack:    {First: 0, Last: 0, Step: 1, Speed: 0}, // Use idle frame while charging
+		StateSliding:           {First: 0, Last: 3, Step: 1, Speed: 6}, // Custom slide animation (4 frames)
 	},
 }

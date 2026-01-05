@@ -81,6 +81,17 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 					if player.Direction.X < 0 {
 						drawOp.GeoM.Scale(-1, 1)
 					}
+					// Apply rotation for jump kick
+					if e.HasComponent(components.State) {
+						state := components.State.Get(e)
+						if state.CurrentState == cfg.StateAttackingJump {
+							rotation := cfg.Combat.JumpKickRotation
+							if player.Direction.X < 0 {
+								rotation = -rotation
+							}
+							drawOp.GeoM.Rotate(rotation)
+						}
+					}
 				}
 				if isEnemy {
 					enemy := components.Enemy.Get(e)

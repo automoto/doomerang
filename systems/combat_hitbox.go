@@ -342,6 +342,13 @@ func applyHitToEnemy(ecs *ecs.ECS, enemyEntry *donburi.Entry, hitbox *components
 	// Mark as hit
 	hitbox.HitEntities[enemyEntry] = true
 
+	// Set Hit state immediately to prevent enemy AI from overriding knockback
+	if enemyEntry.HasComponent(components.State) {
+		state := components.State.Get(enemyEntry)
+		state.CurrentState = cfg.Hit
+		state.StateTimer = 0
+	}
+
 	// Play hit sound
 	PlaySFX(ecs, cfg.SoundHit)
 
@@ -378,16 +385,22 @@ func applyHitToPlayer(ecs *ecs.ECS, playerEntry *donburi.Entry, hitbox *componen
 func applyKnockback(targetEntry *donburi.Entry, hitbox *components.HitboxData, targetObject *resolv.Object) {
 	ownerObject := components.Object.Get(hitbox.OwnerEntity).Object
 
-	// Determine knockback direction
+	// Determine knockback direction using center points for accuracy
+	ownerCenterX := ownerObject.X + ownerObject.W/2
+	targetCenterX := targetObject.X + targetObject.W/2
+
+	// Knockback pushes target AWAY from owner
 	knockbackDirection := 1.0
-	if targetObject.X < ownerObject.X {
+	if targetCenterX < ownerCenterX {
+		// Target is to the left of owner, push left (negative)
 		knockbackDirection = -1.0
 	}
+	// Otherwise target is to the right, push right (positive)
 
 	// Apply knockback force
 	physics := components.Physics.Get(targetEntry)
 	physics.SpeedX = knockbackDirection * hitbox.KnockbackForce
-	physics.SpeedY = -2.0 // Small upward knockback
+	physics.SpeedY = cfg.Combat.KnockbackUpwardForce
 }
 
 func cleanupHitboxes(ecs *ecs.ECS) {

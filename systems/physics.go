@@ -11,8 +11,14 @@ func UpdatePhysics(ecs *ecs.ECS) {
 	components.Physics.Each(ecs.World, func(e *donburi.Entry) {
 		physics := components.Physics.Get(e)
 
-		// Apply friction and horizontal speed limiting.
+		// Determine friction based on state
 		friction := physics.Friction
+		if e.HasComponent(components.State) {
+			state := components.State.Get(e)
+			if state.CurrentState == cfg.StateSliding {
+				friction = cfg.Player.SlideFriction
+			}
+		}
 		if e.HasComponent(components.MeleeAttack) {
 			if melee := components.MeleeAttack.Get(e); melee.IsAttacking {
 				friction = physics.AttackFriction
