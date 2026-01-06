@@ -63,6 +63,11 @@ var (
 	Camera = newArchetype(
 		components.Camera,
 	)
+	VFXEffect = newArchetype(
+		components.Object,
+		components.Animation,
+		components.AutoDestroy,
+	)
 )
 
 type archetype struct {

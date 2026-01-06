@@ -115,6 +115,11 @@ func handleJumpInput(e *ecs.ECS, jumpAction, crouchAction components.ActionState
 	if physics.OnGround != nil {
 		physics.SpeedY = -cfg.Player.JumpSpeed
 		PlaySFX(e, cfg.SoundJump)
+		// Spawn jump dust and squash/stretch
+		factory.SpawnJumpDust(e, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+		if playerEntry, ok := components.Player.First(e.World); ok {
+			TriggerSquashStretch(playerEntry, cfg.SquashStretch.JumpScaleX, cfg.SquashStretch.JumpScaleY)
+		}
 		return
 	}
 
@@ -196,6 +201,8 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 			// Slide if moving fast enough, otherwise crouch
 			if absFloat(physics.SpeedX) >= cfg.Player.SlideSpeedThreshold {
 				enterSlideState(state, playerObject)
+				// Spawn slide dust
+				factory.SpawnSlideDust(ecs, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
 			} else {
 				state.CurrentState = cfg.Crouch
 				state.StateTimer = 0
@@ -308,6 +315,9 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		// Transition to idle/running when landing on the ground
 		if physics.OnGround != nil {
 			PlaySFX(ecs, cfg.SoundLand)
+			// Spawn landing dust and squash/stretch
+			factory.SpawnLandDust(ecs, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+			TriggerSquashStretch(playerEntry, cfg.SquashStretch.LandScaleX, cfg.SquashStretch.LandScaleY)
 			transitionToMovementState(player, physics, state)
 		} else if physics.WallSliding != nil {
 			state.CurrentState = cfg.WallSlide

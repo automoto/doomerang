@@ -80,6 +80,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombat))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombatHitboxes))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateDeaths))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEffects))
 
 	// Systems that run even when paused
 	ecs.AddSystem(systems.UpdateSettings)

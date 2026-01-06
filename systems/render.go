@@ -71,9 +71,23 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				drawOp.GeoM.Reset()
 				drawOp.ColorScale.Reset()
 
-				// Anchor the sprite at its bottom-center so that the feet line up with the
-				// bottom of the collision box.
-				drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
+				// Check if this is a VFX entity with scale (uses center anchoring)
+				isVFX := e.HasComponent(components.VFXScale)
+				if isVFX {
+					// VFX: anchor at center of sprite
+					drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight)/2)
+					vfxScale := components.VFXScale.Get(e)
+					drawOp.GeoM.Scale(vfxScale.Scale, vfxScale.Scale)
+				} else {
+					// Characters: anchor at bottom-center so feet line up with collision box
+					drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
+				}
+
+				// Apply squash/stretch effect (scale around anchor point)
+				if e.HasComponent(components.SquashStretch) {
+					ss := components.SquashStretch.Get(e)
+					drawOp.GeoM.Scale(ss.ScaleX, ss.ScaleY)
+				}
 
 				// Flip the sprite if facing left.
 				if isPlayer {
@@ -100,9 +114,14 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 					}
 				}
 
-				// Move the sprite so that its bottom-center aligns with the bottom-center
-				// of the (smaller) collision box.
-				drawOp.GeoM.Translate(o.X+o.W/2, o.Y+o.H)
+				// Position the sprite
+				if isVFX {
+					// VFX: center of sprite at center of collision box
+					drawOp.GeoM.Translate(o.X+o.W/2, o.Y+o.H/2)
+				} else {
+					// Characters: bottom-center of sprite at bottom-center of collision box
+					drawOp.GeoM.Translate(o.X+o.W/2, o.Y+o.H)
+				}
 
 				// Apply the camera translation.
 				drawOp.GeoM.Translate(float64(width)/2-camera.Position.X, float64(height)/2-camera.Position.Y)
@@ -125,6 +144,14 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				if isEnemy {
 					enemy := components.Enemy.Get(e)
 					drawOp.ColorScale.ScaleWithColorScale(enemy.TintColor)
+				}
+
+				// Apply flash effect (overrides other color effects)
+				// Skip flash for dying entities to prevent visual artifacts
+				if e.HasComponent(components.Flash) && !e.HasComponent(components.Death) {
+					flash := components.Flash.Get(e)
+					drawOp.ColorScale.Reset()
+					drawOp.ColorScale.Scale(flash.R, flash.G, flash.B, 1)
 				}
 
 				// Draw the current frame.
@@ -256,4 +283,42 @@ func DrawSprites(ecs *ecs.ECS, screen *ebiten.Image) {
 
 		screen.DrawImage(sprite.Image, drawOp)
 	})
+}
+
+// TriggerHitFlash starts a white flash effect on the entity (for hits dealt)
+func TriggerHitFlash(entry *donburi.Entry) {
+	// Don't flash dying entities
+	if entry.HasComponent(components.Death) {
+		return
+	}
+	if entry.HasComponent(components.Flash) {
+		flash := components.Flash.Get(entry)
+		flash.Duration = cfg.Combat.HitFlashFrames
+		flash.R, flash.G, flash.B = 3, 3, 3
+	} else {
+		entry.AddComponent(components.Flash)
+		components.Flash.Set(entry, &components.FlashData{
+			Duration: cfg.Combat.HitFlashFrames,
+			R:        3, G: 3, B: 3, // Bright white (multiplier)
+		})
+	}
+}
+
+// TriggerDamageFlash starts a red flash effect on the entity (for damage taken)
+func TriggerDamageFlash(entry *donburi.Entry) {
+	// Don't flash dying entities
+	if entry.HasComponent(components.Death) {
+		return
+	}
+	if entry.HasComponent(components.Flash) {
+		flash := components.Flash.Get(entry)
+		flash.Duration = cfg.Combat.DamageFlashFrames
+		flash.R, flash.G, flash.B = 3, 1, 1
+	} else {
+		entry.AddComponent(components.Flash)
+		components.Flash.Set(entry, &components.FlashData{
+			Duration: cfg.Combat.DamageFlashFrames,
+			R:        3, G: 1, B: 1, // Red tint (multiplier)
+		})
+	}
 }

@@ -19,6 +19,7 @@ type BoomerangData struct {
 	PierceDistance   float64
 	HitEnemies       map[*donburi.Entry]struct{}
 	Damage           int
+	ChargeRatio      float64 // 0.0 = quick throw, 1.0 = fully charged
 }
 
 var Boomerang = donburi.NewComponentType[BoomerangData]()

@@ -41,6 +41,14 @@ const (
 	// Enemy AI states
 	StatePatrol
 	StateChase
+
+	// VFX states (dust and impact effects)
+	StateJumpDust
+	StateLandDust
+	StateSlideDust
+	StateExplosionShort
+	StatePlasma
+	StateGunshot
 )
 
 // StateToFileName maps StateID to the corresponding filename prefix.
@@ -80,6 +88,14 @@ var StateToFileName = map[StateID]string{
 	// Enemy AI states map to movement animations
 	StatePatrol: "walk",
 	StateChase:  "running",
+
+	// VFX states map to effect sprite files
+	StateJumpDust:       "jumpdust",
+	StateLandDust:       "landingdust",
+	StateSlideDust:      "slidedust",
+	StateExplosionShort: "explosion_short",
+	StatePlasma:         "plasma",
+	StateGunshot:        "gunshot_rifle",
 }
 
 func (s StateID) String() string {

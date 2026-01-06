@@ -72,7 +72,8 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 		MaxRange:         maxRange,
 		PierceDistance:   config.Boomerang.PierceDistance,
 		HitEnemies:       make(map[*donburi.Entry]struct{}),
-		Damage:           20, // Significant damage
+		Damage:           20,         // Significant damage
+		ChargeRatio:      chargeRatio, // Store for scaled effects
 	})
 
 	// Sprite
@@ -88,6 +89,13 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 	if owner.HasComponent(components.Player) {
 		ownerPlayer.ActiveBoomerang = b
 	}
+
+	// Spawn gunshot muzzle flash effect in front of player
+	// Offset further from player center so effect doesn't clip into player sprite
+	gunshotOffset := 45.0
+	gunshotX := ownerObj.X + ownerObj.W/2 + gunshotOffset*facingX
+	gunshotY := ownerObj.Y + ownerObj.H/2
+	SpawnGunshot(ecs, gunshotX, gunshotY, facingX)
 
 	return b
 }

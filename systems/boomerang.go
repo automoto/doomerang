@@ -5,6 +5,7 @@ import (
 
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
+	"github.com/automoto/doomerang/systems/factory"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -100,11 +101,7 @@ func SwitchToInbound(b *components.BoomerangData, physics *components.PhysicsDat
 	}
 	b.State = components.BoomerangInbound
 	physics.Gravity = 0 // Disable gravity for homing return
-	
-	// Reset hit enemies so we can hit them again on return
-	for k := range b.HitEnemies {
-		delete(b.HitEnemies, k)
-	}
+	// Keep HitEnemies - each enemy should only be hit once per throw
 }
 
 func checkCollisions(ecs *ecs.ECS, e *donburi.Entry, b *components.BoomerangData, physics *components.PhysicsData, obj *components.ObjectData) {
@@ -152,23 +149,45 @@ func handleEnemyCollision(ecs *ecs.ECS, boomerangEntry *donburi.Entry, b *compon
 	// Play impact sound
 	PlaySFX(ecs, cfg.SoundBoomerangImpact)
 
+	// Visual effects: hit flash on enemy
+	TriggerHitFlash(enemyEntry)
+
+	// Impact effect at enemy position - scale based on charge
+	// Quick throw (0.0) = 50% size, fully charged (1.0) = 100% size
+	impactX := enemyObj.X + enemyObj.W/2
+	impactY := enemyObj.Y + enemyObj.H/2
+	explosionScale := 0.5 + b.ChargeRatio*0.5
+	factory.SpawnExplosion(ecs, impactX, impactY, explosionScale)
+	TriggerScreenShake(ecs, cfg.ScreenShake.BoomerangIntensity, cfg.ScreenShake.BoomerangDuration)
+
 	// Apply Damage
 	if health := components.Health.Get(enemyEntry); health != nil {
 		health.Current -= b.Damage
 
+		// Show health bar on hit
+		if !enemyEntry.HasComponent(components.HealthBar) {
+			donburi.Add(enemyEntry, components.HealthBar, &components.HealthBarData{
+				TimeToLive: cfg.Combat.HealthBarDuration,
+			})
+		} else {
+			// Reset timer if health bar already visible
+			hb := components.HealthBar.Get(enemyEntry)
+			hb.TimeToLive = cfg.Combat.HealthBarDuration
+		}
+
 		// Knockback (simplified)
 		if enemyPhysics := components.Physics.Get(enemyEntry); enemyPhysics != nil {
 			if b.State == components.BoomerangOutbound {
-				enemyPhysics.SpeedX = 2.0
+				enemyPhysics.SpeedX = cfg.Boomerang.HitKnockback
 			} else {
-				enemyPhysics.SpeedX = -2.0
+				enemyPhysics.SpeedX = -cfg.Boomerang.HitKnockback
 			}
 		}
 	}
 
-	// Visual Feedback
+	// Visual Feedback - use half the normal enemy invuln frames for boomerang hits
 	if enemyComp := components.Enemy.Get(enemyEntry); enemyComp != nil {
-		enemyComp.InvulnFrames = 15 
+		enemyComp.InvulnFrames = cfg.Combat.EnemyInvulnFrames / 2
 	}
 
 	// Add to hit map

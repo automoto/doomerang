@@ -352,6 +352,10 @@ func applyHitToEnemy(ecs *ecs.ECS, enemyEntry *donburi.Entry, hitbox *components
 	// Play hit sound
 	PlaySFX(ecs, cfg.SoundHit)
 
+	// Visual effects: flash and screen shake (same for punch, kick, jump kick)
+	TriggerHitFlash(enemyEntry)
+	TriggerScreenShake(ecs, cfg.ScreenShake.MeleeIntensity, cfg.ScreenShake.MeleeDuration)
+
 	// Apply damage
 	donburi.Add(enemyEntry, components.DamageEvent, &components.DamageEventData{
 		Amount: hitbox.Damage,
@@ -372,6 +376,10 @@ func applyHitToPlayer(ecs *ecs.ECS, playerEntry *donburi.Entry, hitbox *componen
 
 	// Play hit sound
 	PlaySFX(ecs, cfg.SoundHit)
+
+	// Visual effects: damage flash and stronger screen shake
+	TriggerDamageFlash(playerEntry)
+	TriggerScreenShake(ecs, cfg.ScreenShake.PlayerDamageIntensity, cfg.ScreenShake.PlayerDamageDuration)
 
 	// Apply damage
 	donburi.Add(playerEntry, components.DamageEvent, &components.DamageEventData{

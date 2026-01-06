@@ -113,6 +113,10 @@ type CombatConfig struct {
 
 	// Health bar display
 	HealthBarDuration int // frames
+
+	// Flash effects (frames)
+	HitFlashFrames    int // white flash when dealing damage
+	DamageFlashFrames int // red flash when taking damage
 }
 
 // PhysicsConfig contains physics-related configuration values
@@ -179,6 +183,7 @@ type BoomerangConfig struct {
 	PierceDistance float64
 	Gravity        float64
 	MaxChargeTime  int
+	HitKnockback   float64 // horizontal knockback applied to enemies on hit
 }
 
 // PauseConfig contains pause menu configuration values
@@ -217,6 +222,25 @@ type GameOverConfig struct {
 	MenuOptions       []string
 }
 
+// ScreenShakeConfig contains screen shake effect configuration
+type ScreenShakeConfig struct {
+	MeleeIntensity        float64 // pixels - punch, kick, jump kick (all same)
+	MeleeDuration         int     // frames
+	PlayerDamageIntensity float64 // pixels
+	PlayerDamageDuration  int     // frames
+	BoomerangIntensity    float64 // pixels - charged throw impact
+	BoomerangDuration     int     // frames
+}
+
+// SquashStretchConfig contains squash/stretch effect configuration
+type SquashStretchConfig struct {
+	JumpScaleX float64 // horizontal scale on jump (< 1 = narrower)
+	JumpScaleY float64 // vertical scale on jump (> 1 = taller)
+	LandScaleX float64 // horizontal scale on land (> 1 = wider)
+	LandScaleY float64 // vertical scale on land (< 1 = shorter)
+	LerpSpeed  float64 // how fast to return to normal scale
+}
+
 // Config holds general game configuration
 type Config struct {
 	Width  int
@@ -235,6 +259,8 @@ var Boomerang BoomerangConfig
 var Pause PauseConfig
 var Menu MenuConfig
 var GameOver GameOverConfig
+var ScreenShake ScreenShakeConfig
+var SquashStretch SquashStretchConfig
 
 // Shared RGBA color constants
 var (
@@ -326,6 +352,7 @@ func init() {
 		PierceDistance: 40.0,
 		Gravity:        0.2,
 		MaxChargeTime:  60,
+		HitKnockback:   2.0,
 	}
 
 	// Enemy Config
@@ -443,6 +470,10 @@ func init() {
 		JumpKickRotation: 0.35,
 
 		HealthBarDuration: 180,
+
+		// Flash effects
+		HitFlashFrames:    3,
+		DamageFlashFrames: 5,
 	}
 
 	// Pause Config
@@ -479,5 +510,24 @@ func init() {
 		MenuItemHeight:    30,
 		MenuItemGap:       15,
 		MenuOptions:       []string{"Retry", "Main Menu"},
+	}
+
+	// Screen Shake Config
+	ScreenShake = ScreenShakeConfig{
+		MeleeIntensity:        2.0,
+		MeleeDuration:         5,
+		PlayerDamageIntensity: 4.0,
+		PlayerDamageDuration:  8,
+		BoomerangIntensity:    4.0,
+		BoomerangDuration:     6,
+	}
+
+	// Squash/Stretch Config
+	SquashStretch = SquashStretchConfig{
+		JumpScaleX: 0.7,
+		JumpScaleY: 1.5,
+		LandScaleX: 1.5,
+		LandScaleY: 0.6,
+		LerpSpeed:  0.10,
 	}
 }
