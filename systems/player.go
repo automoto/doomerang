@@ -240,11 +240,25 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 			if player.BoomerangChargeTime < cfg.Boomerang.MaxChargeTime {
 				player.BoomerangChargeTime++
 			}
+			// Spawn charge VFX after holding for a bit (not on quick throws)
+			if player.BoomerangChargeTime == 15 && player.ChargeVFX == nil {
+				player.ChargeVFX = factory.SpawnChargeVFX(ecs, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+				PlaySFX(ecs, cfg.SoundBoomerangCharge)
+			}
+			// Update charge VFX position to follow player's feet
+			if player.ChargeVFX != nil {
+				factory.UpdateChargeVFXPosition(player.ChargeVFX, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+			}
 			// Apply friction instead of instant stop for smoother feel
 			applyThrowFriction(physics)
 			break
 		}
 		// Released - throw!
+		// Destroy charge VFX if it exists
+		if player.ChargeVFX != nil {
+			factory.DestroyChargeVFX(ecs, player.ChargeVFX)
+			player.ChargeVFX = nil
+		}
 		state.CurrentState = cfg.Throw
 		state.StateTimer = 0
 		PlaySFX(ecs, cfg.SoundBoomerangThrow)

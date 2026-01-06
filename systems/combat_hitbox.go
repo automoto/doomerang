@@ -6,6 +6,7 @@ import (
 	"github.com/automoto/doomerang/archetypes"
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
+	"github.com/automoto/doomerang/systems/factory"
 	"github.com/automoto/doomerang/tags"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -168,18 +169,27 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 	// Create shared hit map for all hitboxes in this attack
 	sharedHitMap := make(map[*donburi.Entry]bool)
 
+	// Calculate charge ratio before applying bonuses (for VFX scaling)
+	var chargeRatio float64
+	if isPlayer {
+		melee := components.MeleeAttack.Get(owner)
+		chargeRatio = float64(melee.ChargeTime) / float64(cfg.Combat.MaxChargeTime)
+		if chargeRatio > 1.0 {
+			chargeRatio = 1.0
+		}
+		melee.ChargeTime = 0 // Reset charge time
+	}
+
 	for _, config := range configs {
 		hitbox := archetypes.Hitbox.Spawn(ecs)
 
 		// Apply charge bonus
 		if isPlayer {
-			melee := components.MeleeAttack.Get(owner)
-			chargeBonus := 1.0 + (float64(melee.ChargeTime) / float64(cfg.Combat.MaxChargeTime))
+			chargeBonus := 1.0 + chargeRatio
 			config.Damage = int(float64(config.Damage) * chargeBonus)
 			config.Knockback *= chargeBonus
 			config.Width *= chargeBonus
 			config.Height *= chargeBonus
-			melee.ChargeTime = 0 // Reset charge time
 		}
 
 		// Position hitbox in front of attacker
@@ -222,6 +232,7 @@ func CreateHitbox(ecs *ecs.ECS, owner *donburi.Entry, ownerObject *resolv.Object
 			LifeTime:       config.Lifetime,
 			HitEntities:    sharedHitMap,
 			AttackType:     attackType,
+			ChargeRatio:    chargeRatio,
 		})
 
 		// Set active hitbox reference on owner
@@ -355,6 +366,12 @@ func applyHitToEnemy(ecs *ecs.ECS, enemyEntry *donburi.Entry, hitbox *components
 	// Visual effects: flash and screen shake (same for punch, kick, jump kick)
 	TriggerHitFlash(enemyEntry)
 	TriggerScreenShake(ecs, cfg.ScreenShake.MeleeIntensity, cfg.ScreenShake.MeleeDuration)
+
+	// Spawn hit particles at enemy center, scaled by charge
+	hitX := enemyObject.X + enemyObject.W/2
+	hitY := enemyObject.Y + enemyObject.H/2
+	explosionScale := 0.5 + hitbox.ChargeRatio*0.5 // 50% to 100% size
+	factory.SpawnHitExplosion(ecs, hitX, hitY, explosionScale)
 
 	// Apply damage
 	donburi.Add(enemyEntry, components.DamageEvent, &components.DamageEventData{

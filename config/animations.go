@@ -45,5 +45,7 @@ var CharacterAnimations = map[string]map[StateID]AnimationDef{
 		StateExplosionShort: {First: 0, Last: 24, Step: 1, Speed: 2}, // 57x56 frames
 		StatePlasma:         {First: 0, Last: 23, Step: 1, Speed: 2}, // 32x43 frames
 		StateGunshot:        {First: 0, Last: 12, Step: 1, Speed: 2}, // 46x26 frames
+		HitExplosion:        {First: 0, Last: 64, Step: 4, Speed: 1}, // 47x57 frames, fast playback
+		ChargeUp:            {First: 25, Last: 49, Step: 1, Speed: 2}, // 102x135 frames, second half only
 	},
 }

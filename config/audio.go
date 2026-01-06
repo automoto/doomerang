@@ -18,6 +18,7 @@ const (
 	SoundBoomerangThrow
 	SoundBoomerangCatch
 	SoundBoomerangImpact
+	SoundBoomerangCharge
 	// UI sounds
 	SoundMenuNavigate
 	SoundMenuSelect
@@ -61,6 +62,7 @@ func init() {
 			SoundBoomerangThrow:  "audio/sfx/boomerang_throw.wav",
 			SoundBoomerangCatch:  "audio/sfx/boomerang_catch.wav",
 			SoundBoomerangImpact: "audio/sfx/boomerang_impact.wav",
+			SoundBoomerangCharge: "audio/sfx/boomerang_charge.wav",
 			SoundMenuNavigate:    "audio/sfx/menu_navigate.wav",
 			SoundMenuSelect:      "audio/sfx/menu_select.wav",
 		},

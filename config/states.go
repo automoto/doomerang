@@ -49,6 +49,8 @@ const (
 	StateExplosionShort
 	StatePlasma
 	StateGunshot
+	HitExplosion
+	ChargeUp
 )
 
 // StateToFileName maps StateID to the corresponding filename prefix.
@@ -93,9 +95,11 @@ var StateToFileName = map[StateID]string{
 	StateJumpDust:       "jumpdust",
 	StateLandDust:       "landingdust",
 	StateSlideDust:      "slidedust",
-	StateExplosionShort: "explosion_short",
-	StatePlasma:         "plasma",
-	StateGunshot:        "gunshot_rifle",
+	StateExplosionShort:  "explosion_short",
+	StatePlasma:          "plasma",
+	StateGunshot:         "gunshot_rifle",
+	HitExplosion:         "explosion",
+	ChargeUp:             "level_up",
 }
 
 func (s StateID) String() string {

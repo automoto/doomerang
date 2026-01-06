@@ -25,6 +25,8 @@ var vfxFrameSizes = map[cfg.StateID]struct{ W, H int }{
 	cfg.StateExplosionShort: {57, 56},
 	cfg.StatePlasma:         {32, 43},
 	cfg.StateGunshot:        {46, 26},
+	cfg.HitExplosion:        {47, 57},
+	cfg.ChargeUp:            {102, 135},
 }
 
 // VFX directories
@@ -35,6 +37,8 @@ var vfxDirs = map[cfg.StateID]string{
 	cfg.StateExplosionShort: "sfx",
 	cfg.StatePlasma:         "sfx",
 	cfg.StateGunshot:        "sfx",
+	cfg.HitExplosion:        "sfx",
+	cfg.ChargeUp:            "sfx",
 }
 
 // SpawnVFX creates a visual effect entity at the given position (bottom-center anchored, for dust effects)
@@ -239,4 +243,69 @@ func SpawnGunshot(ecs *ecs.ECS, x, y, directionX float64) {
 		rotation = math.Pi // Flip 180 degrees if facing left
 	}
 	SpawnVFXWithRotation(ecs, x, y, rotation, cfg.StateGunshot)
+}
+
+// SpawnHitExplosion spawns scaled hit explosion effect centered at position
+func SpawnHitExplosion(ecs *ecs.ECS, x, y, scale float64) {
+	SpawnVFXCenteredScaled(ecs, x, y, cfg.HitExplosion, scale)
+}
+
+// SpawnChargeVFX spawns a looping charge-up VFX at the player's feet and returns the entry
+func SpawnChargeVFX(ecs *ecs.ECS, x, y float64) *donburi.Entry {
+	size := vfxFrameSizes[cfg.ChargeUp]
+	dir := vfxDirs[cfg.ChargeUp]
+
+	entry := archetypes.VFXEffect.Spawn(ecs)
+
+	spaceEntry, ok := components.Space.First(ecs.World)
+	if !ok {
+		return nil
+	}
+	space := components.Space.Get(spaceEntry)
+
+	// Position at bottom-center: x,y is player's feet, so center horizontally and extend upward
+	obj := resolv.NewObject(x-float64(size.W)/2, y-float64(size.H), float64(size.W), float64(size.H))
+	obj.Data = entry
+	space.Add(obj)
+	components.Object.Set(entry, &components.ObjectData{Object: obj})
+
+	animData := createVFXAnimation(dir, cfg.ChargeUp, size.W, size.H)
+	components.Animation.Set(entry, animData)
+	animData.SetAnimation(cfg.ChargeUp)
+
+	// Don't auto-destroy - this VFX loops until manually destroyed
+	components.AutoDestroy.Set(entry, &components.AutoDestroyData{
+		FramesRemaining:   -1,
+		DestroyOnAnimLoop: false,
+	})
+
+	return entry
+}
+
+// DestroyChargeVFX removes a charge VFX entity
+func DestroyChargeVFX(ecs *ecs.ECS, entry *donburi.Entry) {
+	if entry == nil || !entry.Valid() {
+		return
+	}
+	if spaceEntry, ok := components.Space.First(ecs.World); ok {
+		obj := components.Object.Get(entry)
+		if obj != nil && obj.Object != nil {
+			components.Space.Get(spaceEntry).Remove(obj.Object)
+		}
+	}
+	ecs.World.Remove(entry.Entity())
+}
+
+// UpdateChargeVFXPosition updates the position of a charge VFX to follow a target
+func UpdateChargeVFXPosition(entry *donburi.Entry, x, y float64) {
+	if entry == nil || !entry.Valid() {
+		return
+	}
+	obj := components.Object.Get(entry)
+	if obj != nil && obj.Object != nil {
+		size := vfxFrameSizes[cfg.ChargeUp]
+		// Position at bottom-center: x,y is player's feet
+		obj.X = x - float64(size.W)/2
+		obj.Y = y - float64(size.H)
+	}
 }
