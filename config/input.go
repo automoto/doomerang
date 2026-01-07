@@ -16,6 +16,8 @@ const (
 	ActionPause
 	ActionMenuUp
 	ActionMenuDown
+	ActionMenuLeft
+	ActionMenuRight
 	ActionMenuSelect
 )
 
@@ -72,6 +74,12 @@ func init() {
 			},
 			ActionMenuDown: {
 				Keys: []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+			},
+			ActionMenuLeft: {
+				Keys: []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
+			},
+			ActionMenuRight: {
+				Keys: []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
 			},
 			ActionMenuSelect: {
 				Keys: []ebiten.Key{ebiten.KeyEnter},
