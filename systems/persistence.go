@@ -79,13 +79,11 @@ func SaveSettings(s *SavedSettings) error {
 		log.Printf("Warning: Could not save settings: %v", err)
 		return err
 	}
-	log.Printf("Settings saved successfully: %s", string(data))
 	return nil
 }
 
 // SaveCurrentSettings saves the current settings from the SettingsMenuData component
 func SaveCurrentSettings(s *components.SettingsMenuData) {
-	log.Println("SaveCurrentSettings called")
 	saved := &SavedSettings{
 		MusicVolume:     s.MusicVolume,
 		SFXVolume:       s.SFXVolume,

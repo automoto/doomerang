@@ -19,23 +19,20 @@ const (
 	ActionMenuLeft
 	ActionMenuRight
 	ActionMenuSelect
+	ActionMenuBack
 )
-
-// GamepadBinding represents a gamepad button on a specific gamepad
-type GamepadBinding struct {
-	GamepadID ebiten.GamepadID
-	Button    ebiten.GamepadButton
-}
 
 // InputBinding represents a single key or button binding for an action
 type InputBinding struct {
-	Keys           []ebiten.Key
-	GamepadButtons []GamepadBinding
+	Keys                   []ebiten.Key
+	StandardGamepadButtons []ebiten.StandardGamepadButton
 }
 
 // InputConfig holds all input mappings
 type InputConfig struct {
 	Bindings map[ActionID]InputBinding
+	// Deadzone for analog stick input (0.0 to 1.0)
+	AnalogDeadzone float64
 }
 
 // Input is the global input configuration
@@ -43,46 +40,98 @@ var Input InputConfig
 
 func init() {
 	Input = InputConfig{
+		AnalogDeadzone: 0.25,
 		Bindings: map[ActionID]InputBinding{
 			ActionMoveLeft: {
 				Keys: []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
+				// D-pad Left (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftLeft,
+				},
 			},
 			ActionMoveRight: {
 				Keys: []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
+				// D-pad Right (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftRight,
+				},
 			},
 			ActionJump: {
 				Keys: []ebiten.Key{ebiten.KeyX, ebiten.KeyW},
-				GamepadButtons: []GamepadBinding{
-					{GamepadID: 0, Button: ebiten.GamepadButton0},
-					{GamepadID: 1, Button: ebiten.GamepadButton0},
+				// A / Cross button
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonRightBottom,
 				},
 			},
 			ActionAttack: {
 				Keys: []ebiten.Key{ebiten.KeyZ},
+				// X / Square button
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonRightLeft,
+				},
 			},
 			ActionCrouch: {
 				Keys: []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+				// D-pad Down (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftBottom,
+				},
 			},
 			ActionBoomerang: {
 				Keys: []ebiten.Key{ebiten.KeySpace},
+				// B / Circle button
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonRightRight,
+				},
 			},
 			ActionPause: {
 				Keys: []ebiten.Key{ebiten.KeyEscape, ebiten.KeyP},
+				// Start / Options button
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonCenterRight,
+				},
 			},
 			ActionMenuUp: {
 				Keys: []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
+				// D-pad Up (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftTop,
+				},
 			},
 			ActionMenuDown: {
 				Keys: []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+				// D-pad Down (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftBottom,
+				},
 			},
 			ActionMenuLeft: {
 				Keys: []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
+				// D-pad Left (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftLeft,
+				},
 			},
 			ActionMenuRight: {
 				Keys: []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
+				// D-pad Right (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftRight,
+				},
 			},
 			ActionMenuSelect: {
 				Keys: []ebiten.Key{ebiten.KeyEnter},
+				// A / Cross button
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonRightBottom,
+				},
+			},
+			ActionMenuBack: {
+				Keys: []ebiten.Key{ebiten.KeyEscape, ebiten.KeyBackspace},
+				// B / Circle button
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonRightRight,
+				},
 			},
 		},
 	}

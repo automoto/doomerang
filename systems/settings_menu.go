@@ -29,7 +29,6 @@ func UpdateSettingsMenu(e *ecs.ECS) {
 	leftAction := input.Actions[cfg.ActionMenuLeft]
 	rightAction := input.Actions[cfg.ActionMenuRight]
 	selectAction := input.Actions[cfg.ActionMenuSelect]
-	pauseAction := input.Actions[cfg.ActionPause]
 
 	// Navigate up
 	if upAction.JustPressed {
@@ -58,8 +57,11 @@ func UpdateSettingsMenu(e *ecs.ECS) {
 		handleSelect(e, settings)
 	}
 
-	// Escape to close
-	if pauseAction.JustPressed {
+	// B/Circle, Start, or Escape to go back
+	backAction := input.Actions[cfg.ActionMenuBack]
+	boomerangAction := input.Actions[cfg.ActionBoomerang]
+	pauseAction := input.Actions[cfg.ActionPause]
+	if backAction.JustPressed || boomerangAction.JustPressed || pauseAction.JustPressed {
 		closeSettings(e, settings)
 	}
 }
@@ -351,6 +353,17 @@ func formatToggle(value bool) string {
 	return "[ ] Off"
 }
 
+// isControllerConnected checks if any gamepad with standard layout is connected
+func isControllerConnected() bool {
+	gamepadIDs = ebiten.AppendGamepadIDs(gamepadIDs[:0])
+	for _, gpID := range gamepadIDs {
+		if ebiten.IsStandardGamepadLayoutAvailable(gpID) {
+			return true
+		}
+	}
+	return false
+}
+
 // GetOrCreateSettingsMenu returns the singleton SettingsMenu component, creating if needed.
 func GetOrCreateSettingsMenu(e *ecs.ECS) *components.SettingsMenuData {
 	if _, ok := components.SettingsMenu.First(e.World); !ok {
@@ -359,6 +372,12 @@ func GetOrCreateSettingsMenu(e *ecs.ECS) *components.SettingsMenuData {
 		// Initialize with current audio values
 		musicVol := GetMusicVolume()
 		sfxVol := GetSFXVolume()
+
+		// Auto-detect input mode based on connected controllers
+		inputMode := int(cfg.InputModeKeyboard)
+		if isControllerConnected() {
+			inputMode = int(cfg.InputModeController)
+		}
 
 		components.SettingsMenu.SetValue(ent, components.SettingsMenuData{
 			IsOpen:          false,
@@ -369,7 +388,7 @@ func GetOrCreateSettingsMenu(e *ecs.ECS) *components.SettingsMenuData {
 			Muted:           false,
 			Fullscreen:      ebiten.IsFullscreen(),
 			ResolutionIndex: cfg.SettingsMenu.DefaultResolutionIndex,
-			InputMode:       int(cfg.InputModeKeyboard),
+			InputMode:       inputMode,
 			PreMuteMusicVol: musicVol,
 			PreMuteSFXVol:   sfxVol,
 		})
