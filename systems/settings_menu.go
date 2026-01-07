@@ -252,16 +252,25 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 	fontFace := fonts.ExcelBold.Get()
 	titleFont := fonts.ExcelTitle.Get()
 
-	// Draw title
+	// Draw title centered near top
 	title := "SETTINGS"
 	titleWidth := len(title) * 20
 	titleX := int((width - float64(titleWidth)) / 2)
-	text.Draw(screen, title, titleFont, titleX, 60, cfg.Menu.TitleColor)
+	text.Draw(screen, title, titleFont, titleX, 35, cfg.Menu.TitleColor)
 
-	// Calculate menu positioning
-	menuItemHeight := cfg.Pause.MenuItemHeight
-	menuItemGap := cfg.Pause.MenuItemGap
-	startY := 120.0
+	// Count visible options for layout calculation
+	visibleCount := 0
+	for opt := components.SettingsOptMusicVolume; opt <= components.SettingsOptBack; opt++ {
+		if !isOptionHidden(settings, opt) {
+			visibleCount++
+		}
+	}
+
+	// Calculate menu positioning - center vertically in available space
+	menuItemHeight := 24.0
+	menuItemGap := 10.0
+	totalMenuHeight := float64(visibleCount) * (menuItemHeight + menuItemGap)
+	startY := (height-totalMenuHeight)/2 + 10 // Offset slightly down from center
 
 	// Draw each option
 	optionIndex := 0
@@ -281,25 +290,24 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 		// Get label and value for this option
 		label, value := getOptionDisplay(settings, opt)
 
-		// Draw label on left side
-		labelX := int(width/2) - 150
+		// Draw label on left side (centered layout)
+		labelX := int(width/2) - 120
 		text.Draw(screen, label, fontFace, labelX, int(y)+int(menuItemHeight), textColor)
 
 		// Draw value on right side (if not Back button)
 		if opt != components.SettingsOptBack {
-			valueX := int(width/2) + 50
+			valueX := int(width/2) + 40
 			text.Draw(screen, value, fontFace, valueX, int(y)+int(menuItemHeight), textColor)
 		}
 
 		optionIndex++
 	}
 
-	// Draw navigation hint at bottom
-	hintY := startY + float64(optionIndex+1)*(menuItemHeight+menuItemGap)
-	hint := "Arrow Keys: Navigate/Adjust   Enter: Select   Esc: Back"
+	// Draw compact navigation hint at bottom
+	hint := "Arrows: Navigate   Enter: Select   Esc: Back"
 	hintWidth := len(hint) * 7
 	hintX := int((width - float64(hintWidth)) / 2)
-	text.Draw(screen, hint, fontFace, hintX, int(hintY), cfg.Pause.TextColorNormal)
+	text.Draw(screen, hint, fontFace, hintX, int(height)-12, cfg.Pause.TextColorNormal)
 }
 
 // getOptionDisplay returns the label and value display for an option
