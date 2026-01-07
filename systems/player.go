@@ -200,8 +200,8 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		} else if crouchAction.JustPressed && physics.OnGround != nil {
 			// Slide if moving fast enough, otherwise crouch
 			if absFloat(physics.SpeedX) >= cfg.Player.SlideSpeedThreshold {
+				PlaySFX(ecs, cfg.SoundSlide)
 				enterSlideState(state, playerObject)
-				// Spawn slide dust
 				factory.SpawnSlideDust(ecs, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
 			} else {
 				state.CurrentState = cfg.Crouch
