@@ -209,6 +209,16 @@ func SetSFXVolume(e *ecs.ECS, volume float64) {
 	globalSFXVolume = volume
 }
 
+// GetMusicVolume returns the current music volume (0.0 - 1.0)
+func GetMusicVolume() float64 {
+	return globalMusicVolume
+}
+
+// GetSFXVolume returns the current SFX volume (0.0 - 1.0)
+func GetSFXVolume() float64 {
+	return globalSFXVolume
+}
+
 // GetOrCreateAudio returns the singleton Audio component for this ECS, creating it if needed
 func GetOrCreateAudio(e *ecs.ECS) *components.AudioData {
 	initGlobalAudio()

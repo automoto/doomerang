@@ -1,7 +1,6 @@
 package systems
 
 import (
-	"log"
 	"os"
 
 	"github.com/automoto/doomerang/components"
@@ -37,6 +36,11 @@ func UpdatePause(ecs *ecs.ECS) {
 		return
 	}
 
+	// Skip pause menu input if settings is open
+	if IsSettingsOpen(ecs) {
+		return
+	}
+
 	upAction := input.Actions[cfg.ActionMenuUp]
 	downAction := input.Actions[cfg.ActionMenuDown]
 	selectAction := input.Actions[cfg.ActionMenuSelect]
@@ -64,7 +68,7 @@ func UpdatePause(ecs *ecs.ECS) {
 			pause.IsPaused = false
 			ResumeMusic(ecs)
 		case components.MenuSettings:
-			log.Println("Settings clicked")
+			OpenSettings(ecs, true)
 		case components.MenuExit:
 			os.Exit(0)
 		}

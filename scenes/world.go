@@ -84,6 +84,7 @@ func (ps *PlatformerScene) configure() {
 
 	// Systems that run even when paused
 	ecs.AddSystem(systems.UpdateSettings)
+	ecs.AddSystem(systems.UpdateSettingsMenu)
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCamera))
 
 	// Add renderers
@@ -95,6 +96,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddRenderer(cfg.Default, systems.DrawHUD)
 	ecs.AddRenderer(cfg.Default, systems.DrawDebug)
 	ecs.AddRenderer(cfg.Default, systems.DrawPause)
+	ecs.AddRenderer(cfg.Default, systems.DrawSettingsMenu)
 
 	ps.ecs = ecs
 

@@ -26,6 +26,11 @@ type PlatformerSceneCreator interface {
 // NewUpdateMenu creates an UpdateMenu system with scene transition capability
 func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() interface{}) ecs.System {
 	return func(e *ecs.ECS) {
+		// Skip menu input if settings is open
+		if IsSettingsOpen(e) {
+			return
+		}
+
 		menu := GetOrCreateMenu(e)
 		input := getOrCreateInput(e)
 
@@ -60,7 +65,7 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 			case components.MainMenuLevelSelect:
 				log.Println("Level Select clicked")
 			case components.MainMenuSettings:
-				log.Println("Settings clicked")
+				OpenSettings(e, false)
 			case components.MainMenuExit:
 				os.Exit(0)
 			}

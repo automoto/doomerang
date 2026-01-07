@@ -8,6 +8,7 @@ import (
 	"github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/automoto/doomerang/scenes"
+	"github.com/automoto/doomerang/systems"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -68,6 +69,15 @@ func main() {
 
 	ebiten.SetWindowSize(config.C.Width, config.C.Height)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+	// Initialize persistence and load saved settings
+	if err := systems.InitPersistence(); err != nil {
+		log.Printf("Warning: Could not initialize persistence: %v", err)
+	}
+	if saved, err := systems.LoadSettings(); err == nil && saved != nil {
+		systems.ApplySavedSettingsGlobal(saved)
+	}
+
 	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatal(err)
 	}

@@ -38,6 +38,8 @@ github.com/lafriks/go-tiled v0.13.0/go.mod h1:FRhv/27R9S9IOmDl7+XrSUjFrV0uCUCu23
 github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8/go.mod h1:HKlIX3XHQyzLZPlr7++PzdhaXEj94dEiJgZDTsxEqUI=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/quasilyte/gdata v0.8.1 h1:cR9TFUHrRciVq1E4hqofan6jcQvmJd9lM1E7YLeUfi8=
+github.com/quasilyte/gdata v0.8.1/go.mod h1:VZbd2RCpKR2cbTGuLC1Esnyl1+KFv/jXBJrs/ijL8TA=
 github.com/solarlune/resolv v0.6.0 h1:FUUWXA7RySs1bdr6OCFByi0Vc0JJdlcoEjf1s3FaFII=
 github.com/solarlune/resolv v0.6.0/go.mod h1:92rrmv+F90KfITUMXZF/iUqWbkM7IRZOdJPWwmstTEU=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
