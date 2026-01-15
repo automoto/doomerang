@@ -262,7 +262,8 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		state.CurrentState = cfg.Throw
 		state.StateTimer = 0
 		PlaySFX(ecs, cfg.SoundBoomerangThrow)
-		factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
+		aimX, aimY := calculateBoomerangAim(input, player.Direction.X)
+		factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime), aimX, aimY)
 
 	case cfg.Throw:
 		// Apply friction instead of instant stop for smoother feel
@@ -351,6 +352,31 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 	}
 
 	updatePlayerAnimation(state, animData)
+}
+
+// calculateBoomerangAim returns the aim direction vector based on input.
+// Returns (aimX, aimY) where the vector represents the throw direction.
+func calculateBoomerangAim(input *components.InputData, facingX float64) (aimX, aimY float64) {
+	upAction := input.Actions[cfg.ActionMoveUp]
+	downAction := input.Actions[cfg.ActionCrouch] // Down/Crouch key for aiming down
+	leftAction := input.Actions[cfg.ActionMoveLeft]
+	rightAction := input.Actions[cfg.ActionMoveRight]
+
+	horizontal := leftAction.Pressed || rightAction.Pressed
+
+	if upAction.Pressed && !downAction.Pressed {
+		if horizontal {
+			return facingX, -1.0 // Diagonal up
+		}
+		return 0, -1.0 // Straight up
+	}
+	if downAction.Pressed && !upAction.Pressed {
+		if horizontal {
+			return facingX, 1.0 // Diagonal down
+		}
+		return 0, 1.0 // Straight down
+	}
+	return facingX, 0 // Forward (default)
 }
 
 // Helper functions for state management

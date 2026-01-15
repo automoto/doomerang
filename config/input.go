@@ -9,6 +9,7 @@ const (
 	ActionNone ActionID = iota
 	ActionMoveLeft
 	ActionMoveRight
+	ActionMoveUp
 	ActionJump
 	ActionAttack
 	ActionCrouch
@@ -54,6 +55,13 @@ func init() {
 				// D-pad Right (analog stick handled separately)
 				StandardGamepadButtons: []ebiten.StandardGamepadButton{
 					ebiten.StandardGamepadButtonLeftRight,
+				},
+			},
+			ActionMoveUp: {
+				Keys: []ebiten.Key{ebiten.KeyUp},
+				// D-pad Up (analog stick handled separately)
+				StandardGamepadButtons: []ebiten.StandardGamepadButton{
+					ebiten.StandardGamepadButtonLeftTop,
 				},
 			},
 			ActionJump: {
