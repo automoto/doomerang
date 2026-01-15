@@ -175,14 +175,29 @@ func handleEnemyCollision(ecs *ecs.ECS, boomerangEntry *donburi.Entry, b *compon
 			hb.TimeToLive = cfg.Combat.HealthBarDuration
 		}
 
-		// Knockback (simplified)
-		if enemyPhysics := components.Physics.Get(enemyEntry); enemyPhysics != nil {
-			if b.State == components.BoomerangOutbound {
-				enemyPhysics.SpeedX = cfg.Boomerang.HitKnockback
-			} else {
-				enemyPhysics.SpeedX = -cfg.Boomerang.HitKnockback
-			}
+	}
+
+	// Set Hit state to trigger knockback animation and prevent AI override
+	if enemyEntry.HasComponent(components.State) {
+		state := components.State.Get(enemyEntry)
+		state.CurrentState = cfg.Hit
+		state.StateTimer = 0
+	}
+
+	// Apply knockback similar to melee attacks
+	if enemyPhysics := components.Physics.Get(enemyEntry); enemyPhysics != nil {
+		boomerangObj := components.Object.Get(boomerangEntry).Object
+		boomerangCenterX := boomerangObj.X + boomerangObj.W/2
+		enemyCenterX := enemyObj.X + enemyObj.W/2
+
+		// Knockback pushes enemy AWAY from boomerang
+		knockbackDirection := 1.0
+		if enemyCenterX < boomerangCenterX {
+			knockbackDirection = -1.0
 		}
+
+		enemyPhysics.SpeedX = knockbackDirection * cfg.Boomerang.HitKnockback
+		enemyPhysics.SpeedY = cfg.Combat.KnockbackUpwardForce
 	}
 
 	// Visual Feedback - use half the normal enemy invuln frames for boomerang hits
