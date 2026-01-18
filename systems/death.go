@@ -73,16 +73,24 @@ func RespawnPlayer(ecs *ecs.ECS, e *donburi.Entry) {
 	}
 	levelData := components.Level.Get(levelEntry)
 
-	if len(levelData.CurrentLevel.PlayerSpawns) == 0 {
-		return
+	// Determine spawn position - use checkpoint if available, else default spawn
+	var spawnX, spawnY float64
+	if levelData.ActiveCheckpoint != nil {
+		spawnX = levelData.ActiveCheckpoint.SpawnX
+		spawnY = levelData.ActiveCheckpoint.SpawnY
+	} else {
+		if len(levelData.CurrentLevel.PlayerSpawns) == 0 {
+			return
+		}
+		spawn := levelData.CurrentLevel.PlayerSpawns[0]
+		spawnX = spawn.X
+		spawnY = spawn.Y
 	}
-
-	spawn := levelData.CurrentLevel.PlayerSpawns[0]
 
 	// Reset position
 	obj := components.Object.Get(e)
-	obj.X = spawn.X
-	obj.Y = spawn.Y
+	obj.X = spawnX
+	obj.Y = spawnY
 
 	// Reset physics
 	physics := components.Physics.Get(e)

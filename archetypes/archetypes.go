@@ -68,6 +68,11 @@ var (
 		components.Animation,
 		components.AutoDestroy,
 	)
+	Checkpoint = newArchetype(
+		tags.Checkpoint,
+		components.Checkpoint,
+		components.Object,
+	)
 )
 
 type archetype struct {

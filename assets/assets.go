@@ -35,6 +35,7 @@ type Level struct {
 	EnemySpawns  []EnemySpawn
 	PlayerSpawns []PlayerSpawn
 	DeadZones    []DeadZone
+	Checkpoints  []CheckpointSpawn
 	Name         string
 	Width        int
 	Height       int
@@ -55,6 +56,11 @@ type EnemySpawn struct {
 
 type DeadZone struct {
 	X, Y, Width, Height float64
+}
+
+type CheckpointSpawn struct {
+	X, Y, Width, Height float64
+	CheckpointID        float64
 }
 
 type LevelLoader struct{}
@@ -147,6 +153,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		EnemySpawns:  []EnemySpawn{},
 		PlayerSpawns: []PlayerSpawn{},
 		DeadZones:    []DeadZone{},
+		Checkpoints:  []CheckpointSpawn{},
 		Name:         levelPath,
 		Width:        levelMap.Width * levelMap.TileWidth,
 		Height:       levelMap.Height * levelMap.TileHeight,
@@ -204,6 +211,17 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					Y:      o.Y,
 					Width:  o.Width,
 					Height: o.Height,
+				})
+			}
+		case "Checkpoint":
+			for _, o := range og.Objects {
+				checkpointID := o.Properties.GetFloat("checkpointID")
+				level.Checkpoints = append(level.Checkpoints, CheckpointSpawn{
+					X:            o.X,
+					Y:            o.Y,
+					Width:        o.Width,
+					Height:       o.Height,
+					CheckpointID: checkpointID,
 				})
 			}
 		}

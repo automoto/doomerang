@@ -80,6 +80,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombat))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombatHitboxes))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateDeaths))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCheckpoints))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEffects))
 
 	// Systems that run even when paused
@@ -127,6 +128,11 @@ func (ps *PlatformerScene) configure() {
 	// Create dead zones from the level
 	for _, dz := range levelData.CurrentLevel.DeadZones {
 		factory2.CreateDeadZone(ps.ecs, dz.X, dz.Y, dz.Width, dz.Height)
+	}
+
+	// Create checkpoints from the level
+	for _, ckp := range levelData.CurrentLevel.Checkpoints {
+		factory2.CreateCheckpoint(ps.ecs, ckp.X, ckp.Y, ckp.Width, ckp.Height, ckp.CheckpointID)
 	}
 
 	// Determine player spawn position
