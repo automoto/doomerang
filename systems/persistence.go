@@ -92,7 +92,7 @@ func SaveCurrentSettings(s *components.SettingsMenuData) {
 		ResolutionIndex: s.ResolutionIndex,
 		InputMode:       s.InputMode,
 	}
-	SaveSettings(saved)
+	_ = SaveSettings(saved)
 }
 
 // ApplySavedSettings applies loaded settings to the game systems

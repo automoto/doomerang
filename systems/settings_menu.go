@@ -187,11 +187,6 @@ func toggleMute(e *ecs.ECS, s *components.SettingsMenuData) {
 func toggleFullscreen(s *components.SettingsMenuData) {
 	s.Fullscreen = !s.Fullscreen
 	ebiten.SetFullscreen(s.Fullscreen)
-
-	// If exiting fullscreen and resolution is selected, move to next valid option
-	if !s.Fullscreen && s.SelectedOption == components.SettingsOptResolution {
-		// Resolution is now visible, no need to change selection
-	}
 }
 
 // cycleResolution cycles through available resolutions

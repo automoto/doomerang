@@ -11,6 +11,7 @@ var (
 	Hitbox           = donburi.NewTag().SetName("Hitbox")
 	Boomerang        = donburi.NewTag().SetName("Boomerang")
 	Checkpoint       = donburi.NewTag().SetName("Checkpoint")
+	Fire             = donburi.NewTag().SetName("Fire")
 )
 
 // Resolv tags for physics collision
@@ -22,6 +23,7 @@ const (
 	ResolvBoomerang  = "Boomerang"
 	ResolvDeadZone   = "deadzone"
 	ResolvCheckpoint = "checkpoint"
+	ResolvFire       = "fire"
 
 	// Slope type tags
 	Slope45UpRight = "45_up_right"

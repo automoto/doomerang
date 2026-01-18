@@ -51,6 +51,10 @@ const (
 	StateGunshot
 	HitExplosion
 	ChargeUp
+
+	// Fire obstacle states
+	FirePulsing
+	FireContinuous
 )
 
 // StateToFileName maps StateID to the corresponding filename prefix.
@@ -100,6 +104,10 @@ var StateToFileName = map[StateID]string{
 	StateGunshot:         "gunshot_rifle",
 	HitExplosion:         "explosion",
 	ChargeUp:             "level_up",
+
+	// Fire obstacle sprites
+	FirePulsing:    "flames_pulse",
+	FireContinuous: "flame_continuous",
 }
 
 func (s StateID) String() string {

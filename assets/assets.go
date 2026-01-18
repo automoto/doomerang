@@ -36,6 +36,7 @@ type Level struct {
 	PlayerSpawns []PlayerSpawn
 	DeadZones    []DeadZone
 	Checkpoints  []CheckpointSpawn
+	Fires        []FireSpawn
 	Name         string
 	Width        int
 	Height       int
@@ -61,6 +62,12 @@ type DeadZone struct {
 type CheckpointSpawn struct {
 	X, Y, Width, Height float64
 	CheckpointID        float64
+}
+
+type FireSpawn struct {
+	X, Y      float64
+	FireType  string // "fire_pulsing" or "fire_continuous"
+	Direction string // "up", "down", "left", "right" (default: "right")
 }
 
 type LevelLoader struct{}
@@ -154,6 +161,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		PlayerSpawns: []PlayerSpawn{},
 		DeadZones:    []DeadZone{},
 		Checkpoints:  []CheckpointSpawn{},
+		Fires:        []FireSpawn{},
 		Name:         levelPath,
 		Width:        levelMap.Width * levelMap.TileWidth,
 		Height:       levelMap.Height * levelMap.TileHeight,
@@ -223,6 +231,28 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					Height:       o.Height,
 					CheckpointID: checkpointID,
 				})
+			}
+		case "Obstacles":
+			for _, o := range og.Objects {
+				// Parse fire obstacles by object type
+				// Note: Using Type field as TMX files use type= attribute
+				fireType := o.Class
+				if fireType == "" {
+					fireType = o.Type //nolint:staticcheck // TMX uses type= attribute
+				}
+				if fireType == "fire_pulsing" || fireType == "fire_continuous" {
+					// Get direction from Tiled properties, default to "right"
+					direction := o.Properties.GetString("Direction")
+					if direction == "" {
+						direction = "right"
+					}
+					level.Fires = append(level.Fires, FireSpawn{
+						X:         o.X,
+						Y:         o.Y,
+						FireType:  fireType,
+						Direction: direction,
+					})
+				}
 			}
 		}
 	}

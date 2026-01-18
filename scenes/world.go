@@ -81,6 +81,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombatHitboxes))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateDeaths))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCheckpoints))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateFire))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEffects))
 
 	// Systems that run even when paused
@@ -133,6 +134,11 @@ func (ps *PlatformerScene) configure() {
 	// Create checkpoints from the level
 	for _, ckp := range levelData.CurrentLevel.Checkpoints {
 		factory2.CreateCheckpoint(ps.ecs, ckp.X, ckp.Y, ckp.Width, ckp.Height, ckp.CheckpointID)
+	}
+
+	// Create fire obstacles from the level
+	for _, fire := range levelData.CurrentLevel.Fires {
+		factory2.CreateFire(ps.ecs, fire.X, fire.Y, fire.FireType, fire.Direction)
 	}
 
 	// Determine player spawn position

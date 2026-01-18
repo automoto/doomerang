@@ -186,6 +186,29 @@ type BoomerangConfig struct {
 	HitKnockback   float64 // horizontal knockback applied to enemies on hit
 }
 
+// FireHitboxPhase defines hitbox scaling for a range of animation frames
+type FireHitboxPhase struct {
+	StartFrame int
+	EndFrame   int
+	StartScale float64 // 0.0 to 1.0
+	EndScale   float64 // 0.0 to 1.0
+}
+
+// FireTypeConfig contains configuration for specific fire obstacle types
+type FireTypeConfig struct {
+	Damage         int
+	KnockbackForce float64
+	FrameWidth     int
+	FrameHeight    int
+	State          StateID
+	HitboxPhases   []FireHitboxPhase // nil = static hitbox (for fire_continuous)
+}
+
+// FireConfig contains fire obstacle configuration
+type FireConfig struct {
+	Types map[string]FireTypeConfig
+}
+
 // PauseConfig contains pause menu configuration values
 type PauseConfig struct {
 	OverlayColor      color.RGBA
@@ -256,6 +279,7 @@ var Physics PhysicsConfig
 var Animation AnimationConfig
 var UI UIConfig
 var Boomerang BoomerangConfig
+var Fire FireConfig
 var Pause PauseConfig
 var Menu MenuConfig
 var GameOver GameOverConfig
@@ -353,6 +377,32 @@ func init() {
 		Gravity:        0.2,
 		MaxChargeTime:  60,
 		HitKnockback:   2.0,
+	}
+
+	// Fire Config
+	Fire = FireConfig{
+		Types: map[string]FireTypeConfig{
+			"fire_pulsing": {
+				Damage:         15,
+				KnockbackForce: 6.0,
+				FrameWidth:     65,
+				FrameHeight:    43,
+				State:          FirePulsing,
+				HitboxPhases: []FireHitboxPhase{
+					{StartFrame: 0, EndFrame: 10, StartScale: 0.3, EndScale: 0.6},  // Igniting
+					{StartFrame: 11, EndFrame: 23, StartScale: 0.6, EndScale: 1.0}, // Growing
+					{StartFrame: 24, EndFrame: 34, StartScale: 1.0, EndScale: 0.0}, // Dying
+					// Frames 35-44: no entry = no hitbox
+				},
+			},
+			"fire_continuous": {
+				Damage:         15,
+				KnockbackForce: 6.0,
+				FrameWidth:     66,
+				FrameHeight:    47,
+				State:          FireContinuous,
+			},
+		},
 	}
 
 	// Enemy Config

@@ -73,6 +73,12 @@ var (
 		components.Checkpoint,
 		components.Object,
 	)
+	Fire = newArchetype(
+		tags.Fire,
+		components.Fire,
+		components.Object,
+		components.Animation,
+	)
 )
 
 type archetype struct {

@@ -3,6 +3,7 @@ package systems
 import (
 	"image"
 	"image/color"
+	"math"
 
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
@@ -73,11 +74,16 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 
 				// Check if this is a VFX entity with scale (uses center anchoring)
 				isVFX := e.HasComponent(components.VFXScale)
+				isFire := e.HasComponent(components.Fire)
+
 				if isVFX {
 					// VFX: anchor at center of sprite
 					drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight)/2)
 					vfxScale := components.VFXScale.Get(e)
 					drawOp.GeoM.Scale(vfxScale.Scale, vfxScale.Scale)
+				} else if isFire {
+					// Fire: anchor at center of sprite (flames extend from center)
+					drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight)/2)
 				} else {
 					// Characters: anchor at bottom-center so feet line up with collision box
 					drawOp.GeoM.Translate(-float64(animData.FrameWidth)/2, -float64(animData.FrameHeight))
@@ -87,6 +93,19 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				if e.HasComponent(components.SquashStretch) {
 					ss := components.SquashStretch.Get(e)
 					drawOp.GeoM.Scale(ss.ScaleX, ss.ScaleY)
+				}
+
+				// Handle fire direction (sprite faces right by default)
+				if e.HasComponent(components.Fire) {
+					fire := components.Fire.Get(e)
+					switch fire.Direction {
+					case "left":
+						drawOp.GeoM.Scale(-1, 1)
+					case "up":
+						drawOp.GeoM.Rotate(-math.Pi / 2)
+					case "down":
+						drawOp.GeoM.Rotate(math.Pi / 2)
+					}
 				}
 
 				// Flip the sprite if facing left.
@@ -115,7 +134,11 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				}
 
 				// Position the sprite
-				if isVFX {
+				if isFire {
+					// Fire: use fixed sprite center (doesn't move with dynamic hitbox)
+					fire := components.Fire.Get(e)
+					drawOp.GeoM.Translate(fire.SpriteCenterX, fire.SpriteCenterY)
+				} else if isVFX {
 					// VFX: center of sprite at center of collision box
 					drawOp.GeoM.Translate(o.X+o.W/2, o.Y+o.H/2)
 				} else {
