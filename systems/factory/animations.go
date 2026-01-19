@@ -50,7 +50,8 @@ func GenerateAnimations(key string, frameWidth, frameHeight int) *components.Ani
 			sx := sheetIndex * frameWidth
 			sy := 0
 			srcRect := image.Rect(sx, sy, sx+frameWidth, sy+frameHeight)
-			frames[sheetIndex] = sprite.SubImage(srcRect).(*ebiten.Image)
+			// Use the global frame cache to avoid creating duplicate images
+			frames[sheetIndex] = assets.GetFrame(key, state, sheetIndex, srcRect)
 		}
 		animData.CachedFrames[state] = frames
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"image"
 	"path/filepath"
 
 	"github.com/automoto/doomerang/config"
@@ -87,12 +88,14 @@ type PatrolPath struct {
 }
 
 type AnimationLoader struct {
-	cache map[string]*ebiten.Image
+	cache      map[string]*ebiten.Image
+	frameCache map[string]*ebiten.Image
 }
 
 func NewAnimationLoader() *AnimationLoader {
 	return &AnimationLoader{
-		cache: make(map[string]*ebiten.Image),
+		cache:      make(map[string]*ebiten.Image),
+		frameCache: make(map[string]*ebiten.Image),
 	}
 }
 
@@ -116,6 +119,25 @@ func (l *AnimationLoader) MustLoadImage(path string) *ebiten.Image {
 	return img
 }
 
+// GetFrame returns a cached sub-image for a specific animation frame.
+// This prevents creating thousands of duplicate *ebiten.Image structs for the same frame.
+func (l *AnimationLoader) GetFrame(dir string, state config.StateID, frameIndex int, srcRect image.Rectangle) *ebiten.Image {
+	key := fmt.Sprintf("%s/%s/%d", dir, state.String(), frameIndex)
+	if img, ok := l.frameCache[key]; ok {
+		return img
+	}
+
+	// Load the full sprite sheet
+	sheetPath := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state.String())
+	sheet := l.MustLoadImage(sheetPath)
+
+	// Create the sub-image for this frame
+	frame := sheet.SubImage(srcRect).(*ebiten.Image)
+	l.frameCache[key] = frame
+
+	return frame
+}
+
 func GetObjectImage(name string) *ebiten.Image {
 	path := fmt.Sprintf("images/objects/%s", name)
 	return animationLoader.MustLoadImage(path)
@@ -124,6 +146,10 @@ func GetObjectImage(name string) *ebiten.Image {
 func GetIconImage(name string) *ebiten.Image {
 	path := fmt.Sprintf("images/icons/%s", name)
 	return animationLoader.MustLoadImage(path)
+}
+
+func GetFrame(dir string, state config.StateID, frameIndex int, srcRect image.Rectangle) *ebiten.Image {
+	return animationLoader.GetFrame(dir, state, frameIndex, srcRect)
 }
 
 func (l *LevelLoader) MustLoadLevels() []Level {
