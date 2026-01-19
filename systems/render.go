@@ -173,8 +173,10 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				// Skip flash for dying entities to prevent visual artifacts
 				if e.HasComponent(components.Flash) && !e.HasComponent(components.Death) {
 					flash := components.Flash.Get(e)
-					drawOp.ColorScale.Reset()
-					drawOp.ColorScale.Scale(flash.R, flash.G, flash.B, 1)
+					if flash.Duration > 0 {
+						drawOp.ColorScale.Reset()
+						drawOp.ColorScale.Scale(flash.R, flash.G, flash.B, 1)
+					}
 				}
 
 				// Draw the current frame.
@@ -314,16 +316,11 @@ func TriggerHitFlash(entry *donburi.Entry) {
 	if entry.HasComponent(components.Death) {
 		return
 	}
+	// Update existing Flash component (initialized in factory)
 	if entry.HasComponent(components.Flash) {
 		flash := components.Flash.Get(entry)
 		flash.Duration = cfg.Combat.HitFlashFrames
-		flash.R, flash.G, flash.B = 3, 3, 3
-	} else {
-		entry.AddComponent(components.Flash)
-		components.Flash.Set(entry, &components.FlashData{
-			Duration: cfg.Combat.HitFlashFrames,
-			R:        3, G: 3, B: 3, // Bright white (multiplier)
-		})
+		flash.R, flash.G, flash.B = 3, 3, 3 // Bright white (multiplier)
 	}
 }
 
@@ -333,15 +330,10 @@ func TriggerDamageFlash(entry *donburi.Entry) {
 	if entry.HasComponent(components.Death) {
 		return
 	}
+	// Update existing Flash component (initialized in factory)
 	if entry.HasComponent(components.Flash) {
 		flash := components.Flash.Get(entry)
 		flash.Duration = cfg.Combat.DamageFlashFrames
-		flash.R, flash.G, flash.B = 3, 1, 1
-	} else {
-		entry.AddComponent(components.Flash)
-		components.Flash.Set(entry, &components.FlashData{
-			Duration: cfg.Combat.DamageFlashFrames,
-			R:        3, G: 1, B: 1, // Red tint (multiplier)
-		})
+		flash.R, flash.G, flash.B = 3, 1, 1 // Red tint (multiplier)
 	}
 }

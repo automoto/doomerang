@@ -32,19 +32,12 @@ func updateVFXAnimations(ecs *ecs.ECS) {
 
 // updateFlashEffects decrements flash timers and removes expired flashes
 func updateFlashEffects(ecs *ecs.ECS) {
-	var toRemove []*donburi.Entry
-
 	components.Flash.Each(ecs.World, func(e *donburi.Entry) {
 		flash := components.Flash.Get(e)
-		flash.Duration--
-		if flash.Duration <= 0 {
-			toRemove = append(toRemove, e)
+		if flash.Duration > 0 {
+			flash.Duration--
 		}
 	})
-
-	for _, e := range toRemove {
-		e.RemoveComponent(components.Flash)
-	}
 }
 
 // updateSquashStretchEffects lerps scale values toward target and removes when normalized

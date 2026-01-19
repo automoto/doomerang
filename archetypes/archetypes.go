@@ -28,6 +28,7 @@ var (
 		components.State,
 		components.MeleeAttack,
 		components.Lives,
+		components.Flash,
 	)
 	Enemy = newArchetype(
 		tags.Enemy,
@@ -37,6 +38,7 @@ var (
 		components.Animation,
 		components.Physics,
 		components.State,
+		components.Flash,
 	)
 	Hitbox = newArchetype(
 		tags.Hitbox,
