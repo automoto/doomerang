@@ -343,10 +343,12 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		// Draw the image at its offset position with opacity
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(imgLayer.OffsetX), float64(imgLayer.OffsetY))
-		// Apply layer opacity (default to 1.0 if not set, since go-tiled defaults to 0)
+		// Apply layer opacity from Tiled (go-tiled defaults to 1.0 if not specified)
 		opacity := imgLayer.Opacity
-		if opacity == 0 {
-			opacity = 1.0
+		// Skip fully transparent layers
+		if opacity <= 0 {
+			img.Dispose()
+			continue
 		}
 		op.ColorScale.ScaleAlpha(float32(opacity))
 		level.Background.DrawImage(img, op)
@@ -374,10 +376,12 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 			// Convert the rendered layer to an Ebiten image and draw it with opacity
 			layerImage := ebiten.NewImageFromImage(renderer.Result)
 			op := &ebiten.DrawImageOptions{}
-			// Apply layer opacity (default to 1.0 if not set, since go-tiled defaults to 0)
+			// Apply layer opacity from Tiled (go-tiled defaults to 1.0 if not specified)
 			opacity := layer.Opacity
-			if opacity == 0 {
-				opacity = 1.0
+			// Skip fully transparent layers
+			if opacity <= 0 {
+				layerImage.Dispose()
+				continue
 			}
 			op.ColorScale.ScaleAlpha(float32(opacity))
 			level.Background.DrawImage(layerImage, op)
