@@ -317,6 +317,35 @@ func checkHitboxCollisions(ecs *ecs.ECS, hitboxEntry *donburi.Entry, hitbox *com
 			}
 		}
 	}
+
+	// Player attacks can also destroy knives
+	if isPlayerAttack {
+		checkKnifeHitboxCollisions(ecs, hitboxObject)
+	}
+}
+
+// checkKnifeHitboxCollisions checks if player hitbox collides with knives and destroys them
+func checkKnifeHitboxCollisions(ecs *ecs.ECS, hitboxObject *resolv.Object) {
+	check := hitboxObject.Check(0, 0, tags.ResolvKnife)
+	if check == nil {
+		return
+	}
+
+	for _, obj := range check.Objects {
+		knifeEntry, ok := obj.Data.(*donburi.Entry)
+		if !ok || knifeEntry == nil || !knifeEntry.Valid() {
+			continue
+		}
+
+		// Spawn small impact VFX
+		factory.SpawnExplosion(ecs, obj.X+obj.W/2, obj.Y+obj.H/2, 0.3)
+
+		// Destroy knife
+		if spaceEntry, ok := components.Space.First(ecs.World); ok {
+			components.Space.Get(spaceEntry).Remove(obj)
+		}
+		ecs.World.Remove(knifeEntry.Entity())
+	}
 }
 
 func shouldHitTarget(hitbox *components.HitboxData, target *donburi.Entry, hitboxObject, targetObject *resolv.Object) bool {

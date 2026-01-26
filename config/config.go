@@ -70,6 +70,12 @@ type EnemyTypeConfig struct {
 	// Visual
 	TintColor      color.RGBA // RGBA color tint for this enemy type
 	SpriteSheetKey string     // e.g., "player", "guard", "slime"
+
+	// Ranged combat (for knife thrower type)
+	IsRanged        bool    // If true, enemy throws projectiles instead of melee
+	ThrowRange      float64 // Distance at which enemy can throw
+	ThrowCooldown   int     // Frames between throws
+	ThrowWindupTime int     // Frames before knife is released (for animation sync)
 }
 
 // EnemyConfig contains enemy system configuration
@@ -186,6 +192,15 @@ type BoomerangConfig struct {
 	HitKnockback   float64 // horizontal knockback applied to enemies on hit
 }
 
+// KnifeConfig contains knife projectile configuration
+type KnifeConfig struct {
+	Speed          float64 // Projectile speed (faster than player)
+	Damage         int     // Damage dealt to player
+	Width          float64 // Collision width
+	Height         float64 // Collision height
+	KnockbackForce float64 // Knockback on hit
+}
+
 // FireHitboxPhase defines hitbox scaling for a range of animation frames
 type FireHitboxPhase struct {
 	StartFrame int
@@ -279,6 +294,7 @@ var Physics PhysicsConfig
 var Animation AnimationConfig
 var UI UIConfig
 var Boomerang BoomerangConfig
+var Knife KnifeConfig
 var Fire FireConfig
 var Pause PauseConfig
 var Menu MenuConfig
@@ -377,6 +393,15 @@ func init() {
 		Gravity:        0.2,
 		MaxChargeTime:  60,
 		HitKnockback:   2.0,
+	}
+
+	// Knife Config
+	Knife = KnifeConfig{
+		Speed:          8.0,  // Faster than player (6.0)
+		Damage:         12,
+		Width:          36.0, // Actual knife dimensions within 96x84 sprite
+		Height:         7.0,
+		KnockbackForce: 4.0,
 	}
 
 	// Fire Config
@@ -481,11 +506,42 @@ func init() {
 		SpriteSheetKey:   "player",
 	}
 
+	knifeThrowerType := EnemyTypeConfig{
+		Name:             "KnifeThrower",
+		Health:           50,
+		PatrolSpeed:      0,   // Stationary
+		ChaseSpeed:       0,   // Stationary
+		AttackRange:      0,   // Not used for ranged
+		ChaseRange:       0,   // Not used (stationary)
+		StoppingDistance: 0,   // Not used
+		AttackCooldown:   0,   // Not used (use ThrowCooldown instead)
+		InvulnFrames:     15,
+		AttackDuration:   0,   // Not used
+		HitstunDuration:  20,
+		Damage:           0,   // Not used (knife has its own damage)
+		KnockbackForce:   0,   // Not used
+		Gravity:          0.75,
+		Friction:         0.2,
+		MaxSpeed:         0, // Stationary
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   16,
+		CollisionHeight:  40,
+		TintColor:        Purple,
+		SpriteSheetKey:   "player",
+		// Ranged specific
+		IsRanged:        true,
+		ThrowRange:      200.0, // Detection/attack range
+		ThrowCooldown:   120,   // 2 seconds at 60fps
+		ThrowWindupTime: 15,    // Frames before knife spawns
+	}
+
 	Enemy = EnemyConfig{
 		Types: map[string]EnemyTypeConfig{
-			"Guard":      guardType,
-			"LightGuard": lightGuardType,
-			"HeavyGuard": heavyGuardType,
+			"Guard":        guardType,
+			"LightGuard":   lightGuardType,
+			"HeavyGuard":   heavyGuardType,
+			"KnifeThrower": knifeThrowerType,
 		},
 		HysteresisMultiplier:  1.5,
 		DefaultPatrolDistance: 32.0,

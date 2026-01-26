@@ -5,6 +5,7 @@ import (
 
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
+	"github.com/automoto/doomerang/systems/factory"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -71,6 +72,12 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 
 	// Calculate distance to player
 	distanceToPlayer := math.Abs(playerObject.X - enemyObject.X)
+
+	// Use ranged AI for ranged enemies
+	if enemy.TypeConfig != nil && enemy.TypeConfig.IsRanged {
+		updateRangedEnemyAI(ecs, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
+		return
+	}
 
 	// State machine
 	switch state.CurrentState {
@@ -247,6 +254,57 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	// Don't apply movement input during attack - let friction naturally slow down
 }
 
+// updateRangedEnemyAI handles AI behavior for ranged enemies (knife throwers)
+func updateRangedEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	// Face the player (ranged enemies always face the player when in range)
+	if playerObject.X > enemyObject.X {
+		enemy.Direction.X = 1
+	} else {
+		enemy.Direction.X = -1
+	}
+
+	switch state.CurrentState {
+	case cfg.StatePatrol, cfg.StateChase, cfg.Idle:
+		// Stationary - check if player is in throw range
+		if distanceToPlayer <= enemy.TypeConfig.ThrowRange && enemy.AttackCooldown == 0 {
+			state.CurrentState = cfg.Throw
+			state.StateTimer = 0
+		}
+		// Ranged enemies don't move, so no movement logic here
+		physics.SpeedX = 0
+
+	case cfg.Throw:
+		handleThrowState(ecs, enemyEntry, enemy, state, enemyObject, playerObject)
+
+	case cfg.Hit:
+		// Stunned for a short period
+		if state.StateTimer > enemy.TypeConfig.HitstunDuration {
+			state.CurrentState = cfg.Idle
+			state.StateTimer = 0
+		}
+		physics.SpeedX = 0
+	}
+}
+
+// handleThrowState handles the throwing animation and knife creation
+func handleThrowState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, state *components.StateData, enemyObject, playerObject *resolv.Object) {
+	// Throw knife at windup frame
+	if state.StateTimer == enemy.TypeConfig.ThrowWindupTime {
+		// Target player's current position
+		targetX := playerObject.X + playerObject.W/2
+		targetY := playerObject.Y + playerObject.H/2
+		factory.CreateKnife(ecs, enemyEntry, targetX, targetY)
+		PlaySFX(ecs, cfg.SoundBoomerangThrow) // Reuse throw sound for now
+	}
+
+	// Animation complete (windup + throw animation)
+	if state.StateTimer >= enemy.TypeConfig.ThrowWindupTime+15 {
+		state.CurrentState = cfg.Idle
+		state.StateTimer = 0
+		enemy.AttackCooldown = enemy.TypeConfig.ThrowCooldown
+	}
+}
+
 func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
 	// Simple animation state based on movement and AI state
 	var targetState cfg.StateID
@@ -254,6 +312,8 @@ func updateEnemyAnimation(enemy *components.EnemyData, physics *components.Physi
 	switch state.CurrentState {
 	case cfg.StateAttackingPunch:
 		targetState = cfg.Punch01 // Use punch animation for attacks
+	case cfg.Throw:
+		targetState = cfg.Throw // Use throw animation for ranged attacks
 	case cfg.Hit:
 		targetState = cfg.Hit
 	default:

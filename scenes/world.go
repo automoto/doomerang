@@ -77,6 +77,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCollisions))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateObjects))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateBoomerang))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateKnives))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombat))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombatHitboxes))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateDeaths))

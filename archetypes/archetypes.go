@@ -59,6 +59,13 @@ var (
 		components.Sprite,
 		components.Physics,
 	)
+	Knife = newArchetype(
+		tags.Knife,
+		components.Knife,
+		components.Object,
+		components.Sprite,
+		components.Physics,
+	)
 	Level = newArchetype(
 		components.Level,
 	)
