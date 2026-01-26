@@ -309,6 +309,13 @@ var Menu MenuConfig
 var GameOver GameOverConfig
 var ScreenShake ScreenShakeConfig
 var SquashStretch SquashStretchConfig
+var Debug DebugConfig
+
+// DebugConfig contains debug/testing command-line options
+type DebugConfig struct {
+	SkipMenu        bool    // Skip menu and go directly to game
+	StartCheckpoint float64 // Checkpoint ID to spawn at (-1 = use default)
+}
 
 // Shared RGBA color constants
 var (
@@ -652,5 +659,11 @@ func init() {
 		LandScaleX: 1.5,
 		LandScaleY: 0.6,
 		LerpSpeed:  0.10,
+	}
+
+	// Debug Config (defaults, can be overridden by CLI flags)
+	Debug = DebugConfig{
+		SkipMenu:        false,
+		StartCheckpoint: -1,
 	}
 }

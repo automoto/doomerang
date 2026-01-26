@@ -3,6 +3,7 @@ package scenes
 import (
 	"errors"
 	"image/color"
+	"log"
 	"sync"
 
 	cfg "github.com/automoto/doomerang/config"
@@ -144,16 +145,40 @@ func (ps *PlatformerScene) configure() {
 
 	// Determine player spawn position
 	var playerSpawnX, playerSpawnY float64
+	var foundCheckpoint bool
 
-	if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
-		err := errors.New("no player spawn points defined in Map")
-		panic(err)
+	// Check if we should spawn at a specific checkpoint (debug/testing)
+	if cfg.Debug.StartCheckpoint >= 0 {
+		for _, ckp := range levelData.CurrentLevel.Checkpoints {
+			if ckp.CheckpointID == cfg.Debug.StartCheckpoint {
+				playerSpawnX = ckp.X + ckp.Width/2
+				playerSpawnY = ckp.Y + ckp.Height/2
+				foundCheckpoint = true
+
+				// Set active checkpoint so respawns work correctly
+				levelData.ActiveCheckpoint = &components.ActiveCheckpointData{
+					SpawnX:       playerSpawnX,
+					SpawnY:       playerSpawnY,
+					CheckpointID: ckp.CheckpointID,
+				}
+				break
+			}
+		}
+		if !foundCheckpoint {
+			log.Printf("Warning: Checkpoint %.0f not found, using default spawn", cfg.Debug.StartCheckpoint)
+		}
 	}
 
-	// Use the first player spawn point defined in Tiled
-	spawn := levelData.CurrentLevel.PlayerSpawns[0]
-	playerSpawnX = spawn.X
-	playerSpawnY = spawn.Y
+	// Fallback to default spawn
+	if !foundCheckpoint {
+		if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
+			err := errors.New("no player spawn points defined in Map")
+			panic(err)
+		}
+		spawn := levelData.CurrentLevel.PlayerSpawns[0]
+		playerSpawnX = spawn.X
+		playerSpawnY = spawn.Y
+	}
 
 	// Create the player at the determined position
 	player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)
