@@ -16,7 +16,7 @@ import (
 )
 
 // CreateFire creates a fire obstacle entity with collision detection and animation
-// x, y is the point where fire emanates FROM. Hitbox extends in the direction specified.
+// x, y is the BASE EDGE where fire emanates from. Fire extends outward in the specified direction.
 func CreateFire(ecs *ecs.ECS, x, y float64, fireType, direction string) *donburi.Entry {
 	fire := archetypes.Fire.Spawn(ecs)
 
@@ -27,74 +27,45 @@ func CreateFire(ecs *ecs.ECS, x, y float64, fireType, direction string) *donburi
 		fireCfg = cfg.Fire.Types["fire_continuous"]
 	}
 
-	// Use sprite dimensions from config for positioning
-	// Apply hitbox scale factor (default to 1.0 if not set)
+	// Hitbox scale factor (default to 1.0 if not set)
 	hitboxScale := fireCfg.HitboxScale
 	if hitboxScale == 0 {
 		hitboxScale = 1.0
 	}
-	// For up/down, swap width and height (rotated 90°)
-	spriteW := float64(fireCfg.FrameWidth) * hitboxScale
-	spriteH := float64(fireCfg.FrameHeight) * hitboxScale
 
-	// Calculate hitbox position using full sprite dimensions
-	// The point (x, y) marks where fire emanates FROM
-	var hitboxX, hitboxY, w, h float64
-	switch direction {
-	case "left":
-		w, h = spriteW, spriteH
-		hitboxX, hitboxY = x-w, y-h/2
-	case "up":
-		w, h = spriteH, spriteW // Swap for vertical
-		hitboxX, hitboxY = x-w/2, y-h
-	case "down":
-		w, h = spriteH, spriteW // Swap for vertical
-		hitboxX, hitboxY = x-w/2, y
-	default: // "right"
-		w, h = spriteW, spriteH
-		hitboxX, hitboxY = x, y-h/2
+	// Hitbox dimensions (swap width/height for vertical directions)
+	hitboxW := float64(fireCfg.FrameWidth) * hitboxScale
+	hitboxH := float64(fireCfg.FrameHeight) * hitboxScale
+	if direction == "up" || direction == "down" {
+		hitboxW, hitboxH = hitboxH, hitboxW
 	}
 
-	// Calculate sprite center (used for rendering)
-	spriteCenterX := hitboxX + w/2
-	spriteCenterY := hitboxY + h/2
-
-	// Calculate anchor point for dynamic hitbox positioning
-	// Anchor is the fixed point that doesn't move during scaling
-	var anchorX, anchorY float64
-	switch direction {
-	case "left":
-		anchorX, anchorY = hitboxX+w, hitboxY+h
-	case "up":
-		anchorX, anchorY = spriteCenterX, hitboxY+h
-	case "down":
-		anchorX, anchorY = spriteCenterX, hitboxY
-	default: // "right"
-		anchorX, anchorY = hitboxX, hitboxY+h
-	}
+	// Calculate sprite center and hitbox position
+	frameW := float64(fireCfg.FrameWidth)
+	spriteCenterX, spriteCenterY := components.FireSpriteCenter(x, y, frameW, direction)
+	hitboxX := spriteCenterX - hitboxW/2
+	hitboxY := spriteCenterY - hitboxH/2
 
 	// Create resolv collision object
-	obj := resolv.NewObject(hitboxX, hitboxY, w, h, tags.ResolvFire)
-	obj.SetShape(resolv.NewRectangle(0, 0, w, h))
+	obj := resolv.NewObject(hitboxX, hitboxY, hitboxW, hitboxH, tags.ResolvFire)
+	obj.SetShape(resolv.NewRectangle(0, 0, hitboxW, hitboxH))
 	obj.Data = fire
 
 	components.Object.SetValue(fire, components.ObjectData{Object: obj})
 
-	// Determine initial active state
-	active := true // Both types start active
-
 	components.Fire.SetValue(fire, components.FireData{
 		FireType:       fireType,
-		Active:         active,
+		Active:         true,
 		Damage:         fireCfg.Damage,
 		KnockbackForce: fireCfg.KnockbackForce,
 		Direction:      direction,
-		BaseWidth:      w,
-		BaseHeight:     h,
+		BaseWidth:      hitboxW,
+		BaseHeight:     hitboxH,
+		OriginX:        x,
+		OriginY:        y,
+		FrameWidth:     frameW,
 		SpriteCenterX:  spriteCenterX,
 		SpriteCenterY:  spriteCenterY,
-		AnchorX:        anchorX,
-		AnchorY:        anchorY,
 		HitboxPhases:   fireCfg.HitboxPhases,
 	})
 
@@ -154,3 +125,4 @@ func createFireAnimation(state cfg.StateID, frameWidth, frameHeight int) *compon
 
 	return animData
 }
+

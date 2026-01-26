@@ -123,29 +123,16 @@ func getFireHitboxScale(frame int, phases []cfg.FireHitboxPhase) float64 {
 }
 
 // updateFireHitbox resizes the fire's collision hitbox based on scale
-// Uses absolute positioning from anchor point to avoid floating point drift
+// Hitbox is always centered on sprite center (pre-calculated in FireData)
 func updateFireHitbox(e *donburi.Entry, fire *components.FireData, scale float64) {
 	obj := components.Object.Get(e)
 
 	newW := fire.BaseWidth * scale
 	newH := fire.BaseHeight * scale
 
-	// Calculate absolute position from fixed anchor point
-	switch fire.Direction {
-	case "left":
-		obj.X = fire.AnchorX - newW
-		obj.Y = fire.AnchorY - newH
-	case "up":
-		obj.X = fire.AnchorX - newW/2
-		obj.Y = fire.AnchorY - newH
-	case "down":
-		obj.X = fire.AnchorX - newW/2
-		obj.Y = fire.AnchorY
-	default: // "right"
-		obj.X = fire.AnchorX
-		obj.Y = fire.AnchorY - newH
-	}
-
+	// Center hitbox on pre-calculated sprite center
+	obj.X = fire.SpriteCenterX - newW/2
+	obj.Y = fire.SpriteCenterY - newH/2
 	obj.W = newW
 	obj.H = newH
 }

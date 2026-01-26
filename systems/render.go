@@ -96,8 +96,10 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				}
 
 				// Handle fire direction (sprite faces right by default)
-				if e.HasComponent(components.Fire) {
-					fire := components.Fire.Get(e)
+				// Cache fire pointer for reuse in positioning
+				var fire *components.FireData
+				if isFire {
+					fire = components.Fire.Get(e)
 					switch fire.Direction {
 					case "left":
 						drawOp.GeoM.Scale(-1, 1)
@@ -135,8 +137,7 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 
 				// Position the sprite
 				if isFire {
-					// Fire: use fixed sprite center (doesn't move with dynamic hitbox)
-					fire := components.Fire.Get(e)
+					// Fire: use pre-calculated sprite center
 					drawOp.GeoM.Translate(fire.SpriteCenterX, fire.SpriteCenterY)
 				} else if isVFX {
 					// VFX: center of sprite at center of collision box
