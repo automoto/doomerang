@@ -183,10 +183,10 @@ Finish zone at end of level triggers transition to next level.
 - [ ] Add tutorial messages to config or Tiled properties
 
 ### Directional Aiming
-- [ ] Modify boomerang throw to read directional input
-- [ ] Implement 5-way angle calculation
-- [ ] Handle diagonal detection (up/down + forward)
-- [ ] Test all 5 throw directions
+- [x] Modify boomerang throw to read directional input
+- [x] Implement 5-way angle calculation
+- [x] Handle diagonal detection (up/down + forward)
+- [x] Test all 5 throw directions
 
 ### Ranged Enemy
 - [ ] Create knife projectile entity/component
@@ -198,21 +198,21 @@ Finish zone at end of level triggers transition to next level.
 - [ ] Add sprites/animations
 
 ### Fire Obstacles
-- [ ] Create fire obstacle entity/component
-- [ ] Implement pulsing fire timer logic
-- [ ] Implement continuous fire (always active)
-- [ ] Add damage and knockback on contact
-- [ ] Add fire sprites/animations
-- [ ] Load fire obstacles from Tiled
+- [x] Create fire obstacle entity/component
+- [x] Implement pulsing fire timer logic
+- [x] Implement continuous fire (always active)
+- [x] Add damage and knockback on contact
+- [x] Add fire sprites/animations
+- [x] Load fire obstacles from Tiled
 
 ### Checkpoints
-- [ ] Create checkpoint entity/component
-- [ ] Implement checkpoint activation on contact
-- [ ] Track last activated checkpoint
-- [ ] Modify respawn logic to use checkpoint
-- [ ] Reset tip tracking on respawn
+- [x] Create checkpoint entity/component
+- [x] Implement checkpoint activation on contact
+- [x] Track last activated checkpoint
+- [x] Modify respawn logic to use checkpoint
+- [x] Reset tip tracking on respawn
 - [ ] Add checkpoint visual feedback
-- [ ] Load checkpoints from Tiled
+- [x] Load checkpoints from Tiled
 
 ### Level Finish
 - [ ] Create finish zone entity
