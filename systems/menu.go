@@ -115,6 +115,13 @@ func DrawMenu(e *ecs.ECS, screen *ebiten.Image) {
 
 		text.Draw(screen, option, menuFont, x, int(y)+int(cfg.Menu.MenuItemHeight), textColor)
 	}
+
+	// Draw navigation hint at bottom
+	hintFont := fonts.ExcelSmall.Get()
+	hint := "Arrows: Navigate   Enter: Select"
+	hintWidth := len(hint) * 7
+	hintX := int((width - float64(hintWidth)) / 2)
+	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Menu.TextColorNormal)
 }
 
 // GetOrCreateMenu returns the singleton Menu component, creating if needed

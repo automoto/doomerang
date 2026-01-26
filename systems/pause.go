@@ -119,6 +119,13 @@ func DrawPause(ecs *ecs.ECS, screen *ebiten.Image) {
 
 		text.Draw(screen, option, fontFace, x, int(y)+int(cfg.Pause.MenuItemHeight), textColor)
 	}
+
+	// Draw navigation hint at bottom
+	hintFont := fonts.ExcelSmall.Get()
+	hint := "Arrows: Navigate   Enter: Select   Esc: Resume"
+	hintWidth := len(hint) * 7
+	hintX := int((width - float64(hintWidth)) / 2)
+	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
 }
 
 // WithPauseCheck wraps a system to skip execution when paused.

@@ -299,10 +299,11 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 	}
 
 	// Draw compact navigation hint at bottom
+	hintFont := fonts.ExcelSmall.Get()
 	hint := "Arrows: Navigate   Enter: Select   Esc: Back"
 	hintWidth := len(hint) * 7
 	hintX := int((width - float64(hintWidth)) / 2)
-	text.Draw(screen, hint, fontFace, hintX, int(height)-12, cfg.Pause.TextColorNormal)
+	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
 }
 
 // getOptionDisplay returns the label and value display for an option

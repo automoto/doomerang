@@ -332,6 +332,8 @@ var (
 	LightRed     = color.RGBA{R: 255, G: 60, B: 60, A: 255}
 	Magenta      = color.RGBA{R: 255, G: 0, B: 255, A: 255}
 	BlackOverlay = color.RGBA{R: 0, G: 0, B: 0, A: 180}
+	LightBlue    = color.RGBA{R: 100, G: 180, B: 255, A: 255} // Selected menu items
+	DarkBlue     = color.RGBA{R: 60, G: 100, B: 160, A: 255}  // Unselected menu items
 )
 
 // Direction constants for player facing
@@ -609,8 +611,8 @@ func init() {
 	// Pause Config
 	Pause = PauseConfig{
 		OverlayColor:      BlackOverlay,
-		TextColorNormal:   BrightYellow,
-		TextColorSelected: LightGreen,
+		TextColorNormal:   Purple,
+		TextColorSelected: LightBlue,
 		MenuItemHeight:    30,
 		MenuItemGap:       15,
 		MenuOptions:       []string{"Resume", "Settings", "Exit"},
@@ -620,8 +622,8 @@ func init() {
 	Menu = MenuConfig{
 		BackgroundColor:   color.RGBA{R: 20, G: 20, B: 40, A: 255},
 		TitleColor:        White,
-		TextColorNormal:   BrightYellow,
-		TextColorSelected: LightGreen,
+		TextColorNormal:   Purple,
+		TextColorSelected: LightBlue,
 		TitleY:            50,
 		MenuStartY:        100,
 		MenuItemHeight:    30,

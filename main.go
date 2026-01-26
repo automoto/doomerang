@@ -35,6 +35,7 @@ func NewGame() *Game {
 	fonts.LoadFont(fonts.Excel, excelFont)
 	fonts.LoadFontWithSize(fonts.ExcelBold, excelFont, 20)
 	fonts.LoadFontWithSize(fonts.ExcelTitle, excelFont, 32)
+	fonts.LoadFontWithSize(fonts.ExcelSmall, excelFont, 12)
 
 	g := &Game{
 		bounds: image.Rectangle{},
