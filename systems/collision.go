@@ -163,11 +163,10 @@ func shouldStopHorizontalMovement(object *resolv.Object, check *resolv.Collision
 		return false
 	}
 
-	objectCenterY := object.Y + object.H/2
+	objectBottom := object.Y + object.H
 
 	for _, solid := range solids {
-		// Only stop if object's center would be within solid's vertical bounds
-		if objectCenterY >= solid.Y && objectCenterY <= solid.Y+solid.H {
+		if objectBottom > solid.Y && object.Y < solid.Y+solid.H {
 			return true
 		}
 	}

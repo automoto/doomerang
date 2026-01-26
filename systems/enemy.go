@@ -254,36 +254,52 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	// Don't apply movement input during attack - let friction naturally slow down
 }
 
-// updateRangedEnemyAI handles AI behavior for ranged enemies (knife throwers)
 func updateRangedEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
-	// Face the player (ranged enemies always face the player when in range)
+	switch state.CurrentState {
+	case cfg.StatePatrol, cfg.Idle:
+		updateRangedPatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
+
+	case cfg.StateApproachEdge:
+		handleApproachEdgeState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
+
+	case cfg.Throw:
+		handleThrowState(ecs, enemyEntry, enemy, state, enemyObject, playerObject)
+
+	case cfg.Hit:
+		if state.StateTimer > enemy.TypeConfig.HitstunDuration {
+			state.CurrentState = cfg.StatePatrol
+			state.StateTimer = 0
+		}
+		physics.SpeedX = 0
+	}
+}
+
+func updateRangedPatrolState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	if distanceToPlayer > enemy.TypeConfig.ThrowRange || enemy.AttackCooldown > 0 {
+		if enemy.PatrolPathName != "" {
+			handleCustomPatrol(ecs, enemyEntry, enemy, physics, state, enemyObject)
+		} else {
+			handleDefaultPatrol(enemy, physics, enemyObject)
+		}
+		return
+	}
+
 	if playerObject.X > enemyObject.X {
 		enemy.Direction.X = 1
 	} else {
 		enemy.Direction.X = -1
 	}
 
-	switch state.CurrentState {
-	case cfg.StatePatrol, cfg.StateChase, cfg.Idle:
-		// Stationary - check if player is in throw range
-		if distanceToPlayer <= enemy.TypeConfig.ThrowRange && enemy.AttackCooldown == 0 {
-			state.CurrentState = cfg.Throw
-			state.StateTimer = 0
-		}
-		// Ranged enemies don't move, so no movement logic here
-		physics.SpeedX = 0
-
-	case cfg.Throw:
-		handleThrowState(ecs, enemyEntry, enemy, state, enemyObject, playerObject)
-
-	case cfg.Hit:
-		// Stunned for a short period
-		if state.StateTimer > enemy.TypeConfig.HitstunDuration {
-			state.CurrentState = cfg.Idle
-			state.StateTimer = 0
-		}
-		physics.SpeedX = 0
+	verticalDiff := playerObject.Y - enemyObject.Y
+	if verticalDiff > enemy.TypeConfig.MinVerticalToThrow && enemy.TypeConfig.MinVerticalToThrow > 0 {
+		state.CurrentState = cfg.StateApproachEdge
+		state.StateTimer = 0
+		return
 	}
+
+	state.CurrentState = cfg.Throw
+	state.StateTimer = 0
+	physics.SpeedX = 0
 }
 
 // handleThrowState handles the throwing animation and knife creation
@@ -299,10 +315,40 @@ func handleThrowState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components
 
 	// Animation complete (windup + throw animation)
 	if state.StateTimer >= enemy.TypeConfig.ThrowWindupTime+15 {
-		state.CurrentState = cfg.Idle
+		state.CurrentState = cfg.StatePatrol
 		state.StateTimer = 0
 		enemy.AttackCooldown = enemy.TypeConfig.ThrowCooldown
 	}
+}
+
+func handleApproachEdgeState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	if playerObject.X > enemyObject.X {
+		enemy.Direction.X = 1
+	} else {
+		enemy.Direction.X = -1
+	}
+
+	verticalDiff := playerObject.Y - enemyObject.Y
+	if distanceToPlayer > enemy.TypeConfig.ThrowRange || verticalDiff <= enemy.TypeConfig.MinVerticalToThrow {
+		state.CurrentState = cfg.StatePatrol
+		state.StateTimer = 0
+		return
+	}
+
+	if !isAtPlatformEdge(enemyObject, enemy.Direction.X) {
+		physics.SpeedX = enemy.TypeConfig.EdgeApproachSpeed * enemy.Direction.X
+		return
+	}
+
+	physics.SpeedX = 0
+	if distanceToPlayer <= enemy.TypeConfig.EdgeThrowDistance && enemy.AttackCooldown == 0 {
+		state.CurrentState = cfg.Throw
+		state.StateTimer = 0
+	}
+}
+
+func isAtPlatformEdge(obj *resolv.Object, direction float64) bool {
+	return obj.Check(8.0*direction, obj.H+4.0, "solid", "platform") == nil
 }
 
 func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
@@ -316,6 +362,8 @@ func updateEnemyAnimation(enemy *components.EnemyData, physics *components.Physi
 		targetState = cfg.Throw // Use throw animation for ranged attacks
 	case cfg.Hit:
 		targetState = cfg.Hit
+	case cfg.StateApproachEdge:
+		targetState = cfg.Walk // Use walk animation when approaching edge
 	default:
 		if physics.OnGround == nil {
 			targetState = cfg.Jump

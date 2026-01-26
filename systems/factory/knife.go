@@ -38,9 +38,17 @@ func CreateKnife(ecs *ecs.ECS, owner *donburi.Entry, targetX, targetY float64) *
 	// Add to space
 	components.Space.Get(components.Space.MustFirst(ecs.World)).Add(obj)
 
-	// Calculate velocity toward target
 	dx := targetX - startX
 	dy := targetY - startY
+
+	// Clamp downward angle to prevent throwing into ground
+	if dy > 0 && config.Knife.MaxDownwardAngle > 0 {
+		angle := math.Atan2(dy, math.Abs(dx))
+		if angle > config.Knife.MaxDownwardAngle {
+			dy = math.Abs(dx) * math.Tan(config.Knife.MaxDownwardAngle)
+		}
+	}
+
 	length := math.Sqrt(dx*dx + dy*dy)
 	if length > 0 {
 		dx /= length

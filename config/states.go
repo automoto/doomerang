@@ -41,6 +41,7 @@ const (
 	// Enemy AI states
 	StatePatrol
 	StateChase
+	StateApproachEdge
 
 	// VFX states (dust and impact effects)
 	StateJumpDust
@@ -92,8 +93,9 @@ var StateToFileName = map[StateID]string{
 	StateSliding: "slide", // Custom slide animation
 
 	// Enemy AI states map to movement animations
-	StatePatrol: "walk",
-	StateChase:  "running",
+	StatePatrol:      "walk",
+	StateChase:       "running",
+	StateApproachEdge: "walk",
 
 	// VFX states map to effect sprite files
 	StateJumpDust:       "jumpdust",

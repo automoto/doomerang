@@ -28,9 +28,14 @@ func CreateFire(ecs *ecs.ECS, x, y float64, fireType, direction string) *donburi
 	}
 
 	// Use sprite dimensions from config for positioning
+	// Apply hitbox scale factor (default to 1.0 if not set)
+	hitboxScale := fireCfg.HitboxScale
+	if hitboxScale == 0 {
+		hitboxScale = 1.0
+	}
 	// For up/down, swap width and height (rotated 90°)
-	spriteW := float64(fireCfg.FrameWidth)
-	spriteH := float64(fireCfg.FrameHeight)
+	spriteW := float64(fireCfg.FrameWidth) * hitboxScale
+	spriteH := float64(fireCfg.FrameHeight) * hitboxScale
 
 	// Calculate hitbox position using full sprite dimensions
 	// The point (x, y) marks where fire emanates FROM

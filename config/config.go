@@ -31,6 +31,9 @@ type PlayerConfig struct {
 	SlideRecoveryFrames int     // Delay before standing up after slide
 	SlideRotation       float64 // Radians to rotate sprite during slide
 
+	// Crouch mechanics
+	CrouchWalkSpeed float64 // Max speed while crouch-walking
+
 	// Dimensions
 	FrameWidth      int
 	FrameHeight     int
@@ -72,10 +75,13 @@ type EnemyTypeConfig struct {
 	SpriteSheetKey string     // e.g., "player", "guard", "slime"
 
 	// Ranged combat (for knife thrower type)
-	IsRanged        bool    // If true, enemy throws projectiles instead of melee
-	ThrowRange      float64 // Distance at which enemy can throw
-	ThrowCooldown   int     // Frames between throws
-	ThrowWindupTime int     // Frames before knife is released (for animation sync)
+	IsRanged          bool    // If true, enemy throws projectiles instead of melee
+	ThrowRange        float64 // Distance at which enemy can throw
+	ThrowCooldown     int     // Frames between throws
+	ThrowWindupTime   int     // Frames before knife is released (for animation sync)
+	MinVerticalToThrow float64 // Min vertical distance below which to walk to edge instead of direct throw
+	EdgeApproachSpeed  float64 // Speed when walking to platform edge
+	EdgeThrowDistance  float64 // Max horizontal distance to throw from edge
 }
 
 // EnemyConfig contains enemy system configuration
@@ -194,11 +200,12 @@ type BoomerangConfig struct {
 
 // KnifeConfig contains knife projectile configuration
 type KnifeConfig struct {
-	Speed          float64 // Projectile speed (faster than player)
-	Damage         int     // Damage dealt to player
-	Width          float64 // Collision width
-	Height         float64 // Collision height
-	KnockbackForce float64 // Knockback on hit
+	Speed            float64 // Projectile speed (faster than player)
+	Damage           int     // Damage dealt to player
+	Width            float64 // Collision width
+	Height           float64 // Collision height
+	KnockbackForce   float64 // Knockback on hit
+	MaxDownwardAngle float64 // Maximum downward angle in radians (0 = horizontal, positive = downward)
 }
 
 // FireHitboxPhase defines hitbox scaling for a range of animation frames
@@ -217,6 +224,7 @@ type FireTypeConfig struct {
 	FrameHeight    int
 	State          StateID
 	HitboxPhases   []FireHitboxPhase // nil = static hitbox (for fire_continuous)
+	HitboxScale    float64           // Scale factor for hitbox (1.0 = sprite size)
 }
 
 // FireConfig contains fire obstacle configuration
@@ -376,6 +384,9 @@ func init() {
 		SlideRecoveryFrames: 8,    // Frames of delay before standing up
 		SlideRotation:       -0.35, // Rotate sprite for ground slide look
 
+		// Crouch mechanics
+		CrouchWalkSpeed: 1.5, // Slow movement while crouched
+
 		// Dimensions
 		FrameWidth:      96,
 		FrameHeight:     84,
@@ -397,11 +408,12 @@ func init() {
 
 	// Knife Config
 	Knife = KnifeConfig{
-		Speed:          8.0,  // Faster than player (6.0)
-		Damage:         12,
-		Width:          36.0, // Actual knife dimensions within 96x84 sprite
-		Height:         7.0,
-		KnockbackForce: 4.0,
+		Speed:            8.0,  // Faster than player (6.0)
+		Damage:           12,
+		Width:            36.0, // Actual knife dimensions within 96x84 sprite
+		Height:           7.0,
+		KnockbackForce:   4.0,
+		MaxDownwardAngle: 0.5, // ~30 degrees max downward angle to avoid hitting ground
 	}
 
 	// Fire Config
@@ -413,6 +425,7 @@ func init() {
 				FrameWidth:     65,
 				FrameHeight:    43,
 				State:          FirePulsing,
+				HitboxScale:    0.85,
 				HitboxPhases: []FireHitboxPhase{
 					{StartFrame: 0, EndFrame: 10, StartScale: 0.3, EndScale: 0.6},  // Igniting
 					{StartFrame: 11, EndFrame: 23, StartScale: 0.6, EndScale: 1.0}, // Growing
@@ -426,6 +439,7 @@ func init() {
 				FrameWidth:     66,
 				FrameHeight:    47,
 				State:          FireContinuous,
+				HitboxScale:    0.85,
 			},
 		},
 	}
@@ -509,20 +523,20 @@ func init() {
 	knifeThrowerType := EnemyTypeConfig{
 		Name:             "KnifeThrower",
 		Health:           50,
-		PatrolSpeed:      0,   // Stationary
-		ChaseSpeed:       0,   // Stationary
-		AttackRange:      0,   // Not used for ranged
-		ChaseRange:       0,   // Not used (stationary)
-		StoppingDistance: 0,   // Not used
-		AttackCooldown:   0,   // Not used (use ThrowCooldown instead)
+		PatrolSpeed:      1.5,  // Patrol when player not in range
+		ChaseSpeed:       0,    // Does not chase
+		AttackRange:      0,    // Not used for ranged
+		ChaseRange:       0,    // Not used
+		StoppingDistance: 0,    // Not used
+		AttackCooldown:   0,    // Not used (use ThrowCooldown instead)
 		InvulnFrames:     15,
-		AttackDuration:   0,   // Not used
+		AttackDuration:   0,    // Not used
 		HitstunDuration:  20,
-		Damage:           0,   // Not used (knife has its own damage)
-		KnockbackForce:   0,   // Not used
+		Damage:           0,    // Not used (knife has its own damage)
+		KnockbackForce:   0,    // Not used
 		Gravity:          0.75,
 		Friction:         0.2,
-		MaxSpeed:         0, // Stationary
+		MaxSpeed:         3.0,  // Allow movement for patrol
 		FrameWidth:       96,
 		FrameHeight:      84,
 		CollisionWidth:   16,
@@ -530,10 +544,13 @@ func init() {
 		TintColor:        Purple,
 		SpriteSheetKey:   "player",
 		// Ranged specific
-		IsRanged:        true,
-		ThrowRange:      200.0, // Detection/attack range
-		ThrowCooldown:   120,   // 2 seconds at 60fps
-		ThrowWindupTime: 15,    // Frames before knife spawns
+		IsRanged:           true,
+		ThrowRange:         200.0, // Detection/attack range
+		ThrowCooldown:      120,   // 2 seconds at 60fps
+		ThrowWindupTime:    15,    // Frames before knife spawns
+		MinVerticalToThrow: 32.0,  // If player is more than 32px below, walk to edge
+		EdgeApproachSpeed:  1.5,   // Speed when approaching platform edge
+		EdgeThrowDistance:  120.0, // Max horizontal distance to throw from edge
 	}
 
 	Enemy = EnemyConfig{

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="254" height="128" tilewidth="16" tileheight="16" infinite="0" nextlayerid="14" nextobjectid="77">
  <tileset firstgid="1" source="tilesets/cyberpunk-tiles.tsx"/>
- <imagelayer id="6" name="bg" visible="0" opacity="0.7">
+ <imagelayer id="6" name="bg" opacity="0.7">
   <image source="background/bg-cyberpunk-large.png" width="4064" height="2048"/>
   <properties>
    <property name="render" type="bool" value="true"/>
@@ -195,7 +195,7 @@
   <object id="32" name="enemy2" x="3676.33" y="2011.83">
    <polyline points="-1.75,-0.25 -208,0"/>
   </object>
-  <object id="76" name="enemy4" x="2153.94" y="238.688">
+  <object id="76" name="enemy4" x="2153.94" y="237.688">
    <polyline points="1.2525,0.75 -40.6645,0.9375"/>
   </object>
  </objectgroup>
