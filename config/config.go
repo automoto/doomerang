@@ -75,10 +75,10 @@ type EnemyTypeConfig struct {
 	SpriteSheetKey string     // e.g., "player", "guard", "slime"
 
 	// Ranged combat (for knife thrower type)
-	IsRanged          bool    // If true, enemy throws projectiles instead of melee
-	ThrowRange        float64 // Distance at which enemy can throw
-	ThrowCooldown     int     // Frames between throws
-	ThrowWindupTime   int     // Frames before knife is released (for animation sync)
+	IsRanged           bool    // If true, enemy throws projectiles instead of melee
+	ThrowRange         float64 // Distance at which enemy can throw
+	ThrowCooldown      int     // Frames between throws
+	ThrowWindupTime    int     // Frames before knife is released (for animation sync)
 	MinVerticalToThrow float64 // Min vertical distance below which to walk to edge instead of direct throw
 	EdgeApproachSpeed  float64 // Speed when walking to platform edge
 	EdgeThrowDistance  float64 // Max horizontal distance to throw from edge
@@ -386,11 +386,11 @@ func init() {
 		AttackFriction: 0.2,
 
 		// Slide mechanics
-		SlideSpeedThreshold: 4.0,  // Must be moving at least this fast to slide
-		SlideFriction:       0.08, // Gradual slowdown during slide (lower = longer slide)
-		SlideHitboxHeight:   20.0, // Reduced height during slide (normal is 40)
-		SlideMinSpeed:       0.3,  // Stop sliding when speed drops below this
-		SlideRecoveryFrames: 8,    // Frames of delay before standing up
+		SlideSpeedThreshold: 4.0,   // Must be moving at least this fast to slide
+		SlideFriction:       0.08,  // Gradual slowdown during slide (lower = longer slide)
+		SlideHitboxHeight:   20.0,  // Reduced height during slide (normal is 40)
+		SlideMinSpeed:       0.3,   // Stop sliding when speed drops below this
+		SlideRecoveryFrames: 8,     // Frames of delay before standing up
 		SlideRotation:       -0.35, // Rotate sprite for ground slide look
 
 		// Crouch mechanics
@@ -417,7 +417,7 @@ func init() {
 
 	// Knife Config
 	Knife = KnifeConfig{
-		Speed:            8.0,  // Faster than player (6.0)
+		Speed:            8.0, // Faster than player (6.0)
 		Damage:           12,
 		Width:            36.0, // Actual knife dimensions within 96x84 sprite
 		Height:           7.0,
@@ -466,7 +466,7 @@ func init() {
 		InvulnFrames:     15,
 		AttackDuration:   30,
 		HitstunDuration:  15,
-		Damage:           10,
+		Damage:           40,
 		KnockbackForce:   5.0,
 		Gravity:          0.75,
 		Friction:         0.2,
@@ -481,7 +481,7 @@ func init() {
 
 	lightGuardType := EnemyTypeConfig{
 		Name:             "LightGuard",
-		Health:           40,
+		Health:           30,
 		PatrolSpeed:      3.0,
 		ChaseSpeed:       3.5,
 		AttackRange:      32.0,
@@ -491,7 +491,7 @@ func init() {
 		InvulnFrames:     10,
 		AttackDuration:   20,
 		HitstunDuration:  10,
-		Damage:           8,
+		Damage:           20,
 		KnockbackForce:   3.0,
 		Gravity:          0.8,
 		Friction:         0.25,
@@ -516,7 +516,7 @@ func init() {
 		InvulnFrames:     25,
 		AttackDuration:   45,
 		HitstunDuration:  25,
-		Damage:           18,
+		Damage:           30,
 		KnockbackForce:   8.0,
 		Gravity:          0.7,
 		Friction:         0.15,
@@ -531,21 +531,21 @@ func init() {
 
 	knifeThrowerType := EnemyTypeConfig{
 		Name:             "KnifeThrower",
-		Health:           50,
-		PatrolSpeed:      1.5,  // Patrol when player not in range
-		ChaseSpeed:       0,    // Does not chase
-		AttackRange:      0,    // Not used for ranged
-		ChaseRange:       0,    // Not used
-		StoppingDistance: 0,    // Not used
-		AttackCooldown:   0,    // Not used (use ThrowCooldown instead)
+		Health:           30,
+		PatrolSpeed:      1.5, // Patrol when player not in range
+		ChaseSpeed:       0,   // Does not chase
+		AttackRange:      0,   // Not used for ranged
+		ChaseRange:       0,   // Not used
+		StoppingDistance: 0,   // Not used
+		AttackCooldown:   0,   // Not used (use ThrowCooldown instead)
 		InvulnFrames:     15,
-		AttackDuration:   0,    // Not used
+		AttackDuration:   0, // Not used
 		HitstunDuration:  20,
-		Damage:           0,    // Not used (knife has its own damage)
-		KnockbackForce:   0,    // Not used
+		Damage:           0, // Not used (knife has its own damage)
+		KnockbackForce:   0, // Not used
 		Gravity:          0.75,
 		Friction:         0.2,
-		MaxSpeed:         3.0,  // Allow movement for patrol
+		MaxSpeed:         3.0, // Allow movement for patrol
 		FrameWidth:       96,
 		FrameHeight:      84,
 		CollisionWidth:   16,
@@ -554,12 +554,12 @@ func init() {
 		SpriteSheetKey:   "player",
 		// Ranged specific
 		IsRanged:           true,
-		ThrowRange:         200.0, // Detection/attack range
+		ThrowRange:         300.0, // Detection/attack range
 		ThrowCooldown:      120,   // 2 seconds at 60fps
 		ThrowWindupTime:    15,    // Frames before knife spawns
 		MinVerticalToThrow: 32.0,  // If player is more than 32px below, walk to edge
 		EdgeApproachSpeed:  1.5,   // Speed when approaching platform edge
-		EdgeThrowDistance:  120.0, // Max horizontal distance to throw from edge
+		EdgeThrowDistance:  200.0, // Max horizontal distance to throw from edge
 	}
 
 	Enemy = EnemyConfig{
