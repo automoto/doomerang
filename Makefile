@@ -25,11 +25,11 @@ basic-test:
 # Platform builds
 build-mac:
 	@mkdir -p $(DIST_DIR)/mac
-	go build -o $(DIST_DIR)/mac/doomerang .
+	CGO_CFLAGS="-w" go build -o $(DIST_DIR)/mac/doomerang .
 
 build-mac-intel:
 	@mkdir -p $(DIST_DIR)/mac-intel
-	GOOS=darwin GOARCH=amd64 go build -o $(DIST_DIR)/mac-intel/doomerang .
+	CGO_CFLAGS="-w" GOOS=darwin GOARCH=amd64 go build -o $(DIST_DIR)/mac-intel/doomerang .
 
 build-windows:
 	@mkdir -p $(DIST_DIR)/windows

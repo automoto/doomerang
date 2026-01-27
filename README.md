@@ -56,6 +56,10 @@ The project has been optimized for high performance and stability:
 -   **ECS Optimization**: Redundant ECS operations are minimized by caching component checks in hot loops, preventing state tag thrashing via change detection, and caching configuration pointers to avoid expensive map lookups.
 -   **Input Abstraction**: Raw input polling is decoupled from game logic via an `InputData` component. The `UpdateInput` system maps keys/buttons to logical actions (`ActionJump`, `ActionAttack`, etc.), allowing easy remapping and multi-input support.
 
+## Build Notes
+
+-   **macOS Warnings**: The Makefile uses `CGO_CFLAGS="-w"` to suppress CVDisplayLink deprecation warnings from Ebitengine's Metal backend on macOS.
+
 ## Tags
 
 In Donburi ECS, tags are special components used to label and identify entities without attaching complex data. They are defined in `tags/tags.go`.
