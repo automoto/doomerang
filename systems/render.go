@@ -65,6 +65,12 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 				sy := 0
 				srcRect := image.Rect(sx, sy, sx+animData.FrameWidth, sy+animData.FrameHeight)
 				img = animData.SpriteSheets[animData.CurrentSheet].SubImage(srcRect).(*ebiten.Image)
+
+				// Cache to prevent repeated allocations
+				if animData.CachedFrames[animData.CurrentSheet] == nil {
+					animData.CachedFrames[animData.CurrentSheet] = make(map[int]*ebiten.Image)
+				}
+				animData.CachedFrames[animData.CurrentSheet][frame] = img
 			}
 
 			if img != nil {

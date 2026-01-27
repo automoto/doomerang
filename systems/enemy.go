@@ -79,6 +79,16 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 		return
 	}
 
+	// For melee enemies, skip chase/attack if player is on a different vertical level
+	verticalDistance := math.Abs(playerObject.Y - enemyObject.Y)
+	if enemy.TypeConfig != nil && verticalDistance > enemy.TypeConfig.MaxVerticalChase && enemy.TypeConfig.MaxVerticalChase > 0 {
+		if state.CurrentState == cfg.StateChase || state.CurrentState == cfg.StateAttackingPunch {
+			state.CurrentState = cfg.StatePatrol
+			state.StateTimer = 0
+		}
+		return
+	}
+
 	// State machine
 	switch state.CurrentState {
 	case cfg.StatePatrol:

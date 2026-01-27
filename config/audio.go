@@ -35,8 +35,9 @@ type AudioConfig struct {
 
 // SoundConfig maps sound IDs to file paths
 type SoundConfig struct {
-	MenuMusic string
-	SFXPaths  map[SoundID]string
+	MenuMusic         string
+	SFXPaths          map[SoundID]string
+	VolumeMultipliers map[SoundID]float64
 }
 
 var Audio AudioConfig
@@ -67,6 +68,10 @@ func init() {
 			SoundBoomerangCharge: "audio/sfx/boomerang_charge.wav",
 			SoundMenuNavigate:    "audio/sfx/menu_navigate.wav",
 			SoundMenuSelect:      "audio/sfx/menu_select.wav",
+		},
+		VolumeMultipliers: map[SoundID]float64{
+			SoundHit:             1.5,
+			SoundBoomerangImpact: 1.5,
 		},
 	}
 }

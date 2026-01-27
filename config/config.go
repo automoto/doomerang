@@ -50,6 +50,7 @@ type EnemyTypeConfig struct {
 	AttackRange      float64
 	ChaseRange       float64
 	StoppingDistance float64
+	MaxVerticalChase float64 // Max vertical distance to chase/attack player (melee only)
 	AttackCooldown   int
 	InvulnFrames     int
 	AttackDuration   int // frames
@@ -475,6 +476,7 @@ func init() {
 		AttackRange:      36.0,
 		ChaseRange:       80.0,
 		StoppingDistance: 28.0,
+		MaxVerticalChase: 144.0,
 		AttackCooldown:   60,
 		InvulnFrames:     15,
 		AttackDuration:   30,
@@ -500,6 +502,7 @@ func init() {
 		AttackRange:      32.0,
 		ChaseRange:       100.0,
 		StoppingDistance: 24.0,
+		MaxVerticalChase: 144.0,
 		AttackCooldown:   40,
 		InvulnFrames:     10,
 		AttackDuration:   20,
@@ -525,6 +528,7 @@ func init() {
 		AttackRange:      40.0,
 		ChaseRange:       60.0,
 		StoppingDistance: 32.0,
+		MaxVerticalChase: 144.0,
 		AttackCooldown:   90,
 		InvulnFrames:     25,
 		AttackDuration:   45,

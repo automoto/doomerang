@@ -19,6 +19,7 @@ const (
 )
 
 var heartIcon *ebiten.Image
+var hudDrawOp = &ebiten.DrawImageOptions{}
 
 // DrawHUD renders the player's health bar and lives counter in the top-left corner.
 func DrawHUD(ecs *ecs.ECS, screen *ebiten.Image) {
@@ -57,8 +58,8 @@ func drawLives(playerEntry *donburi.Entry, screen *ebiten.Image) {
 	livesY := float64(hudMargin + hudBarHeight + livesMargin)
 
 	for i := 0; i < lives.Lives; i++ {
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(hudMargin)+float64(i)*float64(heartWidth+livesMargin), livesY)
-		screen.DrawImage(heartIcon, op)
+		hudDrawOp.GeoM.Reset()
+		hudDrawOp.GeoM.Translate(float64(hudMargin)+float64(i)*float64(heartWidth+livesMargin), livesY)
+		screen.DrawImage(heartIcon, hudDrawOp)
 	}
 }

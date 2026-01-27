@@ -79,7 +79,12 @@ func playSFX(soundID cfg.SoundID) {
 		return
 	}
 
-	player.SetVolume(globalSFXVolume)
+	volume := globalSFXVolume
+	if mult, ok := cfg.Sound.VolumeMultipliers[soundID]; ok {
+		volume *= mult
+	}
+
+	player.SetVolume(volume)
 	player.Play()
 }
 

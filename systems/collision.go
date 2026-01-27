@@ -364,6 +364,7 @@ func handleDeadZoneHit(ecs *ecs.ECS, e *donburi.Entry) {
 	// Visual effects
 	TriggerScreenShake(ecs, cfg.DeathZone.ScreenShakeIntensity, cfg.DeathZone.ScreenShakeDuration)
 	factory.SpawnExplosion(ecs, centerX, centerY, cfg.DeathZone.ExplosionScale)
+	PlaySFX(ecs, cfg.SoundHit)
 
 	// Stop movement
 	physics := components.Physics.Get(e)
