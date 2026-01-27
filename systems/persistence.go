@@ -181,7 +181,7 @@ func LoadGameProgress() (*SavedGameProgress, error) {
 		log.Printf("Warning: Could not load game progress: %v", err)
 		return nil, nil
 	}
-	if data == nil {
+	if data == nil || len(data) == 0 {
 		return nil, nil
 	}
 
@@ -214,6 +214,35 @@ func SaveGameProgress(levelIndex int, checkpoint *components.ActiveCheckpointDat
 
 	if err := gdataManager.SaveItem("progress", data); err != nil {
 		log.Printf("Warning: Could not save game progress: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+// HasSaveGame returns true if a saved game progress exists
+func HasSaveGame() bool {
+	if !gdataInitialized || gdataManager == nil {
+		return false
+	}
+
+	data, err := gdataManager.LoadItem("progress")
+	if err != nil || data == nil || len(data) == 0 {
+		return false
+	}
+
+	return true
+}
+
+// ClearGameProgress removes any saved game progress
+func ClearGameProgress() error {
+	if !gdataInitialized || gdataManager == nil {
+		return nil
+	}
+
+	// Save empty/nil data to clear the progress
+	if err := gdataManager.SaveItem("progress", nil); err != nil {
+		log.Printf("Warning: Could not clear game progress: %v", err)
 		return err
 	}
 

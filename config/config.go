@@ -244,15 +244,18 @@ type PauseConfig struct {
 
 // MenuConfig contains main menu configuration values
 type MenuConfig struct {
-	BackgroundColor   color.RGBA
-	TitleColor        color.RGBA
-	TextColorNormal   color.RGBA
-	TextColorSelected color.RGBA
-	TitleY            float64
-	MenuStartY        float64
-	MenuItemHeight    float64
-	MenuItemGap       float64
-	MenuOptions       []string
+	BackgroundColor      color.RGBA
+	TitleColor           color.RGBA
+	TextColorNormal      color.RGBA
+	TextColorSelected    color.RGBA
+	TitleY               float64
+	MenuStartY           float64
+	MenuItemHeight       float64
+	MenuItemGap          float64
+	MenuOptions          []string
+	ConfirmDialogMessage string
+	ConfirmDialogYes     string
+	ConfirmDialogNo      string
 }
 
 // GameOverConfig contains game over screen configuration values
@@ -331,7 +334,8 @@ var (
 	White        = color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	Yellow       = color.RGBA{R: 255, G: 255, B: 0, A: 255}
 	BrightYellow = color.RGBA{R: 255, G: 255, B: 100, A: 255}
-	Orange       = color.RGBA{R: 255, G: 165, B: 0, A: 255}
+	Orange       = color.RGBA{R: 255, G: 140, B: 0, A: 255}
+	BrightOrange = color.RGBA{R: 255, G: 180, B: 50, A: 255}
 	Red          = color.RGBA{R: 255, G: 0, B: 0, A: 255}
 	Green        = color.RGBA{R: 0, G: 255, B: 0, A: 255}
 	BrightGreen  = color.RGBA{R: 0, G: 255, B: 60, A: 255}
@@ -620,8 +624,8 @@ func init() {
 	// Pause Config
 	Pause = PauseConfig{
 		OverlayColor:      BlackOverlay,
-		TextColorNormal:   Purple,
-		TextColorSelected: LightBlue,
+		TextColorNormal:   White,
+		TextColorSelected: BrightOrange,
 		MenuItemHeight:    30,
 		MenuItemGap:       15,
 		MenuOptions:       []string{"Resume", "Settings", "Exit"},
@@ -629,23 +633,26 @@ func init() {
 
 	// Menu Config
 	Menu = MenuConfig{
-		BackgroundColor:   color.RGBA{R: 20, G: 20, B: 40, A: 255},
-		TitleColor:        White,
-		TextColorNormal:   Purple,
-		TextColorSelected: LightBlue,
-		TitleY:            50,
-		MenuStartY:        100,
-		MenuItemHeight:    30,
-		MenuItemGap:       12,
-		MenuOptions:       []string{"Start", "Continue", "Level Select", "Settings", "Exit"},
+		BackgroundColor:      color.RGBA{R: 15, G: 25, B: 50, A: 255},
+		TitleColor:           Orange,
+		TextColorNormal:      White,
+		TextColorSelected:    BrightOrange,
+		TitleY:               50,
+		MenuStartY:           100,
+		MenuItemHeight:       30,
+		MenuItemGap:          12,
+		MenuOptions:          []string{"Start", "Continue", "Settings", "Exit"},
+		ConfirmDialogMessage: "Overwrite existing save?",
+		ConfirmDialogYes:     "Yes",
+		ConfirmDialogNo:      "No",
 	}
 
 	// Game Over Config
 	GameOver = GameOverConfig{
 		BackgroundColor:   color.RGBA{R: 40, G: 10, B: 10, A: 255},
 		TitleColor:        LightRed,
-		TextColorNormal:   BrightYellow,
-		TextColorSelected: LightGreen,
+		TextColorNormal:   White,
+		TextColorSelected: BrightOrange,
 		TitleY:            100,
 		MenuStartY:        160,
 		MenuItemHeight:    30,
