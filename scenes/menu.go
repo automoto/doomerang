@@ -57,9 +57,11 @@ func (ms *MenuScene) configure() {
 	// Minimal systems for menu
 	ms.ecs.AddSystem(systems.UpdateInput)
 	ms.ecs.AddSystem(systems.NewUpdateMenu(ms.sceneChanger, createPlatformerScene))
+	ms.ecs.AddSystem(systems.UpdateSettingsMenu)
 
-	// Renderer
+	// Renderers (settings draws on top of menu)
 	ms.ecs.AddRenderer(cfg.Default, systems.DrawMenu)
+	ms.ecs.AddRenderer(cfg.Default, systems.DrawSettingsMenu)
 
 	// Start menu music
 	systems.PlayMusic(ms.ecs, cfg.Sound.MenuMusic)

@@ -28,6 +28,7 @@ var (
 		components.State,
 		components.MeleeAttack,
 		components.Lives,
+		components.Flash,
 	)
 	Enemy = newArchetype(
 		tags.Enemy,
@@ -37,6 +38,7 @@ var (
 		components.Animation,
 		components.Physics,
 		components.State,
+		components.Flash,
 	)
 	Hitbox = newArchetype(
 		tags.Hitbox,
@@ -57,11 +59,34 @@ var (
 		components.Sprite,
 		components.Physics,
 	)
+	Knife = newArchetype(
+		tags.Knife,
+		components.Knife,
+		components.Object,
+		components.Sprite,
+		components.Physics,
+	)
 	Level = newArchetype(
 		components.Level,
 	)
 	Camera = newArchetype(
 		components.Camera,
+	)
+	VFXEffect = newArchetype(
+		components.Object,
+		components.Animation,
+		components.AutoDestroy,
+	)
+	Checkpoint = newArchetype(
+		tags.Checkpoint,
+		components.Checkpoint,
+		components.Object,
+	)
+	Fire = newArchetype(
+		tags.Fire,
+		components.Fire,
+		components.Object,
+		components.Animation,
 	)
 )
 

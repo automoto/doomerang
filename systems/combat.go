@@ -112,6 +112,14 @@ func startDeathSequence(ecs *ecs.ECS, e *donburi.Entry) {
 	// Play death sound
 	PlaySFX(ecs, cfg.SoundDeath)
 
+	// Remove visual effect components to prevent rendering artifacts
+	if e.HasComponent(components.Flash) {
+		e.RemoveComponent(components.Flash)
+	}
+	if e.HasComponent(components.SquashStretch) {
+		e.RemoveComponent(components.SquashStretch)
+	}
+
 	// Add DeathData component with a 60-frame timer.
 	donburi.Add(e, components.Death, &components.DeathData{Timer: 60})
 

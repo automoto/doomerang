@@ -31,6 +31,9 @@ type PlayerConfig struct {
 	SlideRecoveryFrames int     // Delay before standing up after slide
 	SlideRotation       float64 // Radians to rotate sprite during slide
 
+	// Crouch mechanics
+	CrouchWalkSpeed float64 // Max speed while crouch-walking
+
 	// Dimensions
 	FrameWidth      int
 	FrameHeight     int
@@ -70,6 +73,15 @@ type EnemyTypeConfig struct {
 	// Visual
 	TintColor      color.RGBA // RGBA color tint for this enemy type
 	SpriteSheetKey string     // e.g., "player", "guard", "slime"
+
+	// Ranged combat (for knife thrower type)
+	IsRanged           bool    // If true, enemy throws projectiles instead of melee
+	ThrowRange         float64 // Distance at which enemy can throw
+	ThrowCooldown      int     // Frames between throws
+	ThrowWindupTime    int     // Frames before knife is released (for animation sync)
+	MinVerticalToThrow float64 // Min vertical distance below which to walk to edge instead of direct throw
+	EdgeApproachSpeed  float64 // Speed when walking to platform edge
+	EdgeThrowDistance  float64 // Max horizontal distance to throw from edge
 }
 
 // EnemyConfig contains enemy system configuration
@@ -113,6 +125,10 @@ type CombatConfig struct {
 
 	// Health bar display
 	HealthBarDuration int // frames
+
+	// Flash effects (frames)
+	HitFlashFrames    int // white flash when dealing damage
+	DamageFlashFrames int // red flash when taking damage
 }
 
 // PhysicsConfig contains physics-related configuration values
@@ -179,6 +195,41 @@ type BoomerangConfig struct {
 	PierceDistance float64
 	Gravity        float64
 	MaxChargeTime  int
+	HitKnockback   float64 // horizontal knockback applied to enemies on hit
+}
+
+// KnifeConfig contains knife projectile configuration
+type KnifeConfig struct {
+	Speed            float64 // Projectile speed (faster than player)
+	Damage           int     // Damage dealt to player
+	Width            float64 // Collision width
+	Height           float64 // Collision height
+	KnockbackForce   float64 // Knockback on hit
+	MaxDownwardAngle float64 // Maximum downward angle in radians (0 = horizontal, positive = downward)
+}
+
+// FireHitboxPhase defines hitbox scaling for a range of animation frames
+type FireHitboxPhase struct {
+	StartFrame int
+	EndFrame   int
+	StartScale float64 // 0.0 to 1.0
+	EndScale   float64 // 0.0 to 1.0
+}
+
+// FireTypeConfig contains configuration for specific fire obstacle types
+type FireTypeConfig struct {
+	Damage         int
+	KnockbackForce float64
+	FrameWidth     int
+	FrameHeight    int
+	State          StateID
+	HitboxPhases   []FireHitboxPhase // nil = static hitbox (for fire_continuous)
+	HitboxScale    float64           // Scale factor for hitbox (1.0 = sprite size)
+}
+
+// FireConfig contains fire obstacle configuration
+type FireConfig struct {
+	Types map[string]FireTypeConfig
 }
 
 // PauseConfig contains pause menu configuration values
@@ -193,15 +244,18 @@ type PauseConfig struct {
 
 // MenuConfig contains main menu configuration values
 type MenuConfig struct {
-	BackgroundColor   color.RGBA
-	TitleColor        color.RGBA
-	TextColorNormal   color.RGBA
-	TextColorSelected color.RGBA
-	TitleY            float64
-	MenuStartY        float64
-	MenuItemHeight    float64
-	MenuItemGap       float64
-	MenuOptions       []string
+	BackgroundColor      color.RGBA
+	TitleColor           color.RGBA
+	TextColorNormal      color.RGBA
+	TextColorSelected    color.RGBA
+	TitleY               float64
+	MenuStartY           float64
+	MenuItemHeight       float64
+	MenuItemGap          float64
+	MenuOptions          []string
+	ConfirmDialogMessage string
+	ConfirmDialogYes     string
+	ConfirmDialogNo      string
 }
 
 // GameOverConfig contains game over screen configuration values
@@ -215,6 +269,33 @@ type GameOverConfig struct {
 	MenuItemHeight    float64
 	MenuItemGap       float64
 	MenuOptions       []string
+}
+
+// ScreenShakeConfig contains screen shake effect configuration
+type ScreenShakeConfig struct {
+	MeleeIntensity        float64 // pixels - punch, kick, jump kick (all same)
+	MeleeDuration         int     // frames
+	PlayerDamageIntensity float64 // pixels
+	PlayerDamageDuration  int     // frames
+	BoomerangIntensity    float64 // pixels - charged throw impact
+	BoomerangDuration     int     // frames
+}
+
+// DeathZoneConfig contains death zone effect configuration
+type DeathZoneConfig struct {
+	RespawnDelayFrames   int     // Frames before respawn (~0.75s at 60fps)
+	ScreenShakeIntensity float64 // Screen shake intensity in pixels
+	ScreenShakeDuration  int     // Screen shake duration in frames
+	ExplosionScale       float64 // Scale of explosion VFX
+}
+
+// SquashStretchConfig contains squash/stretch effect configuration
+type SquashStretchConfig struct {
+	JumpScaleX float64 // horizontal scale on jump (< 1 = narrower)
+	JumpScaleY float64 // vertical scale on jump (> 1 = taller)
+	LandScaleX float64 // horizontal scale on land (> 1 = wider)
+	LandScaleY float64 // vertical scale on land (< 1 = shorter)
+	LerpSpeed  float64 // how fast to return to normal scale
 }
 
 // Config holds general game configuration
@@ -232,16 +313,29 @@ var Physics PhysicsConfig
 var Animation AnimationConfig
 var UI UIConfig
 var Boomerang BoomerangConfig
+var Knife KnifeConfig
+var Fire FireConfig
 var Pause PauseConfig
 var Menu MenuConfig
 var GameOver GameOverConfig
+var ScreenShake ScreenShakeConfig
+var SquashStretch SquashStretchConfig
+var DeathZone DeathZoneConfig
+var Debug DebugConfig
+
+// DebugConfig contains debug/testing command-line options
+type DebugConfig struct {
+	SkipMenu        bool    // Skip menu and go directly to game
+	StartCheckpoint float64 // Checkpoint ID to spawn at (-1 = use default)
+}
 
 // Shared RGBA color constants
 var (
 	White        = color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	Yellow       = color.RGBA{R: 255, G: 255, B: 0, A: 255}
 	BrightYellow = color.RGBA{R: 255, G: 255, B: 100, A: 255}
-	Orange       = color.RGBA{R: 255, G: 165, B: 0, A: 255}
+	Orange       = color.RGBA{R: 255, G: 140, B: 0, A: 255}
+	BrightOrange = color.RGBA{R: 255, G: 180, B: 50, A: 255}
 	Red          = color.RGBA{R: 255, G: 0, B: 0, A: 255}
 	Green        = color.RGBA{R: 0, G: 255, B: 0, A: 255}
 	BrightGreen  = color.RGBA{R: 0, G: 255, B: 60, A: 255}
@@ -251,6 +345,8 @@ var (
 	LightRed     = color.RGBA{R: 255, G: 60, B: 60, A: 255}
 	Magenta      = color.RGBA{R: 255, G: 0, B: 255, A: 255}
 	BlackOverlay = color.RGBA{R: 0, G: 0, B: 0, A: 180}
+	LightBlue    = color.RGBA{R: 100, G: 180, B: 255, A: 255} // Selected menu items
+	DarkBlue     = color.RGBA{R: 60, G: 100, B: 160, A: 255}  // Unselected menu items
 )
 
 // Direction constants for player facing
@@ -303,12 +399,15 @@ func init() {
 		AttackFriction: 0.2,
 
 		// Slide mechanics
-		SlideSpeedThreshold: 4.0,  // Must be moving at least this fast to slide
-		SlideFriction:       0.08, // Gradual slowdown during slide (lower = longer slide)
-		SlideHitboxHeight:   20.0, // Reduced height during slide (normal is 40)
-		SlideMinSpeed:       0.3,  // Stop sliding when speed drops below this
-		SlideRecoveryFrames: 8,    // Frames of delay before standing up
+		SlideSpeedThreshold: 4.0,   // Must be moving at least this fast to slide
+		SlideFriction:       0.08,  // Gradual slowdown during slide (lower = longer slide)
+		SlideHitboxHeight:   20.0,  // Reduced height during slide (normal is 40)
+		SlideMinSpeed:       0.3,   // Stop sliding when speed drops below this
+		SlideRecoveryFrames: 8,     // Frames of delay before standing up
 		SlideRotation:       -0.35, // Rotate sprite for ground slide look
+
+		// Crouch mechanics
+		CrouchWalkSpeed: 1.5, // Slow movement while crouched
 
 		// Dimensions
 		FrameWidth:      96,
@@ -326,6 +425,45 @@ func init() {
 		PierceDistance: 40.0,
 		Gravity:        0.2,
 		MaxChargeTime:  60,
+		HitKnockback:   2.0,
+	}
+
+	// Knife Config
+	Knife = KnifeConfig{
+		Speed:            8.0, // Faster than player (6.0)
+		Damage:           30,
+		Width:            36.0, // Actual knife dimensions within 96x84 sprite
+		Height:           7.0,
+		KnockbackForce:   4.0,
+		MaxDownwardAngle: 0.5, // ~30 degrees max downward angle to avoid hitting ground
+	}
+
+	// Fire Config
+	Fire = FireConfig{
+		Types: map[string]FireTypeConfig{
+			"fire_pulsing": {
+				Damage:         15,
+				KnockbackForce: 6.0,
+				FrameWidth:     65,
+				FrameHeight:    43,
+				State:          FirePulsing,
+				HitboxScale:    0.85,
+				HitboxPhases: []FireHitboxPhase{
+					{StartFrame: 0, EndFrame: 10, StartScale: 0.3, EndScale: 0.6},  // Igniting
+					{StartFrame: 11, EndFrame: 23, StartScale: 0.6, EndScale: 1.0}, // Growing
+					{StartFrame: 24, EndFrame: 34, StartScale: 1.0, EndScale: 0.0}, // Dying
+					// Frames 35-44: no entry = no hitbox
+				},
+			},
+			"fire_continuous": {
+				Damage:         15,
+				KnockbackForce: 6.0,
+				FrameWidth:     66,
+				FrameHeight:    47,
+				State:          FireContinuous,
+				HitboxScale:    0.85,
+			},
+		},
 	}
 
 	// Enemy Config
@@ -341,7 +479,7 @@ func init() {
 		InvulnFrames:     15,
 		AttackDuration:   30,
 		HitstunDuration:  15,
-		Damage:           10,
+		Damage:           40,
 		KnockbackForce:   5.0,
 		Gravity:          0.75,
 		Friction:         0.2,
@@ -356,7 +494,7 @@ func init() {
 
 	lightGuardType := EnemyTypeConfig{
 		Name:             "LightGuard",
-		Health:           40,
+		Health:           30,
 		PatrolSpeed:      3.0,
 		ChaseSpeed:       3.5,
 		AttackRange:      32.0,
@@ -366,7 +504,7 @@ func init() {
 		InvulnFrames:     10,
 		AttackDuration:   20,
 		HitstunDuration:  10,
-		Damage:           8,
+		Damage:           20,
 		KnockbackForce:   3.0,
 		Gravity:          0.8,
 		Friction:         0.25,
@@ -391,7 +529,7 @@ func init() {
 		InvulnFrames:     25,
 		AttackDuration:   45,
 		HitstunDuration:  25,
-		Damage:           18,
+		Damage:           30,
 		KnockbackForce:   8.0,
 		Gravity:          0.7,
 		Friction:         0.15,
@@ -404,11 +542,45 @@ func init() {
 		SpriteSheetKey:   "player",
 	}
 
+	knifeThrowerType := EnemyTypeConfig{
+		Name:             "KnifeThrower",
+		Health:           30,
+		PatrolSpeed:      1.5, // Patrol when player not in range
+		ChaseSpeed:       0,   // Does not chase
+		AttackRange:      0,   // Not used for ranged
+		ChaseRange:       0,   // Not used
+		StoppingDistance: 0,   // Not used
+		AttackCooldown:   0,   // Not used (use ThrowCooldown instead)
+		InvulnFrames:     15,
+		AttackDuration:   0, // Not used
+		HitstunDuration:  20,
+		Damage:           0, // Not used (knife has its own damage)
+		KnockbackForce:   0, // Not used
+		Gravity:          0.75,
+		Friction:         0.2,
+		MaxSpeed:         3.0, // Allow movement for patrol
+		FrameWidth:       96,
+		FrameHeight:      84,
+		CollisionWidth:   16,
+		CollisionHeight:  40,
+		TintColor:        Purple,
+		SpriteSheetKey:   "player",
+		// Ranged specific
+		IsRanged:           true,
+		ThrowRange:         300.0, // Detection/attack range
+		ThrowCooldown:      120,   // 2 seconds at 60fps
+		ThrowWindupTime:    15,    // Frames before knife spawns
+		MinVerticalToThrow: 32.0,  // If player is more than 32px below, walk to edge
+		EdgeApproachSpeed:  1.5,   // Speed when approaching platform edge
+		EdgeThrowDistance:  200.0, // Max horizontal distance to throw from edge
+	}
+
 	Enemy = EnemyConfig{
 		Types: map[string]EnemyTypeConfig{
-			"Guard":      guardType,
-			"LightGuard": lightGuardType,
-			"HeavyGuard": heavyGuardType,
+			"Guard":        guardType,
+			"LightGuard":   lightGuardType,
+			"HeavyGuard":   heavyGuardType,
+			"KnifeThrower": knifeThrowerType,
 		},
 		HysteresisMultiplier:  1.5,
 		DefaultPatrolDistance: 32.0,
@@ -443,13 +615,17 @@ func init() {
 		JumpKickRotation: 0.35,
 
 		HealthBarDuration: 180,
+
+		// Flash effects
+		HitFlashFrames:    3,
+		DamageFlashFrames: 5,
 	}
 
 	// Pause Config
 	Pause = PauseConfig{
 		OverlayColor:      BlackOverlay,
-		TextColorNormal:   BrightYellow,
-		TextColorSelected: LightGreen,
+		TextColorNormal:   White,
+		TextColorSelected: BrightOrange,
 		MenuItemHeight:    30,
 		MenuItemGap:       15,
 		MenuOptions:       []string{"Resume", "Settings", "Exit"},
@@ -457,27 +633,63 @@ func init() {
 
 	// Menu Config
 	Menu = MenuConfig{
-		BackgroundColor:   color.RGBA{R: 20, G: 20, B: 40, A: 255},
-		TitleColor:        White,
-		TextColorNormal:   BrightYellow,
-		TextColorSelected: LightGreen,
-		TitleY:            50,
-		MenuStartY:        100,
-		MenuItemHeight:    30,
-		MenuItemGap:       12,
-		MenuOptions:       []string{"Start", "Continue", "Level Select", "Settings", "Exit"},
+		BackgroundColor:      color.RGBA{R: 15, G: 25, B: 50, A: 255},
+		TitleColor:           Orange,
+		TextColorNormal:      White,
+		TextColorSelected:    BrightOrange,
+		TitleY:               50,
+		MenuStartY:           100,
+		MenuItemHeight:       30,
+		MenuItemGap:          12,
+		MenuOptions:          []string{"Start", "Continue", "Settings", "Exit"},
+		ConfirmDialogMessage: "Overwrite existing save?",
+		ConfirmDialogYes:     "Yes",
+		ConfirmDialogNo:      "No",
 	}
 
 	// Game Over Config
 	GameOver = GameOverConfig{
 		BackgroundColor:   color.RGBA{R: 40, G: 10, B: 10, A: 255},
 		TitleColor:        LightRed,
-		TextColorNormal:   BrightYellow,
-		TextColorSelected: LightGreen,
+		TextColorNormal:   White,
+		TextColorSelected: BrightOrange,
 		TitleY:            100,
 		MenuStartY:        160,
 		MenuItemHeight:    30,
 		MenuItemGap:       15,
 		MenuOptions:       []string{"Retry", "Main Menu"},
+	}
+
+	// Screen Shake Config
+	ScreenShake = ScreenShakeConfig{
+		MeleeIntensity:        2.0,
+		MeleeDuration:         5,
+		PlayerDamageIntensity: 4.0,
+		PlayerDamageDuration:  8,
+		BoomerangIntensity:    4.0,
+		BoomerangDuration:     6,
+	}
+
+	// Squash/Stretch Config
+	SquashStretch = SquashStretchConfig{
+		JumpScaleX: 0.7,
+		JumpScaleY: 1.5,
+		LandScaleX: 1.5,
+		LandScaleY: 0.6,
+		LerpSpeed:  0.10,
+	}
+
+	// Death Zone Config
+	DeathZone = DeathZoneConfig{
+		RespawnDelayFrames:   15,  // ~0.25s at 60fps
+		ScreenShakeIntensity: 8.0, // Strong shake for death
+		ScreenShakeDuration:  12,
+		ExplosionScale:       1.2,
+	}
+
+	// Debug Config (defaults, can be overridden by CLI flags)
+	Debug = DebugConfig{
+		SkipMenu:        false,
+		StartCheckpoint: -1,
 	}
 }

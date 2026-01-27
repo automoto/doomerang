@@ -6,9 +6,10 @@ import (
 )
 
 type LevelData struct {
-	CurrentLevel *assets.Level
-	LevelIndex   int
-	Levels       []assets.Level
+	CurrentLevel     *assets.Level
+	LevelIndex       int
+	Levels           []assets.Level
+	ActiveCheckpoint *ActiveCheckpointData // Last activated checkpoint for respawn
 }
 
 var Level = donburi.NewComponentType[LevelData]()

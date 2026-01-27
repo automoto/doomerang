@@ -14,10 +14,12 @@ const (
 	SoundJump
 	SoundLand
 	SoundWallAttach
+	SoundSlide
 	// Boomerang sounds
 	SoundBoomerangThrow
 	SoundBoomerangCatch
 	SoundBoomerangImpact
+	SoundBoomerangCharge
 	// UI sounds
 	SoundMenuNavigate
 	SoundMenuSelect
@@ -58,9 +60,11 @@ func init() {
 			SoundJump:            "audio/sfx/jump.wav",
 			SoundLand:            "audio/sfx/land.wav",
 			SoundWallAttach:      "audio/sfx/wall_attach.wav",
+			SoundSlide:           "audio/sfx/slide.wav",
 			SoundBoomerangThrow:  "audio/sfx/boomerang_throw.wav",
 			SoundBoomerangCatch:  "audio/sfx/boomerang_catch.wav",
 			SoundBoomerangImpact: "audio/sfx/boomerang_impact.wav",
+			SoundBoomerangCharge: "audio/sfx/boomerang_charge.wav",
 			SoundMenuNavigate:    "audio/sfx/menu_navigate.wav",
 			SoundMenuSelect:      "audio/sfx/menu_select.wav",
 		},

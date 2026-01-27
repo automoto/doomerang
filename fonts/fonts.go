@@ -13,6 +13,7 @@ const (
 	Excel      FontName = "excel"
 	ExcelBold  FontName = "excel-bold"
 	ExcelTitle FontName = "excel-title"
+	ExcelSmall FontName = "excel-small"
 )
 
 func (f FontName) Get() font.Face {

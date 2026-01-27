@@ -3,6 +3,7 @@ package scenes
 import (
 	"errors"
 	"image/color"
+	"log"
 	"sync"
 
 	cfg "github.com/automoto/doomerang/config"
@@ -76,12 +77,17 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCollisions))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateObjects))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateBoomerang))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateKnives))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombat))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombatHitboxes))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateDeaths))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCheckpoints))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateFire))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEffects))
 
 	// Systems that run even when paused
 	ecs.AddSystem(systems.UpdateSettings)
+	ecs.AddSystem(systems.UpdateSettingsMenu)
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCamera))
 
 	// Add renderers
@@ -93,6 +99,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddRenderer(cfg.Default, systems.DrawHUD)
 	ecs.AddRenderer(cfg.Default, systems.DrawDebug)
 	ecs.AddRenderer(cfg.Default, systems.DrawPause)
+	ecs.AddRenderer(cfg.Default, systems.DrawSettingsMenu)
 
 	ps.ecs = ecs
 
@@ -125,18 +132,64 @@ func (ps *PlatformerScene) configure() {
 		factory2.CreateDeadZone(ps.ecs, dz.X, dz.Y, dz.Width, dz.Height)
 	}
 
-	// Determine player spawn position
-	var playerSpawnX, playerSpawnY float64
-
-	if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
-		err := errors.New("no player spawn points defined in Map")
-		panic(err)
+	// Create checkpoints from the level
+	for _, ckp := range levelData.CurrentLevel.Checkpoints {
+		factory2.CreateCheckpoint(ps.ecs, ckp.X, ckp.Y, ckp.Width, ckp.Height, ckp.CheckpointID)
 	}
 
-	// Use the first player spawn point defined in Tiled
-	spawn := levelData.CurrentLevel.PlayerSpawns[0]
-	playerSpawnX = spawn.X
-	playerSpawnY = spawn.Y
+	// Create fire obstacles from the level
+	for _, fire := range levelData.CurrentLevel.Fires {
+		factory2.CreateFire(ps.ecs, fire.X, fire.Y, fire.FireType, fire.Direction)
+	}
+
+	// Determine player spawn position
+	var playerSpawnX, playerSpawnY float64
+	var foundCheckpoint bool
+
+	// Load saved checkpoint progress
+	if progress, _ := systems.LoadGameProgress(); progress != nil && progress.LevelIndex == levelData.LevelIndex {
+		levelData.ActiveCheckpoint = &components.ActiveCheckpointData{
+			SpawnX:       progress.CheckpointSpawnX,
+			SpawnY:       progress.CheckpointSpawnY,
+			CheckpointID: progress.CheckpointID,
+		}
+		playerSpawnX = progress.CheckpointSpawnX
+		playerSpawnY = progress.CheckpointSpawnY
+		foundCheckpoint = true
+	}
+
+	// Check if we should spawn at a specific checkpoint (debug/testing) - overrides saved progress
+	if cfg.Debug.StartCheckpoint >= 0 {
+		for _, ckp := range levelData.CurrentLevel.Checkpoints {
+			if ckp.CheckpointID == cfg.Debug.StartCheckpoint {
+				playerSpawnX = ckp.X + ckp.Width/2
+				playerSpawnY = ckp.Y + ckp.Height/2
+				foundCheckpoint = true
+
+				// Set active checkpoint so respawns work correctly
+				levelData.ActiveCheckpoint = &components.ActiveCheckpointData{
+					SpawnX:       playerSpawnX,
+					SpawnY:       playerSpawnY,
+					CheckpointID: ckp.CheckpointID,
+				}
+				break
+			}
+		}
+		if !foundCheckpoint {
+			log.Printf("Warning: Checkpoint %.0f not found, using default spawn", cfg.Debug.StartCheckpoint)
+		}
+	}
+
+	// Fallback to default spawn
+	if !foundCheckpoint {
+		if len(levelData.CurrentLevel.PlayerSpawns) <= 0 {
+			err := errors.New("no player spawn points defined in Map")
+			panic(err)
+		}
+		spawn := levelData.CurrentLevel.PlayerSpawns[0]
+		playerSpawnX = spawn.X
+		playerSpawnY = spawn.Y
+	}
 
 	// Create the player at the determined position
 	player := factory2.CreatePlayer(ps.ecs, playerSpawnX, playerSpawnY)

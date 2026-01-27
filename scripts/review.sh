@@ -1,0 +1,1 @@
+git diff origin/master...HEAD | gemini -p "Review these changes for bugs, security issues, and code quality" --output-format json | jq -r '.response' > response.json

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"image"
 	"path/filepath"
 
 	"github.com/automoto/doomerang/config"
@@ -35,6 +36,8 @@ type Level struct {
 	EnemySpawns  []EnemySpawn
 	PlayerSpawns []PlayerSpawn
 	DeadZones    []DeadZone
+	Checkpoints  []CheckpointSpawn
+	Fires        []FireSpawn
 	Name         string
 	Width        int
 	Height       int
@@ -57,6 +60,17 @@ type DeadZone struct {
 	X, Y, Width, Height float64
 }
 
+type CheckpointSpawn struct {
+	X, Y, Width, Height float64
+	CheckpointID        float64
+}
+
+type FireSpawn struct {
+	X, Y      float64
+	FireType  string // "fire_pulsing" or "fire_continuous"
+	Direction string // "up", "down", "left", "right" (default: "right")
+}
+
 type LevelLoader struct{}
 
 func NewLevelLoader() *LevelLoader {
@@ -74,12 +88,14 @@ type PatrolPath struct {
 }
 
 type AnimationLoader struct {
-	cache map[string]*ebiten.Image
+	cache      map[string]*ebiten.Image
+	frameCache map[string]*ebiten.Image
 }
 
 func NewAnimationLoader() *AnimationLoader {
 	return &AnimationLoader{
-		cache: make(map[string]*ebiten.Image),
+		cache:      make(map[string]*ebiten.Image),
+		frameCache: make(map[string]*ebiten.Image),
 	}
 }
 
@@ -103,6 +119,25 @@ func (l *AnimationLoader) MustLoadImage(path string) *ebiten.Image {
 	return img
 }
 
+// GetFrame returns a cached sub-image for a specific animation frame.
+// This prevents creating thousands of duplicate *ebiten.Image structs for the same frame.
+func (l *AnimationLoader) GetFrame(dir string, state config.StateID, frameIndex int, srcRect image.Rectangle) *ebiten.Image {
+	key := fmt.Sprintf("%s/%s/%d", dir, state.String(), frameIndex)
+	if img, ok := l.frameCache[key]; ok {
+		return img
+	}
+
+	// Load the full sprite sheet
+	sheetPath := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state.String())
+	sheet := l.MustLoadImage(sheetPath)
+
+	// Create the sub-image for this frame
+	frame := sheet.SubImage(srcRect).(*ebiten.Image)
+	l.frameCache[key] = frame
+
+	return frame
+}
+
 func GetObjectImage(name string) *ebiten.Image {
 	path := fmt.Sprintf("images/objects/%s", name)
 	return animationLoader.MustLoadImage(path)
@@ -111,6 +146,10 @@ func GetObjectImage(name string) *ebiten.Image {
 func GetIconImage(name string) *ebiten.Image {
 	path := fmt.Sprintf("images/icons/%s", name)
 	return animationLoader.MustLoadImage(path)
+}
+
+func GetFrame(dir string, state config.StateID, frameIndex int, srcRect image.Rectangle) *ebiten.Image {
+	return animationLoader.GetFrame(dir, state, frameIndex, srcRect)
 }
 
 func (l *LevelLoader) MustLoadLevels() []Level {
@@ -147,6 +186,8 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		EnemySpawns:  []EnemySpawn{},
 		PlayerSpawns: []PlayerSpawn{},
 		DeadZones:    []DeadZone{},
+		Checkpoints:  []CheckpointSpawn{},
+		Fires:        []FireSpawn{},
 		Name:         levelPath,
 		Width:        levelMap.Width * levelMap.TileWidth,
 		Height:       levelMap.Height * levelMap.TileHeight,
@@ -205,6 +246,39 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					Width:  o.Width,
 					Height: o.Height,
 				})
+			}
+		case "Checkpoint":
+			for _, o := range og.Objects {
+				checkpointID := o.Properties.GetFloat("checkpointID")
+				level.Checkpoints = append(level.Checkpoints, CheckpointSpawn{
+					X:            o.X,
+					Y:            o.Y,
+					Width:        o.Width,
+					Height:       o.Height,
+					CheckpointID: checkpointID,
+				})
+			}
+		case "Obstacles":
+			for _, o := range og.Objects {
+				// Parse fire obstacles by object type
+				// Note: Using Type field as TMX files use type= attribute
+				fireType := o.Class
+				if fireType == "" {
+					fireType = o.Type //nolint:staticcheck // TMX uses type= attribute
+				}
+				if fireType == "fire_pulsing" || fireType == "fire_continuous" {
+					// Get direction from Tiled properties, default to "right"
+					direction := o.Properties.GetString("Direction")
+					if direction == "" {
+						direction = "right"
+					}
+					level.Fires = append(level.Fires, FireSpawn{
+						X:         o.X,
+						Y:         o.Y,
+						FireType:  fireType,
+						Direction: direction,
+					})
+				}
 			}
 		}
 	}
@@ -269,10 +343,12 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		// Draw the image at its offset position with opacity
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(imgLayer.OffsetX), float64(imgLayer.OffsetY))
-		// Apply layer opacity (default to 1.0 if not set, since go-tiled defaults to 0)
+		// Apply layer opacity from Tiled (go-tiled defaults to 1.0 if not specified)
 		opacity := imgLayer.Opacity
-		if opacity == 0 {
-			opacity = 1.0
+		// Skip fully transparent layers
+		if opacity <= 0 {
+			img.Dispose()
+			continue
 		}
 		op.ColorScale.ScaleAlpha(float32(opacity))
 		level.Background.DrawImage(img, op)
@@ -300,10 +376,12 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 			// Convert the rendered layer to an Ebiten image and draw it with opacity
 			layerImage := ebiten.NewImageFromImage(renderer.Result)
 			op := &ebiten.DrawImageOptions{}
-			// Apply layer opacity (default to 1.0 if not set, since go-tiled defaults to 0)
+			// Apply layer opacity from Tiled (go-tiled defaults to 1.0 if not specified)
 			opacity := layer.Opacity
-			if opacity == 0 {
-				opacity = 1.0
+			// Skip fully transparent layers
+			if opacity <= 0 {
+				layerImage.Dispose()
+				continue
 			}
 			op.ColorScale.ScaleAlpha(float32(opacity))
 			level.Background.DrawImage(layerImage, op)

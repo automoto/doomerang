@@ -41,6 +41,21 @@ const (
 	// Enemy AI states
 	StatePatrol
 	StateChase
+	StateApproachEdge
+
+	// VFX states (dust and impact effects)
+	StateJumpDust
+	StateLandDust
+	StateSlideDust
+	StateExplosionShort
+	StatePlasma
+	StateGunshot
+	HitExplosion
+	ChargeUp
+
+	// Fire obstacle states
+	FirePulsing
+	FireContinuous
 )
 
 // StateToFileName maps StateID to the corresponding filename prefix.
@@ -78,8 +93,23 @@ var StateToFileName = map[StateID]string{
 	StateSliding: "slide", // Custom slide animation
 
 	// Enemy AI states map to movement animations
-	StatePatrol: "walk",
-	StateChase:  "running",
+	StatePatrol:      "walk",
+	StateChase:       "running",
+	StateApproachEdge: "walk",
+
+	// VFX states map to effect sprite files
+	StateJumpDust:       "jumpdust",
+	StateLandDust:       "landingdust",
+	StateSlideDust:      "slidedust",
+	StateExplosionShort:  "explosion_short",
+	StatePlasma:          "plasma",
+	StateGunshot:         "gunshot_rifle",
+	HitExplosion:         "explosion",
+	ChargeUp:             "level_up",
+
+	// Fire obstacle sprites
+	FirePulsing:    "flames_pulse",
+	FireContinuous: "flame_continuous",
 }
 
 func (s StateID) String() string {

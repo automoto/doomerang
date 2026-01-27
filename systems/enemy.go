@@ -5,6 +5,7 @@ import (
 
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
+	"github.com/automoto/doomerang/systems/factory"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -71,6 +72,12 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 
 	// Calculate distance to player
 	distanceToPlayer := math.Abs(playerObject.X - enemyObject.X)
+
+	// Use ranged AI for ranged enemies
+	if enemy.TypeConfig != nil && enemy.TypeConfig.IsRanged {
+		updateRangedEnemyAI(ecs, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
+		return
+	}
 
 	// State machine
 	switch state.CurrentState {
@@ -247,6 +254,103 @@ func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
 	// Don't apply movement input during attack - let friction naturally slow down
 }
 
+func updateRangedEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	switch state.CurrentState {
+	case cfg.StatePatrol, cfg.Idle:
+		updateRangedPatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
+
+	case cfg.StateApproachEdge:
+		handleApproachEdgeState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
+
+	case cfg.Throw:
+		handleThrowState(ecs, enemyEntry, enemy, state, enemyObject, playerObject)
+
+	case cfg.Hit:
+		if state.StateTimer > enemy.TypeConfig.HitstunDuration {
+			state.CurrentState = cfg.StatePatrol
+			state.StateTimer = 0
+		}
+		physics.SpeedX = 0
+	}
+}
+
+func updateRangedPatrolState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	if distanceToPlayer > enemy.TypeConfig.ThrowRange || enemy.AttackCooldown > 0 {
+		if enemy.PatrolPathName != "" {
+			handleCustomPatrol(ecs, enemyEntry, enemy, physics, state, enemyObject)
+		} else {
+			handleDefaultPatrol(enemy, physics, enemyObject)
+		}
+		return
+	}
+
+	if playerObject.X > enemyObject.X {
+		enemy.Direction.X = 1
+	} else {
+		enemy.Direction.X = -1
+	}
+
+	verticalDiff := playerObject.Y - enemyObject.Y
+	if verticalDiff > enemy.TypeConfig.MinVerticalToThrow && enemy.TypeConfig.MinVerticalToThrow > 0 {
+		state.CurrentState = cfg.StateApproachEdge
+		state.StateTimer = 0
+		return
+	}
+
+	state.CurrentState = cfg.Throw
+	state.StateTimer = 0
+	physics.SpeedX = 0
+}
+
+// handleThrowState handles the throwing animation and knife creation
+func handleThrowState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, state *components.StateData, enemyObject, playerObject *resolv.Object) {
+	// Throw knife at windup frame
+	if state.StateTimer == enemy.TypeConfig.ThrowWindupTime {
+		// Target player's current position
+		targetX := playerObject.X + playerObject.W/2
+		targetY := playerObject.Y + playerObject.H/2
+		factory.CreateKnife(ecs, enemyEntry, targetX, targetY)
+		PlaySFX(ecs, cfg.SoundBoomerangThrow) // Reuse throw sound for now
+	}
+
+	// Animation complete (windup + throw animation)
+	if state.StateTimer >= enemy.TypeConfig.ThrowWindupTime+15 {
+		state.CurrentState = cfg.StatePatrol
+		state.StateTimer = 0
+		enemy.AttackCooldown = enemy.TypeConfig.ThrowCooldown
+	}
+}
+
+func handleApproachEdgeState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	if playerObject.X > enemyObject.X {
+		enemy.Direction.X = 1
+	} else {
+		enemy.Direction.X = -1
+	}
+
+	verticalDiff := playerObject.Y - enemyObject.Y
+	if distanceToPlayer > enemy.TypeConfig.ThrowRange || verticalDiff <= enemy.TypeConfig.MinVerticalToThrow {
+		state.CurrentState = cfg.StatePatrol
+		state.StateTimer = 0
+		return
+	}
+
+	if !isAtPlatformEdge(enemyObject, enemy.Direction.X) {
+		physics.SpeedX = enemy.TypeConfig.EdgeApproachSpeed * enemy.Direction.X
+		return
+	}
+
+	physics.SpeedX = 0
+	if distanceToPlayer <= enemy.TypeConfig.EdgeThrowDistance && enemy.AttackCooldown == 0 {
+		state.CurrentState = cfg.Throw
+		state.StateTimer = 0
+	}
+}
+
+func isAtPlatformEdge(obj *resolv.Object, direction float64) bool {
+	return obj.Check(8.0*direction, obj.H+4.0, "solid", "platform") == nil
+}
+
 func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
 	// Simple animation state based on movement and AI state
 	var targetState cfg.StateID
@@ -254,8 +358,12 @@ func updateEnemyAnimation(enemy *components.EnemyData, physics *components.Physi
 	switch state.CurrentState {
 	case cfg.StateAttackingPunch:
 		targetState = cfg.Punch01 // Use punch animation for attacks
+	case cfg.Throw:
+		targetState = cfg.Throw // Use throw animation for ranged attacks
 	case cfg.Hit:
 		targetState = cfg.Hit
+	case cfg.StateApproachEdge:
+		targetState = cfg.Walk // Use walk animation when approaching edge
 	default:
 		if physics.OnGround == nil {
 			targetState = cfg.Jump

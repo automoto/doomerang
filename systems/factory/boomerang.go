@@ -1,6 +1,8 @@
 package factory
 
 import (
+	"math"
+
 	"github.com/automoto/doomerang/archetypes"
 	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/components"
@@ -11,8 +13,8 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-// CreateBoomerang spawns a new boomerang entity.
-func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *donburi.Entry {
+// CreateBoomerang spawns a new boomerang entity with the given aim direction.
+func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64, aimX, aimY float64) *donburi.Entry {
 	b := archetypes.Boomerang.Spawn(ecs)
 
 	// Get owner position and facing
@@ -51,8 +53,17 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 	// Speed scaling: Base speed + bonus from charge (simple linear for now)
 	speed := config.Boomerang.ThrowSpeed * (1.0 + chargeRatio*0.5)
 
-	velocityX := speed * facingX
-	velocityY := -2.0 // Slight upward toss
+	// Normalize aim vector and apply speed
+	length := math.Sqrt(aimX*aimX + aimY*aimY)
+	if length > 0 {
+		aimX /= length
+		aimY /= length
+	}
+	velocityX := speed * aimX
+	velocityY := speed * aimY
+
+	// Add upward lift to all throws for a nice arc
+	velocityY -= 3.0
 
 	components.Physics.Set(b, &components.PhysicsData{
 		SpeedX:   velocityX,
@@ -72,7 +83,8 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 		MaxRange:         maxRange,
 		PierceDistance:   config.Boomerang.PierceDistance,
 		HitEnemies:       make(map[*donburi.Entry]struct{}),
-		Damage:           20, // Significant damage
+		Damage:           20,         // Significant damage
+		ChargeRatio:      chargeRatio, // Store for scaled effects
 	})
 
 	// Sprite
@@ -88,6 +100,12 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64) *
 	if owner.HasComponent(components.Player) {
 		ownerPlayer.ActiveBoomerang = b
 	}
+
+	// Spawn gunshot muzzle flash effect in the throw direction
+	gunshotOffset := 45.0
+	gunshotX := ownerObj.X + ownerObj.W/2 + gunshotOffset*aimX
+	gunshotY := ownerObj.Y + ownerObj.H/2 + gunshotOffset*aimY
+	SpawnGunshot(ecs, gunshotX, gunshotY, aimX)
 
 	return b
 }

@@ -115,6 +115,11 @@ func handleJumpInput(e *ecs.ECS, jumpAction, crouchAction components.ActionState
 	if physics.OnGround != nil {
 		physics.SpeedY = -cfg.Player.JumpSpeed
 		PlaySFX(e, cfg.SoundJump)
+		// Spawn jump dust and squash/stretch
+		factory.SpawnJumpDust(e, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+		if playerEntry, ok := components.Player.First(e.World); ok {
+			TriggerSquashStretch(playerEntry, cfg.SquashStretch.JumpScaleX, cfg.SquashStretch.JumpScaleY)
+		}
 		return
 	}
 
@@ -137,22 +142,9 @@ func handleMovementInput(moveLeftAction, moveRightAction components.ActionState,
 		return
 	}
 
-	// Block movement input during slide - friction is applied in state machine
-	if state.CurrentState == cfg.StateSliding {
+	// Block movement input during slide and crouch - handled separately in state machine
+	if state.CurrentState == cfg.StateSliding || state.CurrentState == cfg.Crouch {
 		return
-	}
-
-	// Apply friction when crouching - gradually slow down
-	if state.CurrentState == cfg.Crouch {
-		friction := cfg.Player.Friction * 2.0
-		if physics.SpeedX > friction {
-			physics.SpeedX -= friction
-		} else if physics.SpeedX < -friction {
-			physics.SpeedX += friction
-		} else {
-			physics.SpeedX = 0
-		}
-		return // No acceleration while crouching
 	}
 
 	accel := cfg.Player.Acceleration
@@ -195,13 +187,14 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		} else if crouchAction.JustPressed && physics.OnGround != nil {
 			// Slide if moving fast enough, otherwise crouch
 			if absFloat(physics.SpeedX) >= cfg.Player.SlideSpeedThreshold {
+				PlaySFX(ecs, cfg.SoundSlide)
 				enterSlideState(state, playerObject)
+				factory.SpawnSlideDust(ecs, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
 			} else {
-				state.CurrentState = cfg.Crouch
-				state.StateTimer = 0
+				enterCrouchState(state, playerObject)
 			}
 		} else if crouchAction.Pressed && physics.OnGround != nil && state.CurrentState != cfg.Running {
-			state.CurrentState = cfg.Crouch
+			enterCrouchState(state, playerObject)
 		} else {
 			transitionToMovementState(player, physics, state)
 		}
@@ -233,15 +226,30 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 			if player.BoomerangChargeTime < cfg.Boomerang.MaxChargeTime {
 				player.BoomerangChargeTime++
 			}
+			// Spawn charge VFX after holding for a bit (not on quick throws)
+			if player.BoomerangChargeTime == 15 && player.ChargeVFX == nil {
+				player.ChargeVFX = factory.SpawnChargeVFX(ecs, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+				PlaySFX(ecs, cfg.SoundBoomerangCharge)
+			}
+			// Update charge VFX position to follow player's feet
+			if player.ChargeVFX != nil {
+				factory.UpdateChargeVFXPosition(player.ChargeVFX, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+			}
 			// Apply friction instead of instant stop for smoother feel
 			applyThrowFriction(physics)
 			break
 		}
 		// Released - throw!
+		// Destroy charge VFX if it exists
+		if player.ChargeVFX != nil {
+			factory.DestroyChargeVFX(ecs, player.ChargeVFX)
+			player.ChargeVFX = nil
+		}
 		state.CurrentState = cfg.Throw
 		state.StateTimer = 0
 		PlaySFX(ecs, cfg.SoundBoomerangThrow)
-		factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime))
+		aimX, aimY := calculateBoomerangAim(input, player.Direction.X)
+		factory.CreateBoomerang(ecs, playerEntry, float64(player.BoomerangChargeTime), aimX, aimY)
 
 	case cfg.Throw:
 		// Apply friction instead of instant stop for smoother feel
@@ -276,23 +284,38 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		}
 
 	case cfg.Crouch:
+		// Allow slow crouch-walking
+		applyCrouchMovement(input, player, physics)
+
 		// Transition back to movement when down key is released
 		if !crouchAction.Pressed {
+			// Try to stand up (may push player horizontally if partially blocked)
+			if !tryStandUp(playerObject, player.Direction.X) {
+				break // Completely blocked - stay crouched
+			}
 			transitionToMovementState(player, physics, state)
 		}
 
 	case cfg.StateSliding:
 		// Friction is handled by physics system with cfg.Player.SlideFriction
 		speed := absFloat(physics.SpeedX)
-		canStandUp := !crouchAction.Pressed && state.StateTimer > cfg.Player.SlideRecoveryFrames
+		wantsToStandUp := !crouchAction.Pressed && state.StateTimer > cfg.Player.SlideRecoveryFrames
 		slideStopped := speed < cfg.Player.SlideMinSpeed
 
-		if !slideStopped && !canStandUp {
+		if !slideStopped && !wantsToStandUp {
 			break
 		}
-		restoreSlideHitbox(playerObject)
+
+		// Try to stand up (may push player horizontally if partially blocked)
+		if !tryStandUp(playerObject, player.Direction.X) {
+			// Completely blocked - transition to crouch (keeps reduced hitbox)
+			physics.SpeedX = 0
+			enterCrouchState(state, playerObject)
+			break
+		}
+
 		if slideStopped && crouchAction.Pressed {
-			state.CurrentState = cfg.Crouch
+			enterCrouchState(state, playerObject)
 		} else {
 			transitionToMovementState(player, physics, state)
 		}
@@ -308,6 +331,9 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 		// Transition to idle/running when landing on the ground
 		if physics.OnGround != nil {
 			PlaySFX(ecs, cfg.SoundLand)
+			// Spawn landing dust and squash/stretch
+			factory.SpawnLandDust(ecs, playerObject.X+playerObject.W/2, playerObject.Y+playerObject.H)
+			TriggerSquashStretch(playerEntry, cfg.SquashStretch.LandScaleX, cfg.SquashStretch.LandScaleY)
 			transitionToMovementState(player, physics, state)
 		} else if physics.WallSliding != nil {
 			state.CurrentState = cfg.WallSlide
@@ -327,6 +353,31 @@ func updatePlayerState(ecs *ecs.ECS, input *components.InputData, playerEntry *d
 	}
 
 	updatePlayerAnimation(state, animData)
+}
+
+// calculateBoomerangAim returns the aim direction vector based on input.
+// Returns (aimX, aimY) where the vector represents the throw direction.
+func calculateBoomerangAim(input *components.InputData, facingX float64) (aimX, aimY float64) {
+	upAction := input.Actions[cfg.ActionMoveUp]
+	downAction := input.Actions[cfg.ActionCrouch] // Down/Crouch key for aiming down
+	leftAction := input.Actions[cfg.ActionMoveLeft]
+	rightAction := input.Actions[cfg.ActionMoveRight]
+
+	horizontal := leftAction.Pressed || rightAction.Pressed
+
+	if upAction.Pressed && !downAction.Pressed {
+		if horizontal {
+			return facingX, -1.0 // Diagonal up
+		}
+		return 0, -1.0 // Straight up
+	}
+	if downAction.Pressed && !upAction.Pressed {
+		if horizontal {
+			return facingX, 1.0 // Diagonal down
+		}
+		return 0, 1.0 // Straight down
+	}
+	return facingX, 0 // Forward (default)
 }
 
 // Helper functions for state management
@@ -380,28 +431,39 @@ func transitionToMovementState(player *components.PlayerData, physics *component
 	player.ComboCounter = 0
 }
 
-// applyThrowFriction applies gradual friction during boomerang throw instead of instant stop
 func applyThrowFriction(physics *components.PhysicsData) {
-	// Use moderate friction for gradual slowdown during throw
-	friction := cfg.Player.Friction * 1.0
-	if physics.SpeedX > friction {
-		physics.SpeedX -= friction
-	} else if physics.SpeedX < -friction {
-		physics.SpeedX += friction
-	} else {
-		physics.SpeedX = 0
-	}
+	applyFriction(physics, cfg.Player.Friction)
 }
 
-// restoreSlideHitbox restores the player hitbox to normal height after sliding
-func restoreSlideHitbox(playerObject *resolv.Object) {
+// tryStandUp attempts to restore full height hitbox, pushing player horizontally if needed.
+func tryStandUp(playerObject *resolv.Object, facingX float64) bool {
 	normalHeight := float64(cfg.Player.CollisionHeight)
 	if playerObject.H >= normalHeight {
-		return
+		return true
 	}
+
 	heightDiff := normalHeight - playerObject.H
-	playerObject.H = normalHeight
-	playerObject.Y -= heightDiff
+
+	if playerObject.Check(0, -heightDiff, "solid") == nil {
+		playerObject.H = normalHeight
+		playerObject.Y -= heightDiff
+		return true
+	}
+
+	// Blocked above - try pushing horizontally
+	const pushDistance = 12.0
+	for _, dir := range []float64{facingX, -facingX} {
+		for offset := 1.0; offset <= pushDistance; offset++ {
+			if playerObject.Check(offset*dir, -heightDiff, "solid") == nil {
+				playerObject.X += offset * dir
+				playerObject.H = normalHeight
+				playerObject.Y -= heightDiff
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func absFloat(x float64) float64 {
@@ -409,6 +471,33 @@ func absFloat(x float64) float64 {
 		return -x
 	}
 	return x
+}
+
+func applyCrouchMovement(input *components.InputData, player *components.PlayerData, physics *components.PhysicsData) {
+	left := input.Actions[cfg.ActionMoveLeft].Pressed
+	right := input.Actions[cfg.ActionMoveRight].Pressed
+
+	switch {
+	case right:
+		physics.SpeedX = cfg.Player.CrouchWalkSpeed
+		player.Direction.X = cfg.DirectionRight
+	case left:
+		physics.SpeedX = -cfg.Player.CrouchWalkSpeed
+		player.Direction.X = cfg.DirectionLeft
+	default:
+		applyFriction(physics, cfg.Player.Friction)
+	}
+}
+
+func applyFriction(physics *components.PhysicsData, friction float64) {
+	switch {
+	case physics.SpeedX > friction:
+		physics.SpeedX -= friction
+	case physics.SpeedX < -friction:
+		physics.SpeedX += friction
+	default:
+		physics.SpeedX = 0
+	}
 }
 
 func performWallKick(physics *components.PhysicsData, player *components.PlayerData, playerObject *resolv.Object, state *components.StateData, melee *components.MeleeAttackData) {
@@ -432,7 +521,21 @@ func performWallKick(physics *components.PhysicsData, player *components.PlayerD
 func enterSlideState(state *components.StateData, playerObject *resolv.Object) {
 	state.CurrentState = cfg.StateSliding
 	state.StateTimer = 0
-	heightDiff := playerObject.H - cfg.Player.SlideHitboxHeight
-	playerObject.H = cfg.Player.SlideHitboxHeight
+	reduceHitboxForCrouch(playerObject)
+}
+
+func enterCrouchState(state *components.StateData, playerObject *resolv.Object) {
+	state.CurrentState = cfg.Crouch
+	state.StateTimer = 0
+	reduceHitboxForCrouch(playerObject)
+}
+
+func reduceHitboxForCrouch(playerObject *resolv.Object) {
+	targetHeight := cfg.Player.SlideHitboxHeight
+	if playerObject.H <= targetHeight {
+		return
+	}
+	heightDiff := playerObject.H - targetHeight
+	playerObject.H = targetHeight
 	playerObject.Y += heightDiff
 }
