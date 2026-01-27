@@ -56,4 +56,6 @@ func UpdateCheckpoints(ecs *ecs.ECS) {
 		SpawnY:       checkpoint.SpawnY,
 		CheckpointID: checkpoint.CheckpointID,
 	}
+
+	SaveGameProgress(levelData.LevelIndex, levelData.ActiveCheckpoint)
 }

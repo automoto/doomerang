@@ -418,7 +418,7 @@ func init() {
 	// Knife Config
 	Knife = KnifeConfig{
 		Speed:            8.0, // Faster than player (6.0)
-		Damage:           12,
+		Damage:           30,
 		Width:            36.0, // Actual knife dimensions within 96x84 sprite
 		Height:           7.0,
 		KnockbackForce:   4.0,

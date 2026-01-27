@@ -147,7 +147,19 @@ func (ps *PlatformerScene) configure() {
 	var playerSpawnX, playerSpawnY float64
 	var foundCheckpoint bool
 
-	// Check if we should spawn at a specific checkpoint (debug/testing)
+	// Load saved checkpoint progress
+	if progress, _ := systems.LoadGameProgress(); progress != nil && progress.LevelIndex == levelData.LevelIndex {
+		levelData.ActiveCheckpoint = &components.ActiveCheckpointData{
+			SpawnX:       progress.CheckpointSpawnX,
+			SpawnY:       progress.CheckpointSpawnY,
+			CheckpointID: progress.CheckpointID,
+		}
+		playerSpawnX = progress.CheckpointSpawnX
+		playerSpawnY = progress.CheckpointSpawnY
+		foundCheckpoint = true
+	}
+
+	// Check if we should spawn at a specific checkpoint (debug/testing) - overrides saved progress
 	if cfg.Debug.StartCheckpoint >= 0 {
 		for _, ckp := range levelData.CurrentLevel.Checkpoints {
 			if ckp.CheckpointID == cfg.Debug.StartCheckpoint {

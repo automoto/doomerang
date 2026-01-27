@@ -163,3 +163,59 @@ func ApplySavedSettingsGlobal(saved *SavedSettings) {
 		ebiten.SetWindowSize(res.Width, res.Height)
 	}
 }
+
+type SavedGameProgress struct {
+	LevelIndex       int     `json:"levelIndex"`
+	CheckpointID     float64 `json:"checkpointId"`
+	CheckpointSpawnX float64 `json:"checkpointSpawnX"`
+	CheckpointSpawnY float64 `json:"checkpointSpawnY"`
+}
+
+func LoadGameProgress() (*SavedGameProgress, error) {
+	if !gdataInitialized || gdataManager == nil {
+		return nil, nil
+	}
+
+	data, err := gdataManager.LoadItem("progress")
+	if err != nil {
+		log.Printf("Warning: Could not load game progress: %v", err)
+		return nil, nil
+	}
+	if data == nil {
+		return nil, nil
+	}
+
+	var progress SavedGameProgress
+	if err := json.Unmarshal(data, &progress); err != nil {
+		log.Printf("Warning: Could not parse saved progress: %v", err)
+		return nil, err
+	}
+
+	return &progress, nil
+}
+
+func SaveGameProgress(levelIndex int, checkpoint *components.ActiveCheckpointData) error {
+	if !gdataInitialized || gdataManager == nil || checkpoint == nil {
+		return nil
+	}
+
+	progress := &SavedGameProgress{
+		LevelIndex:       levelIndex,
+		CheckpointID:     checkpoint.CheckpointID,
+		CheckpointSpawnX: checkpoint.SpawnX,
+		CheckpointSpawnY: checkpoint.SpawnY,
+	}
+
+	data, err := json.Marshal(progress)
+	if err != nil {
+		log.Printf("Warning: Could not serialize game progress: %v", err)
+		return err
+	}
+
+	if err := gdataManager.SaveItem("progress", data); err != nil {
+		log.Printf("Warning: Could not save game progress: %v", err)
+		return err
+	}
+
+	return nil
+}

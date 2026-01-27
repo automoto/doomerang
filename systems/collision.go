@@ -351,15 +351,11 @@ func handleDeadZoneHit(ecs *ecs.ECS, e *donburi.Entry) {
 	lives.Lives--
 
 	if lives.Lives <= 0 {
-		// Game over - remove player from world to trigger scene transition
-		spaceEntry, _ := components.Space.First(e.World)
-		space := components.Space.Get(spaceEntry)
-		if obj := components.Object.Get(e); obj != nil {
-			space.Remove(obj.Object)
-		}
-		ecs.World.Remove(e.Entity())
+		// Game over - respawn at checkpoint with full lives
+		RespawnPlayer(ecs, e)
 		return
 	}
 
-	RespawnPlayer(ecs, e)
+	// Lives remaining - respawn near death location
+	RespawnPlayerNearDeath(ecs, e)
 }

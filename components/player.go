@@ -11,6 +11,8 @@ type PlayerData struct {
 	BoomerangChargeTime int
 	ActiveBoomerang     *donburi.Entry
 	ChargeVFX           *donburi.Entry // VFX shown while charging boomerang
+	LastSafeX           float64        // Last position where player was safely grounded
+	LastSafeY           float64
 }
 
 var Player = donburi.NewComponentType[PlayerData]()
