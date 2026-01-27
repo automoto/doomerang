@@ -10,6 +10,11 @@ import (
 
 func UpdatePhysics(ecs *ecs.ECS) {
 	components.Physics.Each(ecs.World, func(e *donburi.Entry) {
+		// Skip physics for dying player - freeze in place during death delay
+		if e.HasComponent(components.Player) && e.HasComponent(components.Death) {
+			return
+		}
+
 		physics := components.Physics.Get(e)
 
 		// Determine friction based on state

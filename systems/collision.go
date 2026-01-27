@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/automoto/doomerang/components"
+	cfg "github.com/automoto/doomerang/config"
+	"github.com/automoto/doomerang/systems/factory"
 	"github.com/automoto/doomerang/tags"
 	"github.com/solarlune/resolv"
 	"github.com/yohamta/donburi"
@@ -345,17 +347,33 @@ func checkDeadZone(obj *resolv.Object) bool {
 	return check != nil
 }
 
-// handleDeadZoneHit decrements lives and respawns player or triggers game over
+// handleDeadZoneHit triggers death sequence with visual effects and delay
 func handleDeadZoneHit(ecs *ecs.ECS, e *donburi.Entry) {
-	lives := components.Lives.Get(e)
-	lives.Lives--
-
-	if lives.Lives <= 0 {
-		// Game over - respawn at checkpoint with full lives
-		RespawnPlayer(ecs, e)
+	// Early return if already in death sequence
+	if e.HasComponent(components.Death) {
 		return
 	}
 
-	// Lives remaining - respawn near death location
-	RespawnPlayerNearDeath(ecs, e)
+	lives := components.Lives.Get(e)
+	lives.Lives--
+
+	obj := components.Object.Get(e)
+	centerX := obj.X + obj.W/2
+	centerY := obj.Y + obj.H/2
+
+	// Visual effects
+	TriggerScreenShake(ecs, cfg.DeathZone.ScreenShakeIntensity, cfg.DeathZone.ScreenShakeDuration)
+	factory.SpawnExplosion(ecs, centerX, centerY, cfg.DeathZone.ExplosionScale)
+
+	// Stop movement
+	physics := components.Physics.Get(e)
+	physics.SpeedX = 0
+	physics.SpeedY = 0
+
+	// Add death component with delay
+	e.AddComponent(components.Death)
+	components.Death.Set(e, &components.DeathData{
+		Timer:       cfg.DeathZone.RespawnDelayFrames,
+		IsDeathZone: true,
+	})
 }

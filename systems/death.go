@@ -36,6 +36,7 @@ const gameOverDelayFrames = 30
 
 func handlePlayerDeath(ecs *ecs.ECS, e *donburi.Entry) {
 	lives := components.Lives.Get(e)
+	death := components.Death.Get(e)
 
 	// Game over delay expired - remove player
 	if lives.Lives <= 0 {
@@ -48,11 +49,13 @@ func handlePlayerDeath(ecs *ecs.ECS, e *donburi.Entry) {
 		return
 	}
 
-	lives.Lives--
+	// Death zone already decremented lives at collision time
+	if !death.IsDeathZone {
+		lives.Lives--
+	}
 
 	if lives.Lives <= 0 {
 		// Last life lost - delay before game over
-		death := components.Death.Get(e)
 		death.Timer = gameOverDelayFrames
 		return
 	}

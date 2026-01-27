@@ -278,6 +278,14 @@ type ScreenShakeConfig struct {
 	BoomerangDuration     int     // frames
 }
 
+// DeathZoneConfig contains death zone effect configuration
+type DeathZoneConfig struct {
+	RespawnDelayFrames   int     // Frames before respawn (~0.75s at 60fps)
+	ScreenShakeIntensity float64 // Screen shake intensity in pixels
+	ScreenShakeDuration  int     // Screen shake duration in frames
+	ExplosionScale       float64 // Scale of explosion VFX
+}
+
 // SquashStretchConfig contains squash/stretch effect configuration
 type SquashStretchConfig struct {
 	JumpScaleX float64 // horizontal scale on jump (< 1 = narrower)
@@ -309,6 +317,7 @@ var Menu MenuConfig
 var GameOver GameOverConfig
 var ScreenShake ScreenShakeConfig
 var SquashStretch SquashStretchConfig
+var DeathZone DeathZoneConfig
 var Debug DebugConfig
 
 // DebugConfig contains debug/testing command-line options
@@ -661,6 +670,14 @@ func init() {
 		LandScaleX: 1.5,
 		LandScaleY: 0.6,
 		LerpSpeed:  0.10,
+	}
+
+	// Death Zone Config
+	DeathZone = DeathZoneConfig{
+		RespawnDelayFrames:   15,  // ~0.25s at 60fps
+		ScreenShakeIntensity: 8.0, // Strong shake for death
+		ScreenShakeDuration:  12,
+		ExplosionScale:       1.2,
 	}
 
 	// Debug Config (defaults, can be overridden by CLI flags)
