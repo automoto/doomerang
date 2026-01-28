@@ -59,7 +59,7 @@ func DrawGameOver(e *ecs.ECS, screen *ebiten.Image) {
 
 	// Draw "GAME OVER" title
 	titleFont := fonts.ExcelTitle.Get()
-	title := "GAME OVER"
+	title := "YOU DIED"
 	titleWidth := len(title) * 20 // Approximate width for title font
 	titleX := int((width - float64(titleWidth)) / 2)
 	text.Draw(screen, title, titleFont, titleX, int(cfg.GameOver.TitleY), cfg.GameOver.TitleColor)

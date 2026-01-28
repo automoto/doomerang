@@ -83,7 +83,7 @@ func CreateBoomerang(ecs *ecs.ECS, owner *donburi.Entry, chargeFrames float64, a
 		MaxRange:         maxRange,
 		PierceDistance:   config.Boomerang.PierceDistance,
 		HitEnemies:       make(map[*donburi.Entry]struct{}),
-		Damage:           20,         // Significant damage
+		Damage:           config.Boomerang.BaseDamage + int(float64(config.Boomerang.MaxChargeDamageBonus)*chargeRatio),
 		ChargeRatio:      chargeRatio, // Store for scaled effects
 	})
 

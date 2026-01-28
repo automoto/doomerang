@@ -39,6 +39,7 @@ type Level struct {
 	Checkpoints  []CheckpointSpawn
 	Fires        []FireSpawn
 	Messages     []MessageSpawn
+	FinishLines  []FinishLineSpawn
 	Name         string
 	Width        int
 	Height       int
@@ -75,6 +76,10 @@ type FireSpawn struct {
 type MessageSpawn struct {
 	X, Y      float64
 	MessageID float64
+}
+
+type FinishLineSpawn struct {
+	X, Y, Width, Height float64
 }
 
 type LevelLoader struct{}
@@ -195,6 +200,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		Checkpoints:  []CheckpointSpawn{},
 		Fires:        []FireSpawn{},
 		Messages:     []MessageSpawn{},
+		FinishLines:  []FinishLineSpawn{},
 		Name:         levelPath,
 		Width:        levelMap.Width * levelMap.TileWidth,
 		Height:       levelMap.Height * levelMap.TileHeight,
@@ -294,6 +300,15 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 					X:         o.X,
 					Y:         o.Y,
 					MessageID: messageID,
+				})
+			}
+		case "FinishLine":
+			for _, o := range og.Objects {
+				level.FinishLines = append(level.FinishLines, FinishLineSpawn{
+					X:      o.X,
+					Y:      o.Y,
+					Width:  o.Width,
+					Height: o.Height,
 				})
 			}
 		}

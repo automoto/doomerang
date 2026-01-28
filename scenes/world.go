@@ -69,27 +69,29 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.UpdateInput)
 	ecs.AddSystem(systems.UpdatePause)
 
-	// Game systems wrapped with pause check
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdatePlayer))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEnemies))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateStates))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdatePhysics))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCollisions))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateObjects))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateBoomerang))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateKnives))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombat))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCombatHitboxes))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateDeaths))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCheckpoints))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateFire))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEffects))
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateMessage))
+	// Game systems wrapped with pause and level complete checks
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdatePlayer))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateEnemies))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateStates))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdatePhysics))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateCollisions))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateObjects))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateBoomerang))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateKnives))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateCombat))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateCombatHitboxes))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateDeaths))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateCheckpoints))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateFire))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateEffects))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateMessage))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateFinishLine))
+	ecs.AddSystem(systems.UpdateLevelComplete)
 
 	// Systems that run even when paused
 	ecs.AddSystem(systems.UpdateSettings)
 	ecs.AddSystem(systems.UpdateSettingsMenu)
-	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCamera))
+	ecs.AddSystem(systems.WithGameplayChecks(systems.UpdateCamera))
 
 	// Add renderers
 	ecs.AddRenderer(cfg.Default, systems.DrawLevel)
@@ -102,6 +104,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddRenderer(cfg.Default, systems.DrawDebug)
 	ecs.AddRenderer(cfg.Default, systems.DrawPause)
 	ecs.AddRenderer(cfg.Default, systems.DrawSettingsMenu)
+	ecs.AddRenderer(cfg.Default, systems.DrawLevelComplete)
 
 	ps.ecs = ecs
 
@@ -147,6 +150,11 @@ func (ps *PlatformerScene) configure() {
 	// Create message points from the level
 	for _, msg := range levelData.CurrentLevel.Messages {
 		factory2.CreateMessagePoint(ps.ecs, msg.X, msg.Y, msg.MessageID)
+	}
+
+	// Create finish lines from the level
+	for _, fl := range levelData.CurrentLevel.FinishLines {
+		factory2.CreateFinishLine(ps.ecs, fl.X, fl.Y, fl.Width, fl.Height)
 	}
 
 	// Determine player spawn position

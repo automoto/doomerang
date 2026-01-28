@@ -13,6 +13,7 @@ var (
 	Checkpoint       = donburi.NewTag().SetName("Checkpoint")
 	Fire             = donburi.NewTag().SetName("Fire")
 	Knife            = donburi.NewTag().SetName("Knife")
+	FinishLine       = donburi.NewTag().SetName("FinishLine")
 )
 
 // Resolv tags for physics collision
@@ -26,6 +27,7 @@ const (
 	ResolvCheckpoint = "checkpoint"
 	ResolvFire       = "fire"
 	ResolvKnife      = "Knife"
+	ResolvFinishLine = "finishline"
 
 	// Slope type tags
 	Slope45UpRight = "45_up_right"

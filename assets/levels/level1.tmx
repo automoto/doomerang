@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="254" height="128" tilewidth="16" tileheight="16" infinite="0" nextlayerid="15" nextobjectid="100">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="254" height="128" tilewidth="16" tileheight="16" infinite="0" nextlayerid="16" nextobjectid="101">
  <tileset firstgid="1" source="tilesets/cyberpunk-tiles.tsx"/>
  <imagelayer id="6" name="bg" opacity="0.3">
   <image source="background/bg-cyberpunk-large.png" width="4064" height="2048"/>
@@ -270,6 +270,9 @@
   <object id="99" name="enemy4" x="2138.59" y="36.4281">
    <polyline points="1.27152,172.814 -41.2819,216.018"/>
   </object>
+ </objectgroup>
+ <objectgroup color="#ff2f92" id="15" name="FinishLine">
+  <object id="100" x="3680" y="17.5" width="66.5" height="109.5"/>
  </objectgroup>
  <objectgroup id="12" name="Checkpoint">
   <object id="64" x="3248.5" y="1473.33" width="72.6667" height="539.667">

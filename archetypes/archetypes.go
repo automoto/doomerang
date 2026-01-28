@@ -91,6 +91,11 @@ var (
 	MessagePoint = newArchetype(
 		components.MessagePoint,
 	)
+	FinishLine = newArchetype(
+		tags.FinishLine,
+		components.FinishLine,
+		components.Object,
+	)
 )
 
 type archetype struct {
