@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	hudBarWidth  = 200
-	hudBarHeight = 20
+	hudBarWidth  = 130
+	hudBarHeight = 13
 	hudMargin    = 10
 	livesMargin  = 5
 )
@@ -35,12 +35,12 @@ func DrawHUD(ecs *ecs.ECS, screen *ebiten.Image) {
 		float32(hudBarWidth), float32(hudBarHeight),
 		color.RGBA{40, 40, 40, 255}, false)
 
-	// Current HP (red)
+	// Current HP (green)
 	ratio := float32(hp.Current) / float32(hp.Max)
 	vector.DrawFilledRect(screen,
 		float32(hudMargin), float32(hudMargin),
 		float32(hudBarWidth)*ratio, float32(hudBarHeight),
-		color.RGBA{220, 40, 40, 255}, false)
+		color.RGBA{40, 220, 40, 255}, false)
 
 	// Draw lives counter
 	drawLives(playerEntry, screen)
