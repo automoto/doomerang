@@ -306,15 +306,12 @@ type LevelCompleteConfig struct {
 	OverlayColor color.RGBA
 	TitleColor   color.RGBA
 	TextColor    color.RGBA
-	URLColor     color.RGBA
 	HintColor    color.RGBA
 	TitleY       float64
 	MessageY     float64
-	URLY         float64
 	HintY        float64
 	Title        string
 	Message      string
-	URL          string
 	ContinueHint string
 }
 
@@ -775,15 +772,12 @@ func init() {
 		OverlayColor: BlackOverlay,
 		TitleColor:   BrightGreen,
 		TextColor:    White,
-		URLColor:     LightBlue,
 		HintColor:    White,
 		TitleY:       80,
 		MessageY:     140,
-		URLY:         200,
 		HintY:        280,
 		Title:        "Level Complete!",
-		Message:      "Thanks for playing the demo! More levels coming soon...",
-		URL:          "https://example.com/doomerang",
+		Message:      "Thanks for playing Level 1! More levels coming, stay tuned...",
 		ContinueHint: "Press ENTER to exit",
 	}
 }

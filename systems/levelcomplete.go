@@ -60,11 +60,6 @@ func DrawLevelComplete(e *ecs.ECS, screen *ebiten.Image) {
 	msgX := centerTextX(msg, msgFont, width)
 	text.Draw(screen, msg, msgFont, msgX, int(cfg.LevelComplete.MessageY), cfg.LevelComplete.TextColor)
 
-	// Draw URL
-	url := cfg.LevelComplete.URL
-	urlX := centerTextX(url, msgFont, width)
-	text.Draw(screen, url, msgFont, urlX, int(cfg.LevelComplete.URLY), cfg.LevelComplete.URLColor)
-
 	// Draw continue hint
 	hintFont := fonts.ExcelSmall.Get()
 	input := getOrCreateInput(e)
