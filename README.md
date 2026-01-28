@@ -1,6 +1,8 @@
 # Doomerang
 
 Doomerang is a fast-paced 2D action-platformer built with **Go** and the [Ebitengine](https://ebitengine.org/) game engine.
+<img width="534" height="321" alt="Screenshot 2026-01-28 at 3 33 02 AM" src="https://github.com/user-attachments/assets/94d9e5d8-c741-46b0-98f2-66abde1cfa26" />
+
 
 ## 🚀 Quick Start
 
