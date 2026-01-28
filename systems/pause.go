@@ -18,10 +18,8 @@ func UpdatePause(ecs *ecs.ECS) {
 	pause := GetOrCreatePause(ecs)
 	input := getOrCreateInput(ecs)
 
-	pauseAction := input.Actions[cfg.ActionPause]
-
 	// Toggle pause on ESC or P
-	if pauseAction.JustPressed {
+	if GetAction(input, cfg.ActionPause).JustPressed {
 		pause.IsPaused = !pause.IsPaused
 		if pause.IsPaused {
 			pause.SelectedOption = components.MenuResume
@@ -41,19 +39,15 @@ func UpdatePause(ecs *ecs.ECS) {
 		return
 	}
 
-	upAction := input.Actions[cfg.ActionMenuUp]
-	downAction := input.Actions[cfg.ActionMenuDown]
-	selectAction := input.Actions[cfg.ActionMenuSelect]
-
 	// Navigate menu with wrap-around using modulo arithmetic
 	numOptions := int(components.MenuExit) + 1
-	if upAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuUp).JustPressed {
 		pause.SelectedOption = components.PauseMenuOption(
 			(int(pause.SelectedOption) - 1 + numOptions) % numOptions,
 		)
 		PlaySFX(ecs, cfg.SoundMenuNavigate)
 	}
-	if downAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuDown).JustPressed {
 		pause.SelectedOption = components.PauseMenuOption(
 			(int(pause.SelectedOption) + 1) % numOptions,
 		)
@@ -61,7 +55,7 @@ func UpdatePause(ecs *ecs.ECS) {
 	}
 
 	// Handle selection
-	if selectAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuSelect).JustPressed {
 		PlaySFX(ecs, cfg.SoundMenuSelect)
 		switch pause.SelectedOption {
 		case components.MenuResume:
@@ -120,12 +114,24 @@ func DrawPause(ecs *ecs.ECS, screen *ebiten.Image) {
 		text.Draw(screen, option, fontFace, x, int(y)+int(cfg.Pause.MenuItemHeight), textColor)
 	}
 
-	// Draw navigation hint at bottom
+	// Draw navigation hint at bottom based on input method
+	input := getOrCreateInput(ecs)
+	hint := getPauseHint(input.LastInputMethod)
 	hintFont := fonts.ExcelSmall.Get()
-	hint := "Arrows: Navigate   Enter: Select   Esc: Resume"
 	hintWidth := len(hint) * 7
 	hintX := int((width - float64(hintWidth)) / 2)
 	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
+}
+
+// getPauseHint returns the appropriate hint for pause menu
+func getPauseHint(method components.InputMethod) string {
+	switch method {
+	case components.InputPlayStation:
+		return "Left Stick/D-Pad: Navigate   Cross: Select   Options: Resume"
+	case components.InputXbox:
+		return "Left Stick/D-Pad: Navigate   A: Select   Start: Resume"
+	}
+	return "Arrows: Navigate   Enter: Select   Esc: Resume"
 }
 
 // WithPauseCheck wraps a system to skip execution when paused.

@@ -88,6 +88,9 @@ var (
 		components.Object,
 		components.Animation,
 	)
+	MessagePoint = newArchetype(
+		components.MessagePoint,
+	)
 )
 
 type archetype struct {

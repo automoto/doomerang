@@ -33,11 +33,6 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 		menu := GetOrCreateMenu(e)
 		input := getOrCreateInput(e)
 
-		upAction := input.Actions[cfg.ActionMenuUp]
-		downAction := input.Actions[cfg.ActionMenuDown]
-		selectAction := input.Actions[cfg.ActionMenuSelect]
-		backAction := input.Actions[cfg.ActionMenuBack]
-
 		// Handle confirmation dialog
 		if menu.ShowingConfirmDialog {
 			handleConfirmDialog(e, menu, input, sceneChanger, createPlatformerScene)
@@ -50,17 +45,17 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 			return
 		}
 
-		if upAction.JustPressed {
+		if GetAction(input, cfg.ActionMenuUp).JustPressed {
 			PlaySFX(e, cfg.SoundMenuNavigate)
 			menu.SelectedIndex = (menu.SelectedIndex - 1 + numOptions) % numOptions
 		}
-		if downAction.JustPressed {
+		if GetAction(input, cfg.ActionMenuDown).JustPressed {
 			PlaySFX(e, cfg.SoundMenuNavigate)
 			menu.SelectedIndex = (menu.SelectedIndex + 1) % numOptions
 		}
 
 		// Handle selection
-		if selectAction.JustPressed {
+		if GetAction(input, cfg.ActionMenuSelect).JustPressed {
 			PlaySFX(e, cfg.SoundMenuSelect)
 			selectedOption := menu.VisibleOptions[menu.SelectedIndex]
 
@@ -86,7 +81,7 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 		}
 
 		// Allow back/escape to exit
-		if backAction.JustPressed {
+		if GetAction(input, cfg.ActionMenuBack).JustPressed {
 			os.Exit(0)
 		}
 	}
@@ -96,26 +91,21 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 func handleConfirmDialog(e *ecs.ECS, menu *components.MenuData, input *components.InputData,
 	sceneChanger SceneChanger, createPlatformerScene func() interface{}) {
 
-	leftAction := input.Actions[cfg.ActionMenuLeft]
-	rightAction := input.Actions[cfg.ActionMenuRight]
-	selectAction := input.Actions[cfg.ActionMenuSelect]
-	backAction := input.Actions[cfg.ActionMenuBack]
-
 	// Navigate between Yes/No
-	if leftAction.JustPressed || rightAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuLeft).JustPressed || GetAction(input, cfg.ActionMenuRight).JustPressed {
 		PlaySFX(e, cfg.SoundMenuNavigate)
 		menu.ConfirmSelection = 1 - menu.ConfirmSelection // Toggle 0<->1
 	}
 
 	// Cancel dialog
-	if backAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuBack).JustPressed {
 		PlaySFX(e, cfg.SoundMenuNavigate)
 		menu.ShowingConfirmDialog = false
 		return
 	}
 
 	// Confirm selection
-	if selectAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuSelect).JustPressed {
 		PlaySFX(e, cfg.SoundMenuSelect)
 		if menu.ConfirmSelection == 1 { // Yes
 			FadeOutMusic(e)
@@ -175,12 +165,24 @@ func DrawMenu(e *ecs.ECS, screen *ebiten.Image) {
 		drawConfirmDialog(screen, menu, width, height)
 	}
 
-	// Draw navigation hint at bottom
+	// Draw navigation hint at bottom based on input method
+	input := getOrCreateInput(e)
+	hint := getMenuHint(input.LastInputMethod)
 	hintFont := fonts.ExcelSmall.Get()
-	hint := "Arrows: Navigate   Enter: Select"
 	hintWidth := len(hint) * 7
 	hintX := int((width - float64(hintWidth)) / 2)
 	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Menu.TextColorNormal)
+}
+
+// getMenuHint returns the appropriate hint for menu navigation
+func getMenuHint(method components.InputMethod) string {
+	switch method {
+	case components.InputPlayStation:
+		return "Left Stick/D-Pad: Navigate   Cross: Select"
+	case components.InputXbox:
+		return "Left Stick/D-Pad: Navigate   A: Select"
+	}
+	return "Arrows: Navigate   Enter: Select"
 }
 
 // drawConfirmDialog renders the overwrite save confirmation dialog

@@ -323,11 +323,30 @@ var ScreenShake ScreenShakeConfig
 var SquashStretch SquashStretchConfig
 var DeathZone DeathZoneConfig
 var Debug DebugConfig
+var Message MessageConfig
 
 // DebugConfig contains debug/testing command-line options
 type DebugConfig struct {
 	SkipMenu        bool    // Skip menu and go directly to game
 	StartCheckpoint float64 // Checkpoint ID to spawn at (-1 = use default)
+}
+
+// MessageConfig contains message popup configuration
+type MessageConfig struct {
+	ActivationRadius float64    // Pixels to trigger message display
+	DisplayDuration  int        // Frames to display message after triggering
+	BoxPadding       float64    // Padding inside message box
+	BoxColor         color.RGBA // Semi-transparent background color
+	TextColor        color.RGBA // Text color
+	TopMargin        float64    // Distance from top of screen
+
+	// Message content by ID (float64 to match Tiled property format)
+	Messages map[float64]string
+
+	// Input labels for different input methods
+	KeyboardLabels    map[string]string
+	XboxLabels        map[string]string
+	PlayStationLabels map[string]string
 }
 
 // Shared RGBA color constants
@@ -695,5 +714,37 @@ func init() {
 	Debug = DebugConfig{
 		SkipMenu:        false,
 		StartCheckpoint: -1,
+	}
+
+	// Message Config
+	Message = MessageConfig{
+		ActivationRadius: 100.0, // Large radius to catch jumping players
+		DisplayDuration:  300,   // 5 seconds at 60fps
+		BoxPadding:       8.0,
+		BoxColor:         color.RGBA{R: 0, G: 0, B: 0, A: 200},
+		TextColor:        color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		TopMargin:        30.0,
+
+		Messages: map[float64]string{
+			1.0: "{move} to move, {jump} to jump",
+			1.1: "{attack} to strike",
+			1.2: "Hold toward wall + {jump} to wall slide and jump",
+			1.3: "{boomerang} to throw boomerang - hold to charge for more damage",
+			1.4: "Run + {down} to slide",
+			1.5: "Hold a direction while throwing to aim",
+		},
+
+		KeyboardLabels: map[string]string{
+			"jump": "X", "attack": "Z", "boomerang": "SPACE",
+			"move": "Arrow Keys", "up": "UP", "down": "DOWN",
+		},
+		XboxLabels: map[string]string{
+			"jump": "A", "attack": "X", "boomerang": "B",
+			"move": "Left Stick", "up": "D-Pad Up", "down": "D-Pad Down",
+		},
+		PlayStationLabels: map[string]string{
+			"jump": "Cross", "attack": "Square", "boomerang": "Circle",
+			"move": "Left Stick", "up": "D-Pad Up", "down": "D-Pad Down",
+		},
 	}
 }

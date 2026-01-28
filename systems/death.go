@@ -88,6 +88,9 @@ func RespawnPlayer(ecs *ecs.ECS, e *donburi.Entry) {
 
 	lives := components.Lives.Get(e)
 	lives.Lives = lives.MaxLives
+
+	// Reset message state so messages can be shown again
+	ResetMessageState(ecs)
 }
 
 // RespawnPlayerNearDeath respawns the player near their death location on safe ground.
@@ -117,6 +120,9 @@ func RespawnPlayerNearDeath(ecs *ecs.ECS, e *donburi.Entry) {
 	}
 
 	resetPlayerAtPosition(e, spawnX, spawnY)
+
+	// Reset message state so messages can be shown again
+	ResetMessageState(ecs)
 }
 
 func resetPlayerAtPosition(e *donburi.Entry, spawnX, spawnY float64) {

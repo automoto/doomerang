@@ -84,6 +84,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateCheckpoints))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateFire))
 	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateEffects))
+	ecs.AddSystem(systems.WithPauseCheck(systems.UpdateMessage))
 
 	// Systems that run even when paused
 	ecs.AddSystem(systems.UpdateSettings)
@@ -97,6 +98,7 @@ func (ps *PlatformerScene) configure() {
 	ecs.AddRenderer(cfg.Default, systems.DrawHealthBars)
 	ecs.AddRenderer(cfg.Default, systems.DrawHitboxes)
 	ecs.AddRenderer(cfg.Default, systems.DrawHUD)
+	ecs.AddRenderer(cfg.Default, systems.DrawMessage)
 	ecs.AddRenderer(cfg.Default, systems.DrawDebug)
 	ecs.AddRenderer(cfg.Default, systems.DrawPause)
 	ecs.AddRenderer(cfg.Default, systems.DrawSettingsMenu)
@@ -140,6 +142,11 @@ func (ps *PlatformerScene) configure() {
 	// Create fire obstacles from the level
 	for _, fire := range levelData.CurrentLevel.Fires {
 		factory2.CreateFire(ps.ecs, fire.X, fire.Y, fire.FireType, fire.Direction)
+	}
+
+	// Create message points from the level
+	for _, msg := range levelData.CurrentLevel.Messages {
+		factory2.CreateMessagePoint(ps.ecs, msg.X, msg.Y, msg.MessageID)
 	}
 
 	// Determine player spawn position

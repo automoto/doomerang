@@ -21,6 +21,7 @@ const (
 	ActionMenuRight
 	ActionMenuSelect
 	ActionMenuBack
+	ActionCount // Must be last - used for array sizing
 )
 
 // InputBinding represents a single key or button binding for an action

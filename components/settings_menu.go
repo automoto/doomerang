@@ -14,6 +14,7 @@ const (
 	SettingsOptFullscreen
 	SettingsOptResolution
 	SettingsOptInputMode
+	SettingsOptControls
 	SettingsOptBack
 )
 
@@ -22,6 +23,7 @@ type SettingsMenuData struct {
 	IsOpen          bool
 	SelectedOption  SettingsMenuOption
 	OpenedFromPause bool // Track origin for "Back" navigation
+	ShowingControls bool // True when displaying controls screen
 
 	// Current settings values
 	MusicVolume     float64 // 0.0, 0.25, 0.50, 0.75, 1.0

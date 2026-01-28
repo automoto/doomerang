@@ -24,44 +24,49 @@ func UpdateSettingsMenu(e *ecs.ECS) {
 
 	input := getOrCreateInput(e)
 
-	upAction := input.Actions[cfg.ActionMenuUp]
-	downAction := input.Actions[cfg.ActionMenuDown]
-	leftAction := input.Actions[cfg.ActionMenuLeft]
-	rightAction := input.Actions[cfg.ActionMenuRight]
-	selectAction := input.Actions[cfg.ActionMenuSelect]
+	// Handle controls screen separately
+	if settings.ShowingControls {
+		if GetAction(input, cfg.ActionMenuBack).JustPressed ||
+			GetAction(input, cfg.ActionMenuSelect).JustPressed ||
+			GetAction(input, cfg.ActionBoomerang).JustPressed ||
+			GetAction(input, cfg.ActionPause).JustPressed {
+			settings.ShowingControls = false
+			PlaySFX(e, cfg.SoundMenuSelect)
+		}
+		return
+	}
 
 	// Navigate up
-	if upAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuUp).JustPressed {
 		navigateUp(settings)
 		PlaySFX(e, cfg.SoundMenuNavigate)
 	}
 
 	// Navigate down
-	if downAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuDown).JustPressed {
 		navigateDown(settings)
 		PlaySFX(e, cfg.SoundMenuNavigate)
 	}
 
 	// Adjust value left
-	if leftAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuLeft).JustPressed {
 		adjustValue(e, settings, -1)
 	}
 
 	// Adjust value right
-	if rightAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuRight).JustPressed {
 		adjustValue(e, settings, +1)
 	}
 
 	// Select/Enter - for toggles and Back button
-	if selectAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuSelect).JustPressed {
 		handleSelect(e, settings)
 	}
 
 	// B/Circle, Start, or Escape to go back
-	backAction := input.Actions[cfg.ActionMenuBack]
-	boomerangAction := input.Actions[cfg.ActionBoomerang]
-	pauseAction := input.Actions[cfg.ActionPause]
-	if backAction.JustPressed || boomerangAction.JustPressed || pauseAction.JustPressed {
+	if GetAction(input, cfg.ActionMenuBack).JustPressed ||
+		GetAction(input, cfg.ActionBoomerang).JustPressed ||
+		GetAction(input, cfg.ActionPause).JustPressed {
 		closeSettings(e, settings)
 	}
 }
@@ -210,6 +215,10 @@ func handleSelect(e *ecs.ECS, s *components.SettingsMenuData) {
 		toggleFullscreen(s)
 		PlaySFX(e, cfg.SoundMenuSelect)
 
+	case components.SettingsOptControls:
+		s.ShowingControls = true
+		PlaySFX(e, cfg.SoundMenuSelect)
+
 	case components.SettingsOptBack:
 		closeSettings(e, s)
 	}
@@ -242,6 +251,12 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 		cfg.Menu.BackgroundColor,
 		false,
 	)
+
+	// Show controls screen if active
+	if settings.ShowingControls {
+		drawControlsScreen(e, screen, width, height)
+		return
+	}
 
 	// Get font
 	fontFace := fonts.ExcelBold.Get()
@@ -290,20 +305,127 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 		text.Draw(screen, label, fontFace, labelX, int(y)+int(menuItemHeight), textColor)
 
 		// Draw value on right side (if not Back button)
-		if opt != components.SettingsOptBack {
+		if opt != components.SettingsOptBack && opt != components.SettingsOptControls {
 			valueX := int(width/2) + 40
+			text.Draw(screen, value, fontFace, valueX, int(y)+int(menuItemHeight), textColor)
+		} else if opt == components.SettingsOptControls {
+			// Draw arrow for Controls option
+			valueX := int(width/2) + 100
 			text.Draw(screen, value, fontFace, valueX, int(y)+int(menuItemHeight), textColor)
 		}
 
 		optionIndex++
 	}
 
-	// Draw compact navigation hint at bottom
+	// Draw navigation hint at bottom based on input method
+	input := getOrCreateInput(e)
+	hint := getSettingsHint(input.LastInputMethod)
 	hintFont := fonts.ExcelSmall.Get()
-	hint := "Arrows: Navigate   Enter: Select   Esc: Back"
 	hintWidth := len(hint) * 7
 	hintX := int((width - float64(hintWidth)) / 2)
 	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
+}
+
+// drawControlsScreen renders the controls/button mapping screen
+func drawControlsScreen(e *ecs.ECS, screen *ebiten.Image, width, height float64) {
+	input := getOrCreateInput(e)
+	fontFace := fonts.ExcelBold.Get()
+	titleFont := fonts.ExcelTitle.Get()
+	smallFont := fonts.ExcelSmall.Get()
+
+	// Draw title
+	title := "CONTROLS"
+	titleWidth := len(title) * 20
+	titleX := int((width - float64(titleWidth)) / 2)
+	text.Draw(screen, title, titleFont, titleX, 35, cfg.Menu.TitleColor)
+
+	// Get control mappings based on input method
+	mappings := getControlMappings(input.LastInputMethod)
+
+	// Calculate layout
+	startY := 70.0
+	lineHeight := 22.0
+	labelX := int(width/2) - 100
+	valueX := int(width/2) + 20
+
+	for i, mapping := range mappings {
+		y := startY + float64(i)*lineHeight
+		text.Draw(screen, mapping.Action, fontFace, labelX, int(y), cfg.Pause.TextColorNormal)
+		text.Draw(screen, mapping.Button, fontFace, valueX, int(y), cfg.Pause.TextColorSelected)
+	}
+
+	// Draw hint at bottom
+	hint := getBackHint(input.LastInputMethod)
+	hintWidth := len(hint) * 7
+	hintX := int((width - float64(hintWidth)) / 2)
+	text.Draw(screen, hint, smallFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
+}
+
+// controlMapping represents a single control mapping entry
+type controlMapping struct {
+	Action string
+	Button string
+}
+
+// getControlMappings returns control mappings for the given input method
+func getControlMappings(method components.InputMethod) []controlMapping {
+	switch method {
+	case components.InputPlayStation:
+		return []controlMapping{
+			{"Move", "Left Stick / D-Pad"},
+			{"Jump", "Cross"},
+			{"Attack", "Square"},
+			{"Boomerang", "Circle"},
+			{"Aim Throw", "Hold direction"},
+			{"Slide", "Run + Down"},
+			{"Wall Slide", "Hold toward wall"},
+			{"Pause", "Options"},
+		}
+	case components.InputXbox:
+		return []controlMapping{
+			{"Move", "Left Stick / D-Pad"},
+			{"Jump", "A"},
+			{"Attack", "X"},
+			{"Boomerang", "B"},
+			{"Aim Throw", "Hold direction"},
+			{"Slide", "Run + Down"},
+			{"Wall Slide", "Hold toward wall"},
+			{"Pause", "Start"},
+		}
+	default: // Keyboard
+		return []controlMapping{
+			{"Move", "Arrow Keys / WASD"},
+			{"Jump", "X / W"},
+			{"Attack", "Z"},
+			{"Boomerang", "Space"},
+			{"Aim Throw", "Hold direction"},
+			{"Slide", "Run + Down"},
+			{"Wall Slide", "Hold toward wall"},
+			{"Pause", "Esc / P"},
+		}
+	}
+}
+
+// getSettingsHint returns the appropriate hint for settings menu
+func getSettingsHint(method components.InputMethod) string {
+	switch method {
+	case components.InputPlayStation:
+		return "Left Stick/D-Pad: Navigate   Left/Right: Change   Cross: Select   Circle: Back"
+	case components.InputXbox:
+		return "Left Stick/D-Pad: Navigate   Left/Right: Change   A: Select   B: Back"
+	}
+	return "Arrows: Navigate   Left/Right: Change   Enter: Select   Esc: Back"
+}
+
+// getBackHint returns the hint for going back
+func getBackHint(method components.InputMethod) string {
+	switch method {
+	case components.InputPlayStation:
+		return "Press any button to go back"
+	case components.InputXbox:
+		return "Press any button to go back"
+	}
+	return "Press any key to go back"
 }
 
 // getOptionDisplay returns the label and value display for an option
@@ -327,6 +449,8 @@ func getOptionDisplay(s *components.SettingsMenuData, opt components.SettingsMen
 			return "Input", cfg.SettingsMenu.InputModes[s.InputMode]
 		}
 		return "Input", "Unknown"
+	case components.SettingsOptControls:
+		return "Controls", ">"
 	case components.SettingsOptBack:
 		return "< Back", ""
 	default:

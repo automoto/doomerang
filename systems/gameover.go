@@ -16,25 +16,21 @@ func NewUpdateGameOver(sceneChanger SceneChanger, createPlatformerScene func() i
 		gameOver := GetOrCreateGameOver(e)
 		input := getOrCreateInput(e)
 
-		upAction := input.Actions[cfg.ActionMenuUp]
-		downAction := input.Actions[cfg.ActionMenuDown]
-		selectAction := input.Actions[cfg.ActionMenuSelect]
-
 		// Navigate menu with wrap-around using modulo arithmetic
 		numOptions := int(components.GameOverMenu) + 1
-		if upAction.JustPressed {
+		if GetAction(input, cfg.ActionMenuUp).JustPressed {
 			gameOver.SelectedOption = components.GameOverOption(
 				(int(gameOver.SelectedOption) - 1 + numOptions) % numOptions,
 			)
 		}
-		if downAction.JustPressed {
+		if GetAction(input, cfg.ActionMenuDown).JustPressed {
 			gameOver.SelectedOption = components.GameOverOption(
 				(int(gameOver.SelectedOption) + 1) % numOptions,
 			)
 		}
 
 		// Handle selection
-		if selectAction.JustPressed {
+		if GetAction(input, cfg.ActionMenuSelect).JustPressed {
 			switch gameOver.SelectedOption {
 			case components.GameOverRetry:
 				sceneChanger.ChangeScene(createPlatformerScene())

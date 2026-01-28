@@ -38,6 +38,7 @@ type Level struct {
 	DeadZones    []DeadZone
 	Checkpoints  []CheckpointSpawn
 	Fires        []FireSpawn
+	Messages     []MessageSpawn
 	Name         string
 	Width        int
 	Height       int
@@ -69,6 +70,11 @@ type FireSpawn struct {
 	X, Y      float64
 	FireType  string // "fire_pulsing" or "fire_continuous"
 	Direction string // "up", "down", "left", "right" (default: "right")
+}
+
+type MessageSpawn struct {
+	X, Y      float64
+	MessageID float64
 }
 
 type LevelLoader struct{}
@@ -188,6 +194,7 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		DeadZones:    []DeadZone{},
 		Checkpoints:  []CheckpointSpawn{},
 		Fires:        []FireSpawn{},
+		Messages:     []MessageSpawn{},
 		Name:         levelPath,
 		Width:        levelMap.Width * levelMap.TileWidth,
 		Height:       levelMap.Height * levelMap.TileHeight,
@@ -279,6 +286,15 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 						Direction: direction,
 					})
 				}
+			}
+		case "Messages":
+			for _, o := range og.Objects {
+				messageID := o.Properties.GetFloat("message_id")
+				level.Messages = append(level.Messages, MessageSpawn{
+					X:         o.X,
+					Y:         o.Y,
+					MessageID: messageID,
+				})
 			}
 		}
 	}
