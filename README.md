@@ -4,8 +4,7 @@ Doomerang is a fast-paced 2D action-platformer built with **Go** and the [Ebiten
 
 <img width="534" height="321" alt="Screenshot 2026-01-28 at 3 33 02 AM" src="https://github.com/user-attachments/assets/94d9e5d8-c741-46b0-98f2-66abde1cfa26" />
 
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - [Go 1.21+](https://go.dev/dl/)
@@ -16,7 +15,7 @@ Doomerang is a fast-paced 2D action-platformer built with **Go** and the [Ebiten
 make run
 ```
 
-## 🏗 Architecture
+## Architecture
 
 The project follows a standard ECS (Entity Component System) pattern:
 
@@ -29,7 +28,7 @@ The project follows a standard ECS (Entity Component System) pattern:
 
 For a deeper dive into the ECS implementation, see [ECS_AND_DONBURI.md](docs/ECS_AND_DONBURI.md).
 
-## ⚙️ Technical Highlights
+### Technical Highlights
 
 - **Zero-Allocation Rendering**: Reuses drawing options to eliminate per-frame GC pressure.
 - **Asset Caching**: Centralized system prevents redundant asset decoding.
