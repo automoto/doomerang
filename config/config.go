@@ -284,6 +284,15 @@ type ScreenShakeConfig struct {
 	BoomerangDuration     int     // frames
 }
 
+// CameraConfig contains camera behavior configuration
+type CameraConfig struct {
+	FollowSmoothing         float64 // How fast camera follows player (0.0-1.0)
+	LookAheadDistanceX      float64 // Max horizontal look-ahead offset in pixels
+	LookAheadSmoothing      float64 // How fast look-ahead offset changes (0.0-1.0)
+	LookAheadMovingScale    float64 // Scale when player is moving (1.0)
+	LookAheadSpeedThreshold float64 // Minimum speed to update look-ahead
+}
+
 // DeathZoneConfig contains death zone effect configuration
 type DeathZoneConfig struct {
 	RespawnDelayFrames   int     // Frames before respawn (~0.75s at 60fps)
@@ -341,6 +350,7 @@ var DeathZone DeathZoneConfig
 var Debug DebugConfig
 var Message MessageConfig
 var LevelComplete LevelCompleteConfig
+var Camera CameraConfig
 
 // DebugConfig contains debug/testing command-line options
 type DebugConfig struct {
@@ -779,5 +789,14 @@ func init() {
 		Title:        "Level Complete!",
 		Message:      "Thanks for playing Level 1! More levels coming, stay tuned...",
 		ContinueHint: "Press ENTER to exit",
+	}
+
+	// Camera Config
+	Camera = CameraConfig{
+		FollowSmoothing:         0.1,  // Current hardcoded value
+		LookAheadDistanceX:      60.0, // ~10% of 640px screen width
+		LookAheadSmoothing:      0.05, // Slower than follow for smooth feel
+		LookAheadMovingScale:    1.0,
+		LookAheadSpeedThreshold: 0.1, // Minimum speed to update look-ahead
 	}
 }

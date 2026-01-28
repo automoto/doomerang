@@ -6,7 +6,8 @@ import (
 )
 
 type CameraData struct {
-	Position math.Vec2
+	Position   math.Vec2
+	LookAheadX float64 // Current smoothed X offset for look-ahead
 }
 
 var Camera = donburi.NewComponentType[CameraData]()

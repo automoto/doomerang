@@ -22,6 +22,8 @@ func UpdateCamera(e *ecs.ECS) {
 		return // no player (could be dead), skip camera update
 	}
 	playerObject := components.Object.Get(playerEntry)
+	playerData := components.Player.Get(playerEntry)
+	physics := components.Physics.Get(playerEntry)
 
 	// Get level dimensions for camera bounds
 	levelEntry, ok := components.Level.First(e.World)
@@ -33,8 +35,14 @@ func UpdateCamera(e *ecs.ECS) {
 		return
 	}
 
-	// Calculate target camera position (following the player with smoothing)
-	targetX := playerObject.X
+	// Only update look-ahead when player is moving - freeze offset when idle
+	if math.Abs(physics.SpeedX) > config.Camera.LookAheadSpeedThreshold {
+		targetLookAhead := playerData.Direction.X * config.Camera.LookAheadDistanceX * config.Camera.LookAheadMovingScale
+		camera.LookAheadX += (targetLookAhead - camera.LookAheadX) * config.Camera.LookAheadSmoothing
+	}
+
+	// Calculate target camera position (following the player with look-ahead)
+	targetX := playerObject.X + camera.LookAheadX
 	targetY := playerObject.Y
 
 	// Calculate camera bounds based on screen and level dimensions
@@ -54,8 +62,8 @@ func UpdateCamera(e *ecs.ECS) {
 	targetY = math.Max(minCameraY, math.Min(maxCameraY, targetY))
 
 	// Center the camera on the constrained target position, with some smoothing.
-	camera.Position.X += (targetX - camera.Position.X) * 0.1
-	camera.Position.Y += (targetY - camera.Position.Y) * 0.1
+	camera.Position.X += (targetX - camera.Position.X) * config.Camera.FollowSmoothing
+	camera.Position.Y += (targetY - camera.Position.Y) * config.Camera.FollowSmoothing
 }
 
 // updateScreenShake applies screen shake offset to camera and decrements duration
