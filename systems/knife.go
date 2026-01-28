@@ -3,7 +3,6 @@ package systems
 import (
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
-	"github.com/automoto/doomerang/systems/factory"
 	"github.com/automoto/doomerang/tags"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
@@ -53,21 +52,14 @@ func UpdateKnives(ecs *ecs.ECS) {
 func checkKnifeCollisions(ecs *ecs.ECS, knifeEntry *donburi.Entry, obj *components.ObjectData) bool {
 	knife := components.Knife.Get(knifeEntry)
 
-	// Check for collisions with walls, player, boomerang
-	check := obj.Check(0, 0, tags.ResolvSolid, tags.ResolvPlayer, tags.ResolvBoomerang)
+	// Check for collisions with walls and player
+	check := obj.Check(0, 0, tags.ResolvSolid, tags.ResolvPlayer)
 	if check == nil {
 		return false
 	}
 
 	// Wall collision - destroy knife
 	if solids := check.ObjectsByTags(tags.ResolvSolid); len(solids) > 0 {
-		return true
-	}
-
-	// Boomerang collision - destroy knife (boomerang blocks it)
-	if boomerangs := check.ObjectsByTags(tags.ResolvBoomerang); len(boomerangs) > 0 {
-		// Spawn small impact VFX
-		factory.SpawnExplosion(ecs, obj.X+obj.W/2, obj.Y+obj.H/2, 0.3)
 		return true
 	}
 
