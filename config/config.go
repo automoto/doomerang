@@ -406,7 +406,7 @@ func init() {
 		MaxSpeed:     6.0,
 
 		// Combat
-		Health:       100,
+		Health:       60,
 		InvulnFrames: 30,
 
 		// Lives
