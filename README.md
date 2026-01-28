@@ -19,22 +19,22 @@ make run
 
 The project follows a standard ECS (Entity Component System) pattern:
 
-- **`/components`**: Data-only structures (e.g., `PlayerData`, `AnimationData`).
-- **`/systems`**: Logic operating on entities (e.g., `UpdatePhysics`, `Render`).
-- **`/factory`**: Entity creation functions using archetypes.
-- **`/scenes`**: Game state management (Menu, World).
-- **`/assets`**: Tiled maps, spritesheets, and audio.
-- **`/config`**: Global constants, states, and input bindings.
+- `/components`: Data-only structures (e.g., `PlayerData`, `AnimationData`).
+- `/systems`: Logic operating on entities (e.g., `UpdatePhysics`, `Render`).
+- `/factory`: Entity creation functions using archetypes.
+- `/scenes`: Game state management (Menu, World).
+- `/assets`: Tiled maps, spritesheets, and audio.
+- `/config`: Global constants, states, and input bindings.
 
 For a deeper dive into the ECS implementation, see [ECS_AND_DONBURI.md](docs/ECS_AND_DONBURI.md).
 
 ### Technical Highlights
 
-- **Zero-Allocation Rendering**: Reuses drawing options to eliminate per-frame GC pressure.
-- **Asset Caching**: Centralized system prevents redundant asset decoding.
-- **Memory Safety**: Uses pointer wrappers (`ObjectData`) for stable physics references during ECS reallocation.
-- **Type-Safe States**: Centralized `StateID` enum prevents typo-related bugs.
-- **Input Abstraction**: Decouples raw input from logic via action mapping.
+- Zero-Allocation Rendering: Reuses drawing options to eliminate per-frame GC pressure.
+- Asset Caching: Centralized system prevents redundant asset decoding.
+- Memory Safety: Uses pointer wrappers (`ObjectData`) for stable physics references during ECS reallocation.
+- Type-Safe States: Centralized `StateID` enum prevents typo-related bugs.
+- Input Abstraction: Decouples raw input from logic via action mapping.
 
 > **macOS Note**: The Makefile uses `CGO_CFLAGS="-w"` to suppress Metal backend warnings.
 
