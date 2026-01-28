@@ -189,14 +189,16 @@ type UIConfig struct {
 }
 
 type BoomerangConfig struct {
-	ThrowSpeed     float64
-	ReturnSpeed    float64
-	BaseRange      float64
-	MaxChargeRange float64
-	PierceDistance float64
-	Gravity        float64
-	MaxChargeTime  int
-	HitKnockback   float64 // horizontal knockback applied to enemies on hit
+	ThrowSpeed           float64
+	ReturnSpeed          float64
+	BaseRange            float64
+	MaxChargeRange       float64
+	PierceDistance       float64
+	Gravity              float64
+	MaxChargeTime        int
+	HitKnockback         float64 // horizontal knockback applied to enemies on hit
+	BaseDamage           int     // minimum damage at no charge
+	MaxChargeDamageBonus int     // additional damage at full charge
 }
 
 // KnifeConfig contains knife projectile configuration
@@ -299,6 +301,23 @@ type SquashStretchConfig struct {
 	LerpSpeed  float64 // how fast to return to normal scale
 }
 
+// LevelCompleteConfig contains level complete overlay configuration
+type LevelCompleteConfig struct {
+	OverlayColor color.RGBA
+	TitleColor   color.RGBA
+	TextColor    color.RGBA
+	URLColor     color.RGBA
+	HintColor    color.RGBA
+	TitleY       float64
+	MessageY     float64
+	URLY         float64
+	HintY        float64
+	Title        string
+	Message      string
+	URL          string
+	ContinueHint string
+}
+
 // Config holds general game configuration
 type Config struct {
 	Width  int
@@ -324,6 +343,7 @@ var SquashStretch SquashStretchConfig
 var DeathZone DeathZoneConfig
 var Debug DebugConfig
 var Message MessageConfig
+var LevelComplete LevelCompleteConfig
 
 // DebugConfig contains debug/testing command-line options
 type DebugConfig struct {
@@ -438,14 +458,16 @@ func init() {
 
 	// Boomerang Config
 	Boomerang = BoomerangConfig{
-		ThrowSpeed:     6.0,
-		ReturnSpeed:    8.0,
-		BaseRange:      150.0,
-		MaxChargeRange: 250.0,
-		PierceDistance: 40.0,
-		Gravity:        0.2,
-		MaxChargeTime:  60,
-		HitKnockback:   2.0,
+		ThrowSpeed:           6.0,
+		ReturnSpeed:          8.0,
+		BaseRange:            150.0,
+		MaxChargeRange:       250.0,
+		PierceDistance:       40.0,
+		Gravity:              0.2,
+		MaxChargeTime:        60,
+		HitKnockback:         2.0,
+		BaseDamage:           15,
+		MaxChargeDamageBonus: 15,
 	}
 
 	// Knife Config
@@ -746,5 +768,22 @@ func init() {
 			"jump": "Cross", "attack": "Square", "boomerang": "Circle",
 			"move": "Left Stick", "up": "D-Pad Up", "down": "D-Pad Down",
 		},
+	}
+
+	// Level Complete Config
+	LevelComplete = LevelCompleteConfig{
+		OverlayColor: BlackOverlay,
+		TitleColor:   BrightGreen,
+		TextColor:    White,
+		URLColor:     LightBlue,
+		HintColor:    White,
+		TitleY:       80,
+		MessageY:     140,
+		URLY:         200,
+		HintY:        280,
+		Title:        "Level Complete!",
+		Message:      "Thanks for playing the demo! More levels coming soon...",
+		URL:          "https://example.com/doomerang",
+		ContinueHint: "Press ENTER to exit",
 	}
 }
