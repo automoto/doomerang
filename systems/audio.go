@@ -33,6 +33,16 @@ func initGlobalAudio() {
 	})
 }
 
+// PreloadAllSFX decodes all sound effects at startup to avoid lag on first play.
+// This is especially important for WASM where decoding is slower.
+func PreloadAllSFX() {
+	initGlobalAudio()
+
+	for _, path := range cfg.Sound.SFXPaths {
+		_ = globalAudioLoader.PreloadSFX(path)
+	}
+}
+
 // UpdateAudio processes pending SFX and manages music transitions
 func UpdateAudio(e *ecs.ECS) {
 	initGlobalAudio()

@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/automoto/doomerang/assets"
 	cfg "github.com/automoto/doomerang/config"
 	factory2 "github.com/automoto/doomerang/systems/factory"
 
@@ -60,6 +61,10 @@ func (ps *PlatformerScene) Draw(screen *ebiten.Image) {
 }
 
 func (ps *PlatformerScene) configure() {
+	// Preload assets to avoid lag on first use (important for WASM)
+	systems.PreloadAllSFX()
+	assets.PreloadAllAnimations()
+
 	ecs := ecs.NewECS(donburi.NewWorld())
 
 	// Audio system (runs first, even when paused for menu sounds)

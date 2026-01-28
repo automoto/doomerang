@@ -441,3 +441,106 @@ func GetSheet(dir string, state config.StateID) *ebiten.Image {
 	path := fmt.Sprintf("images/spritesheets/%s/%s.png", dir, state.String())
 	return animationLoader.MustLoadImage(path)
 }
+
+// VFX frame dimensions for preloading
+var vfxFrameSizes = map[config.StateID]struct{ W, H int }{
+	config.StateJumpDust:       {96, 84},
+	config.StateLandDust:       {96, 84},
+	config.StateSlideDust:      {96, 84},
+	config.StateExplosionShort: {57, 56},
+	config.StatePlasma:         {32, 43},
+	config.StateGunshot:        {46, 26},
+	config.HitExplosion:        {47, 57},
+	config.ChargeUp:            {102, 135},
+}
+
+// VFX directories for preloading
+var vfxDirs = map[config.StateID]string{
+	config.StateJumpDust:       "player",
+	config.StateLandDust:       "player",
+	config.StateSlideDust:      "player",
+	config.StateExplosionShort: "sfx",
+	config.StatePlasma:         "sfx",
+	config.StateGunshot:        "sfx",
+	config.HitExplosion:        "sfx",
+	config.ChargeUp:            "sfx",
+}
+
+// PreloadAllAnimations preloads all sprite sheets and frames to avoid lag on first render.
+// This is especially important for WASM where texture uploads are slower.
+func PreloadAllAnimations() {
+	// Preload player animations (96x84 frames)
+	preloadCharacterAnimations("player", 96, 84)
+
+	// Preload VFX/SFX animations with their specific frame sizes
+	for state, size := range vfxFrameSizes {
+		dir := vfxDirs[state]
+		defs := config.CharacterAnimations[dir]
+		def, ok := defs[state]
+		if !ok {
+			continue
+		}
+
+		// Load sprite sheet
+		_ = GetSheet(dir, state)
+
+		// Pre-cache all frames
+		step := def.Step
+		if step <= 0 {
+			step = 1
+		}
+		for i := def.First; i <= def.Last; i += step {
+			sx := i * size.W
+			srcRect := image.Rect(sx, 0, sx+size.W, size.H)
+			_ = GetFrame(dir, state, i, srcRect)
+		}
+	}
+
+	// Preload obstacle animations (fire)
+	for fireType, fireCfg := range config.Fire.Types {
+		state := fireCfg.State
+		def, ok := config.CharacterAnimations["obstacle"][state]
+		if !ok {
+			continue
+		}
+
+		// Load sprite sheet
+		_ = GetSheet("obstacle", state)
+
+		// Pre-cache frames
+		step := def.Step
+		if step <= 0 {
+			step = 1
+		}
+		_ = fireType // Used for logging if needed
+		for i := def.First; i <= def.Last; i += step {
+			sx := i * fireCfg.FrameWidth
+			srcRect := image.Rect(sx, 0, sx+fireCfg.FrameWidth, fireCfg.FrameHeight)
+			_ = GetFrame("obstacle", state, i, srcRect)
+		}
+	}
+}
+
+// preloadCharacterAnimations preloads all animations for a character type
+func preloadCharacterAnimations(key string, frameWidth, frameHeight int) {
+	defs, ok := config.CharacterAnimations[key]
+	if !ok {
+		return
+	}
+
+	for state, def := range defs {
+		// Load sprite sheet
+		_ = GetSheet(key, state)
+
+		// Pre-cache all frames
+		step := def.Step
+		if step <= 0 {
+			step = 1
+		}
+		for i := def.First; i <= def.Last; i += step {
+			sx := i * frameWidth
+			srcRect := image.Rect(sx, 0, sx+frameWidth, frameHeight)
+			_ = GetFrame(key, state, i, srcRect)
+		}
+	}
+}
