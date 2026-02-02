@@ -25,54 +25,40 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 	camX := float64(width)/2 - camera.Position.X
 	camY := float64(height)/2 - camera.Position.Y
 
-	// Draw collision grid
+	// Draw collision grid (Disabled, showing objects only)
 	spaceEntry, ok := components.Space.First(ecs.World)
 	if ok {
 		space := components.Space.Get(spaceEntry)
 
-		for y := 0; y < space.Height(); y++ {
-			for x := 0; x < space.Width(); x++ {
-				cell := space.Cell(x, y)
+		// Viewport in world coordinates
+		viewX := camera.Position.X - float64(width)/2
+		viewY := camera.Position.Y - float64(height)/2
+		viewW := float64(width)
+		viewH := float64(height)
 
-				cw := float64(space.CellWidth)
-				ch := float64(space.CellHeight)
-				// Apply camera offset to the cell's position.
-				cx := float64(cell.X)*cw + camX
-				cy := float64(cell.Y)*ch + camY
+		// Draw all collision objects in the space (Entities)
+		// Viewport for culling (already calculated above)
 
-				drawColor := color.RGBA{20, 20, 20, 255}
-
-				if cell.Occupied() {
-					drawColor = color.RGBA{255, 255, 0, 255}
-				}
-
-				// Draw the grid lines directly to the screen in world space.
-				vector.StrokeLine(screen, float32(cx), float32(cy), float32(cx+cw), float32(cy), 1, drawColor, false)
-				vector.StrokeLine(screen, float32(cx+cw), float32(cy), float32(cx+cw), float32(cy+ch), 1, drawColor, false)
-				vector.StrokeLine(screen, float32(cx+cw), float32(cy+ch), float32(cx), float32(cy+ch), 1, drawColor, false)
-				vector.StrokeLine(screen, float32(cx), float32(cy+ch), float32(cx), float32(cy), 1, drawColor, false)
-			}
-		}
-	}
-
-	// Draw all collision objects in the space (Entities)
-	if ok { // reusing spaceEntry check from above
-		space := components.Space.Get(spaceEntry)
 		for _, obj := range space.Objects() {
+			// Cull objects outside viewport
+			if obj.X+obj.W < viewX || obj.X > viewX+viewW || obj.Y+obj.H < viewY || obj.Y > viewY+viewH {
+				continue
+			}
+
 			// Apply camera offset
 			x := obj.X + camX
 			y := obj.Y + camY
 
 			// Determine color based on tags
-			c := color.RGBA{0, 255, 255, 100} // Cyan default
+			c := color.RGBA{0, 255, 255, 255} // Cyan default
 			if obj.HasTags("solid") {
-				c = color.RGBA{100, 100, 100, 100} // Grey
+				c = color.RGBA{100, 100, 100, 255} // Grey
 			} else if obj.HasTags("Player") {
-				c = color.RGBA{0, 0, 255, 100} // Blue
+				c = color.RGBA{0, 0, 255, 255} // Blue
 			} else if obj.HasTags("Enemy") {
-				c = color.RGBA{255, 0, 0, 100} // Red
+				c = color.RGBA{255, 0, 0, 255} // Red
 			} else if obj.HasTags("Boomerang") {
-				c = color.RGBA{0, 255, 0, 200} // Green, more opaque
+				c = color.RGBA{0, 255, 0, 255} // Green
 			}
 
 			// Draw outline

@@ -478,9 +478,21 @@ func DrawHitboxes(ecs *ecs.ECS, screen *ebiten.Image) {
 	camera := components.Camera.Get(cameraEntry)
 	width, height := screen.Bounds().Dx(), screen.Bounds().Dy()
 
+	// Culling bounds
+	padding := 32.0
+	minX := camera.Position.X - float64(width)/2 - padding
+	maxX := camera.Position.X + float64(width)/2 + padding
+	minY := camera.Position.Y - float64(height)/2 - padding
+	maxY := camera.Position.Y + float64(height)/2 + padding
+
 	tags.Hitbox.Each(ecs.World, func(hitboxEntry *donburi.Entry) {
 		hitbox := components.Hitbox.Get(hitboxEntry)
 		o := components.Object.Get(hitboxEntry).Object
+
+		// Viewport Culling
+		if o.X+o.W < minX || o.X > maxX || o.Y+o.H < minY || o.Y > maxY {
+			return
+		}
 
 		// TODO: switch these colors to use the constants we defined in config
 		// Different colors for different attack types
