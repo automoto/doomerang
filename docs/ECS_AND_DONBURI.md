@@ -1,6 +1,6 @@
 # Entity Component System (ECS) and the `donburi` Library
 
-This document provides a concise explanation of the Entity Component System (ECS) architecture and how it is implemented in this project using the `donburi` library. The goal is to establish a clear and consistent approach to game development that can be easily understood and followed by other developers.
+This document provides a concise explanation of the Entity Component System (ECS) architecture and how it is implemented in this project using the `donburi` library.
 
 ## What is ECS?
 
@@ -43,27 +43,62 @@ Characters use a type-safe `StateID` enum (defined in `config/states.go`) instea
 
 ```go
 type StateData struct {
-	CurrentState config.StateID
-	StateTimer   int
+	CurrentState  config.StateID
+	PreviousState config.StateID
+	StateTimer    int
 }
 ```
 
 #### Input Abstraction (`InputData`)
-Player input is decoupled from raw key polling via an `InputData` component. This component stores the state of logical actions rather than raw keys:
+Player input is decoupled from raw key polling via an `InputData` component. This component stores the state of logical actions rather than raw keys. 
+
+**Note:** We use parallel arrays for the current and previous frames to allow for zero-allocation updates.
 
 ```go
-type ActionState struct {
-	Pressed      bool // Currently held down
-	JustPressed  bool // Pressed this frame
-	JustReleased bool // Released this frame
-}
-
 type InputData struct {
-	Actions map[config.ActionID]ActionState
+	Current         [cfg.ActionCount]bool // Current frame's Pressed state
+	Previous        [cfg.ActionCount]bool // Previous frame's Pressed state
+	LastInputMethod InputMethod           // Keyboard, Xbox, PlayStation
 }
 ```
 
-The `UpdateInput` system (runs first) polls raw input and populates `InputData`. Other systems read from this component instead of calling `ebiten.IsKeyPressed` directly.
+The `UpdateInput` system (runs first) polls raw input and populates the `Current` array. Systems access input using the `GetAction` helper, which calculates state transitions on the fly:
+
+```go
+// Helper to get derived state
+func GetAction(input *components.InputData, id cfg.ActionID) ActionState {
+    return ActionState{
+        Pressed:      input.Current[id],
+        JustPressed:  input.Current[id] && !input.Previous[id],
+        JustReleased: !input.Current[id] && input.Previous[id],
+    }
+}
+```
+
+### Asset Management & Caching
+
+To ensure smooth performance and avoid runtime stutters, we employ a robust asset caching strategy located in `assets/assets.go`.
+
+#### `AnimationLoader` & Frame Caching
+We use a global `AnimationLoader` that maintains two levels of caching:
+1.  **Image Cache (`cache`)**: Stores the raw loaded `*ebiten.Image` for full sprite sheets (e.g., `player/idle.png`).
+2.  **Frame Cache (`frameCache`)**: Stores `*ebiten.Image` sub-images for individual frames.
+
+**Why cache frames?**
+In Ebitengine, calling `SubImage` creates a new lightweight image struct. Doing this every frame for every entity would generate significant garbage. By caching the sub-image for "Player-Idle-Frame1", all entities using that animation share the exact same `*ebiten.Image` pointer.
+
+```go
+func (l *AnimationLoader) GetFrame(dir string, state config.StateID, frameIndex int, srcRect image.Rectangle) *ebiten.Image {
+    key := fmt.Sprintf("%s/%s/%d", dir, state.String(), frameIndex)
+    if img, ok := l.frameCache[key]; ok {
+        return img
+    }
+    // ... loads sheet, creates sub-image, caches it ...
+}
+```
+
+#### Preloading
+The `PreloadAllAnimations` function runs at game startup. It iterates through defined animations (for player, enemies, VFX) and populates the `frameCache` immediately. This ensures that the first time an explosion or jump happens, there is no IO or allocation cost.
 
 ### Systems
 
@@ -181,8 +216,8 @@ var Input = InputConfig{
     Bindings: map[ActionID]InputBinding{
         ActionJump: {
             Keys: []ebiten.Key{ebiten.KeyX, ebiten.KeyW},
-            GamepadButtons: []GamepadBinding{
-                {GamepadID: 0, Button: ebiten.GamepadButton0},
+            StandardGamepadButtons: []ebiten.StandardGamepadButton{
+                ebiten.StandardGamepadButtonRightBottom,
             },
         },
         ActionAttack: {Keys: []ebiten.Key{ebiten.KeyZ}},
@@ -194,7 +229,7 @@ var Input = InputConfig{
 To add a new action:
 1. Add the `ActionID` constant in `config/input.go`
 2. Add the binding in `config.Input.Bindings`
-3. Read it in systems via `input.Actions[cfg.ActionMyAction]`
+3. Read it in systems via `systems.GetAction(input, cfg.ActionMyAction)`
 
 ## Physics & Resolv Integration
 
@@ -243,9 +278,8 @@ We use `solarlune/resolv` for collision detection. To ensure high performance an
 10. **Input Abstraction**: Never call `ebiten.IsKeyPressed` or `inpututil.*` directly in game systems. Read from the `InputData` component instead. This enables key remapping and multi-input support.
 
     ```go
-    // GOOD - Read from InputData
-    jumpAction := input.Actions[cfg.ActionJump]
-    if jumpAction.JustPressed { ... }
+    // GOOD - Read from InputData using helper
+    if systems.GetAction(input, cfg.ActionJump).JustPressed { ... }
 
     // BAD - Direct input polling in game logic
     if inpututil.IsKeyJustPressed(ebiten.KeyX) { ... }
