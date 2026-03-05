@@ -23,7 +23,11 @@ type PlatformerSceneCreator interface {
 }
 
 // NewUpdateMenu creates an UpdateMenu system with scene transition capability
-func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() interface{}) ecs.System {
+func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() interface{}, sceneFactories ...func() interface{}) ecs.System {
+	var createRogueliteScene func() interface{}
+	if len(sceneFactories) > 0 {
+		createRogueliteScene = sceneFactories[0]
+	}
 	return func(e *ecs.ECS) {
 		// Skip menu input if settings is open
 		if IsSettingsOpen(e) {
@@ -73,6 +77,11 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 			case components.MainMenuContinue:
 				FadeOutMusic(e)
 				sceneChanger.ChangeScene(createPlatformerScene())
+			case components.MainMenuRoguelite:
+				if createRogueliteScene != nil {
+					FadeOutMusic(e)
+					sceneChanger.ChangeScene(createRogueliteScene())
+				}
 			case components.MainMenuSettings:
 				OpenSettings(e, false)
 			case components.MainMenuExit:
@@ -254,6 +263,8 @@ func getOptionLabel(option components.MainMenuOption) string {
 		return "Start"
 	case components.MainMenuContinue:
 		return "Continue"
+	case components.MainMenuRoguelite:
+		return "Roguelite"
 	case components.MainMenuSettings:
 		return "Settings"
 	case components.MainMenuExit:
@@ -276,6 +287,7 @@ func GetOrCreateMenu(e *ecs.ECS) *components.MenuData {
 			visibleOptions = []components.MainMenuOption{
 				components.MainMenuContinue,
 				components.MainMenuStart,
+				components.MainMenuRoguelite,
 				components.MainMenuSettings,
 				components.MainMenuExit,
 			}
@@ -283,6 +295,7 @@ func GetOrCreateMenu(e *ecs.ECS) *components.MenuData {
 			// No save: only Start (no Continue)
 			visibleOptions = []components.MainMenuOption{
 				components.MainMenuStart,
+				components.MainMenuRoguelite,
 				components.MainMenuSettings,
 				components.MainMenuExit,
 			}

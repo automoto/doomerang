@@ -13,14 +13,20 @@ import (
 
 // GameOverScene displays the game over screen
 type GameOverScene struct {
-	ecs          *ecs.ECS
-	sceneChanger SceneChanger
-	once         sync.Once
+	ecs              *ecs.ECS
+	sceneChanger     SceneChanger
+	once             sync.Once
+	retrySceneFactory func() interface{} // creates the scene to retry (platformer or roguelite)
 }
 
-// NewGameOverScene creates a new game over scene
-func NewGameOverScene(sc SceneChanger) *GameOverScene {
-	return &GameOverScene{sceneChanger: sc}
+// NewGameOverScene creates a new game over scene.
+// Optional retryFactory overrides the default retry behavior (platformer).
+func NewGameOverScene(sc SceneChanger, retryFactory ...func() interface{}) *GameOverScene {
+	gs := &GameOverScene{sceneChanger: sc}
+	if len(retryFactory) > 0 {
+		gs.retrySceneFactory = retryFactory[0]
+	}
+	return gs
 }
 
 func (gs *GameOverScene) Update() {
@@ -42,8 +48,11 @@ func (gs *GameOverScene) configure() {
 	gs.ecs = ecs.NewECS(donburi.NewWorld())
 
 	// Scene factories
-	createPlatformerScene := func() interface{} {
-		return NewPlatformerScene(gs.sceneChanger)
+	retryScene := gs.retrySceneFactory
+	if retryScene == nil {
+		retryScene = func() interface{} {
+			return NewPlatformerScene(gs.sceneChanger)
+		}
 	}
 	createMenuScene := func() interface{} {
 		return NewMenuScene(gs.sceneChanger)
@@ -54,7 +63,7 @@ func (gs *GameOverScene) configure() {
 
 	// Minimal systems for game over
 	gs.ecs.AddSystem(systems.UpdateInput)
-	gs.ecs.AddSystem(systems.NewUpdateGameOver(gs.sceneChanger, createPlatformerScene, createMenuScene))
+	gs.ecs.AddSystem(systems.NewUpdateGameOver(gs.sceneChanger, retryScene, createMenuScene))
 
 	// Renderer
 	gs.ecs.AddRenderer(cfg.Default, systems.DrawGameOver)

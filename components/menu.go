@@ -8,6 +8,7 @@ type MainMenuOption int
 const (
 	MainMenuStart MainMenuOption = iota
 	MainMenuContinue
+	MainMenuRoguelite
 	MainMenuSettings
 	MainMenuExit
 )
