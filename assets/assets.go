@@ -16,12 +16,17 @@ import (
 )
 
 var (
-	//go:embed all:levels
+	//go:embed all:levels all:chunks
 	assetFS embed.FS
 
 	//go:embed all:images
 	animationFS embed.FS
 )
+
+// GetAssetFS returns the embedded filesystem containing levels and chunks
+func GetAssetFS() embed.FS {
+	return assetFS
+}
 
 type PlayerSpawn struct {
 	X          float64

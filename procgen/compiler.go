@@ -16,8 +16,10 @@ func NewCompiler() *Compiler {
 	return &Compiler{}
 }
 
-// Compile converts assembled chunks into an assets.Level with world-space coordinates
-func (c *Compiler) Compile(result *AssemblyResult) (*assets.Level, error) {
+// Compile converts assembled chunks into an assets.Level with world-space coordinates.
+// Pass a non-nil DecorationOptions to tile a background image and apply a color tint
+// behind the chunk tile layers.
+func (c *Compiler) Compile(result *AssemblyResult, opts *DecorationOptions) (*assets.Level, error) {
 	if len(result.PlacedChunks) == 0 {
 		return nil, fmt.Errorf("no chunks to compile")
 	}
@@ -39,6 +41,11 @@ func (c *Compiler) Compile(result *AssemblyResult) (*assets.Level, error) {
 
 	// Create the background image
 	level.Background = ebiten.NewImage(result.TotalWidth, result.TotalHeight)
+
+	// Draw the decorative background image (tiled horizontally) before tile layers
+	if opts != nil && opts.BackgroundImage != nil {
+		c.renderDecorativeBackground(level.Background, opts, result.TotalWidth, result.TotalHeight)
+	}
 
 	for _, pc := range result.PlacedChunks {
 		ox := pc.OffsetX
@@ -126,6 +133,30 @@ func (c *Compiler) renderChunkBackground(bg *ebiten.Image, pc PlacedChunk) error
 	}
 
 	return nil
+}
+
+// renderDecorativeBackground tiles the background image horizontally across the full level width,
+// scaling it vertically to fill the level height, and applies the seed-derived color tint.
+func (c *Compiler) renderDecorativeBackground(dst *ebiten.Image, opts *DecorationOptions, totalWidth, totalHeight int) {
+	src := opts.BackgroundImage
+	srcW := src.Bounds().Dx()
+	srcH := src.Bounds().Dy()
+
+	scaleY := float64(totalHeight) / float64(srcH)
+
+	op := &ebiten.DrawImageOptions{}
+	// ColorScale is set once here and intentionally not modified inside the loop —
+	// the tint must remain constant across all tiles. Only GeoM is reset per iteration.
+	// Alpha is reduced so the background doesn't compete with the tile layers above it.
+	op.ColorScale.Scale(opts.TintR, opts.TintG, opts.TintB, 1.0)
+	op.ColorScale.ScaleAlpha(0.5)
+
+	for x := 0; x < totalWidth; x += srcW {
+		op.GeoM.Reset()
+		op.GeoM.Scale(1.0, scaleY)
+		op.GeoM.Translate(float64(x), 0)
+		dst.DrawImage(src, op)
+	}
 }
 
 func (c *Compiler) compileObjectGroups(level *assets.Level, pc PlacedChunk) {

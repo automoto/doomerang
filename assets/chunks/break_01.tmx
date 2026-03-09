@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="10">
+ <properties>
+  <property name="chunk_id" value="break_01"/>
+  <property name="biome" value="cyberpunk"/>
+  <property name="difficulty" type="int" value="1"/>
+  <property name="tags" value="break"/>
+  <property name="min_enemies" type="int" value="0"/>
+  <property name="max_enemies" type="int" value="0"/>
+ </properties>
+ <tileset firstgid="1" source="../levels/tilesets/cyberpunk-tiles.tsx"/>
+ <layer id="1" name="wg-tiles" width="20" height="20">
+  <properties>
+   <property name="render" type="bool" value="true"/>
+  </properties>
+  <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,
+28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28
+</data>
+ </layer>
+ <objectgroup id="2" name="Connections">
+  <object id="1" name="entry_left" x="0" y="224" width="48" height="48">
+   <properties>
+    <property name="edge" value="left"/>
+    <property name="slot" type="int" value="0"/>
+   </properties>
+  </object>
+  <object id="2" name="exit_right" x="272" y="224" width="48" height="48">
+   <properties>
+    <property name="edge" value="right"/>
+    <property name="slot" type="int" value="0"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>

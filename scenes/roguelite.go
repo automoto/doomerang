@@ -210,9 +210,18 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, error) {
 		return nil, err
 	}
 
-	// Compile base level
+	// Derive decorative variation (background image + color tint) from seed.
+	// Use the start node's biome as the source of truth rather than a separate literal.
+	decoration := procgen.DeriveDecoration(rs.seed, graph.Nodes[0].Biome)
+	defer func() {
+		if decoration.BackgroundImage != nil {
+			decoration.BackgroundImage.Dispose()
+		}
+	}()
+
+	// Compile base level with decoration
 	compiler := procgen.NewCompiler()
-	level, err := compiler.Compile(result)
+	level, err := compiler.Compile(result, &decoration)
 	if err != nil {
 		return nil, err
 	}
