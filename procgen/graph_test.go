@@ -105,16 +105,16 @@ func TestGraphNodeTypes(t *testing.T) {
 	}
 }
 
-func TestAssembleFromGraph(t *testing.T) {
+func TestGenerateFromGraph(t *testing.T) {
 	chunks := loadTestChunks(t)
 	rng := rand.New(rand.NewSource(42))
 	graph := procgen.GenerateGraph(rng, 5, []string{"cyberpunk"})
 	procgen.ValidateGraph(graph)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := assembler.AssembleFromGraph(chunks, graph)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := gen.GenerateFromGraph(chunks, graph)
 	if err != nil {
-		t.Fatalf("AssembleFromGraph failed: %v", err)
+		t.Fatalf("GenerateFromGraph failed: %v", err)
 	}
 
 	if len(result.PlacedChunks) != len(graph.Nodes) {
@@ -131,7 +131,7 @@ func TestAssembleFromGraph(t *testing.T) {
 	}
 }
 
-func TestAssembleFromGraphChunkReuse(t *testing.T) {
+func TestGenerateFromGraphChunkReuse(t *testing.T) {
 	chunks := loadTestChunks(t)
 
 	for seed := int64(0); seed < 20; seed++ {
@@ -139,8 +139,8 @@ func TestAssembleFromGraphChunkReuse(t *testing.T) {
 		graph := procgen.GenerateGraph(rng, 8, []string{"cyberpunk"})
 		procgen.ValidateGraph(graph)
 
-		assembler := procgen.NewAssembler(seed)
-		result, err := assembler.AssembleFromGraph(chunks, graph)
+		gen := procgen.NewChunkGenerator(seed)
+		result, err := gen.GenerateFromGraph(chunks, graph)
 		if err != nil {
 			continue // Some seeds may fail with limited chunks
 		}

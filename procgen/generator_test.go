@@ -6,13 +6,13 @@ import (
 	"github.com/automoto/doomerang/procgen"
 )
 
-func TestAssembleBasic(t *testing.T) {
+func TestGenerateBasic(t *testing.T) {
 	chunks := loadTestChunks(t)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := assembler.Assemble(chunks, 3)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := gen.Generate(chunks, 3)
 	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
+		t.Fatalf("Generate failed: %v", err)
 	}
 
 	// Should have start + 3 middle + exit = 5 chunks
@@ -32,13 +32,13 @@ func TestAssembleBasic(t *testing.T) {
 	}
 }
 
-func TestAssembleAlignment(t *testing.T) {
+func TestGenerateAlignment(t *testing.T) {
 	chunks := loadTestChunks(t)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := assembler.Assemble(chunks, 2)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := gen.Generate(chunks, 2)
 	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
+		t.Fatalf("Generate failed: %v", err)
 	}
 
 	// Verify chunks don't overlap horizontally
@@ -58,13 +58,13 @@ func TestAssembleAlignment(t *testing.T) {
 	}
 }
 
-func TestAssembleConnectionAlignment(t *testing.T) {
+func TestGenerateConnectionAlignment(t *testing.T) {
 	chunks := loadTestChunks(t)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := assembler.Assemble(chunks, 2)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := gen.Generate(chunks, 2)
 	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
+		t.Fatalf("Generate failed: %v", err)
 	}
 
 	// Verify connection points align vertically between adjacent chunks
@@ -89,13 +89,13 @@ func TestAssembleConnectionAlignment(t *testing.T) {
 	}
 }
 
-func TestAssembleDimensions(t *testing.T) {
+func TestGenerateDimensions(t *testing.T) {
 	chunks := loadTestChunks(t)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := assembler.Assemble(chunks, 3)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := gen.Generate(chunks, 3)
 	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
+		t.Fatalf("Generate failed: %v", err)
 	}
 
 	if result.TotalWidth <= 0 {
@@ -116,21 +116,21 @@ func TestAssembleDimensions(t *testing.T) {
 	}
 }
 
-func TestAssembleDifferentSeeds(t *testing.T) {
+func TestGenerateDifferentSeeds(t *testing.T) {
 	chunks := loadTestChunks(t)
 
 	// With only 3 middle chunks, sequences may repeat.
-	// Just verify both assemble without error and produce valid results.
-	a1 := procgen.NewAssembler(1)
-	r1, err := a1.Assemble(chunks, 5)
+	// Just verify both generate without error and produce valid results.
+	g1 := procgen.NewChunkGenerator(1)
+	r1, err := g1.Generate(chunks, 5)
 	if err != nil {
-		t.Fatalf("Assemble seed 1 failed: %v", err)
+		t.Fatalf("Generate seed 1 failed: %v", err)
 	}
 
-	a2 := procgen.NewAssembler(2)
-	r2, err := a2.Assemble(chunks, 5)
+	g2 := procgen.NewChunkGenerator(2)
+	r2, err := g2.Generate(chunks, 5)
 	if err != nil {
-		t.Fatalf("Assemble seed 2 failed: %v", err)
+		t.Fatalf("Generate seed 2 failed: %v", err)
 	}
 
 	if len(r1.PlacedChunks) != len(r2.PlacedChunks) {
@@ -138,7 +138,7 @@ func TestAssembleDifferentSeeds(t *testing.T) {
 	}
 }
 
-func TestAssembleNoStartChunks(t *testing.T) {
+func TestGenerateNoStartChunks(t *testing.T) {
 	// Create chunks with no start tag
 	chunks := []*procgen.Chunk{
 		{ID: "mid", Tags: []procgen.ChunkTag{procgen.TagCombat}, Width: 320, Height: 320,
@@ -148,14 +148,14 @@ func TestAssembleNoStartChunks(t *testing.T) {
 			}},
 	}
 
-	assembler := procgen.NewAssembler(42)
-	_, err := assembler.Assemble(chunks, 1)
+	gen := procgen.NewChunkGenerator(42)
+	_, err := gen.Generate(chunks, 1)
 	if err == nil {
 		t.Error("expected error when no start chunks available")
 	}
 }
 
-func TestAssembleNoExitChunks(t *testing.T) {
+func TestGenerateNoExitChunks(t *testing.T) {
 	chunks := []*procgen.Chunk{
 		{ID: "start", Tags: []procgen.ChunkTag{procgen.TagStart}, Width: 320, Height: 320,
 			Connections: []procgen.ConnectionPoint{
@@ -163,20 +163,20 @@ func TestAssembleNoExitChunks(t *testing.T) {
 			}},
 	}
 
-	assembler := procgen.NewAssembler(42)
-	_, err := assembler.Assemble(chunks, 1)
+	gen := procgen.NewChunkGenerator(42)
+	_, err := gen.Generate(chunks, 1)
 	if err == nil {
 		t.Error("expected error when no exit chunks available")
 	}
 }
 
-func TestAssembleYNormalization(t *testing.T) {
+func TestGenerateYNormalization(t *testing.T) {
 	chunks := loadTestChunks(t)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := assembler.Assemble(chunks, 3)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := gen.Generate(chunks, 3)
 	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
+		t.Fatalf("Generate failed: %v", err)
 	}
 
 	// All Y offsets should be >= 0 after normalization

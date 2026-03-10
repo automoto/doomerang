@@ -33,6 +33,9 @@ type ProcgenConfig struct {
 	// Connection points
 	StandardConnectionHeight int // Standard Y-offset for connection points (in tiles)
 	ConnectionOpeningWidth   int // Standard opening width (in tiles)
+
+	// Level layout
+	ChunkHeadroomFactor float64 // Fraction of screen height added above chunks for camera headroom
 }
 
 // Procgen is the global procgen configuration instance
@@ -67,7 +70,8 @@ func init() {
 		MinRunLength:     8,
 		MaxRunLength:     25,
 
-		StandardConnectionHeight: 20, // tiles from top
-		ConnectionOpeningWidth:   3,  // tiles wide
+		StandardConnectionHeight: 20,  // tiles from top
+		ConnectionOpeningWidth:   3,   // tiles wide
+		ChunkHeadroomFactor:      0.15, // 15% of screen height
 	}
 }

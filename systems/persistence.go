@@ -234,6 +234,69 @@ func HasSaveGame() bool {
 	return true
 }
 
+// SavedRogueliteStats contains lifetime roguelite statistics persisted across sessions
+type SavedRogueliteStats struct {
+	TotalRuns     int   `json:"totalRuns"`
+	BestKillCount int   `json:"bestKillCount"`
+	FastestSecs   int64 `json:"fastestSecs"` // 0 = no completion recorded yet
+}
+
+// LoadRogueliteStats loads lifetime roguelite stats from disk.
+// Returns zero-value struct if no data is saved yet.
+func LoadRogueliteStats() (SavedRogueliteStats, error) {
+	if !gdataInitialized || gdataManager == nil {
+		return SavedRogueliteStats{}, nil
+	}
+
+	data, err := gdataManager.LoadItem("roguelite_stats")
+	if err != nil || len(data) == 0 {
+		return SavedRogueliteStats{}, nil
+	}
+
+	var stats SavedRogueliteStats
+	if err := json.Unmarshal(data, &stats); err != nil {
+		log.Printf("Warning: Could not parse roguelite stats: %v", err)
+		return SavedRogueliteStats{}, err
+	}
+
+	return stats, nil
+}
+
+// SaveRogueliteLifetimeStats merges the current run into persisted lifetime stats and saves.
+func SaveRogueliteLifetimeStats(run FinalRunStats) error {
+	if !gdataInitialized || gdataManager == nil {
+		return nil
+	}
+
+	stored, err := LoadRogueliteStats()
+	if err != nil {
+		log.Printf("Warning: Could not load roguelite stats, starting fresh: %v", err)
+	}
+
+	stored.TotalRuns++
+	if run.KillCount > stored.BestKillCount {
+		stored.BestKillCount = run.KillCount
+	}
+	if stored.FastestSecs == 0 {
+		stored.FastestSecs = run.ElapsedSecs
+	} else if run.ElapsedSecs > 0 && run.ElapsedSecs < stored.FastestSecs {
+		stored.FastestSecs = run.ElapsedSecs
+	}
+
+	data, err := json.Marshal(stored)
+	if err != nil {
+		log.Printf("Warning: Could not serialize roguelite stats: %v", err)
+		return err
+	}
+
+	if err := gdataManager.SaveItem("roguelite_stats", data); err != nil {
+		log.Printf("Warning: Could not save roguelite stats: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 // ClearGameProgress removes any saved game progress
 func ClearGameProgress() error {
 	if !gdataInitialized || gdataManager == nil {

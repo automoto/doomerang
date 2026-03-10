@@ -28,7 +28,17 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 	if len(sceneFactories) > 0 {
 		createRogueliteScene = sceneFactories[0]
 	}
+	// firstFrame guard prevents input bleed: if the player is still holding the
+	// confirm key from a previous scene (e.g. selecting "Main Menu" on the run
+	// summary or game over screen), the fresh InputData sees JustPressed=true,
+	// which would immediately trigger the first menu option. Skipping one frame
+	// lets UpdateInput record the held state into Previous first.
+	firstFrame := true
 	return func(e *ecs.ECS) {
+		if firstFrame {
+			firstFrame = false
+			return
+		}
 		// Skip menu input if settings is open
 		if IsSettingsOpen(e) {
 			return

@@ -54,9 +54,7 @@ func (gs *GameOverScene) configure() {
 			return NewPlatformerScene(gs.sceneChanger)
 		}
 	}
-	createMenuScene := func() interface{} {
-		return NewMenuScene(gs.sceneChanger)
-	}
+	createMenuScene := NewMainMenuFactory(gs.sceneChanger)
 
 	// Audio system
 	gs.ecs.AddSystem(systems.UpdateAudio)

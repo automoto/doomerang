@@ -8,7 +8,7 @@ import (
 	"github.com/lafriks/go-tiled/render"
 )
 
-// Compiler converts an AssemblyResult into a playable assets.Level
+// Compiler converts a GenerationResult into a playable assets.Level
 type Compiler struct{}
 
 // NewCompiler creates a new level compiler
@@ -16,10 +16,10 @@ func NewCompiler() *Compiler {
 	return &Compiler{}
 }
 
-// Compile converts assembled chunks into an assets.Level with world-space coordinates.
+// Compile converts generated chunks into an assets.Level with world-space coordinates.
 // Pass a non-nil DecorationOptions to tile a background image and apply a color tint
 // behind the chunk tile layers.
-func (c *Compiler) Compile(result *AssemblyResult, opts *DecorationOptions) (*assets.Level, error) {
+func (c *Compiler) Compile(result *GenerationResult, opts *DecorationOptions) (*assets.Level, error) {
 	if len(result.PlacedChunks) == 0 {
 		return nil, fmt.Errorf("no chunks to compile")
 	}

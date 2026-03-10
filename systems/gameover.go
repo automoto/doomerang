@@ -12,7 +12,12 @@ import (
 
 // NewUpdateGameOver creates an UpdateGameOver system with scene transition capability
 func NewUpdateGameOver(sceneChanger SceneChanger, createPlatformerScene func() interface{}, createMenuScene func() interface{}) ecs.System {
+	firstFrame := true
 	return func(e *ecs.ECS) {
+		if firstFrame {
+			firstFrame = false
+			return
+		}
 		gameOver := GetOrCreateGameOver(e)
 		input := getOrCreateInput(e)
 

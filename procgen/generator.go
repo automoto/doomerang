@@ -14,26 +14,29 @@ type PlacedChunk struct {
 	OffsetY float64 // World Y offset to align connection points
 }
 
-// AssemblyResult contains the output of chunk assembly
-type AssemblyResult struct {
+// GenerationResult contains the output of chunk generation
+type GenerationResult struct {
 	PlacedChunks []PlacedChunk
 	TotalWidth   int
 	TotalHeight  int
 }
 
-// Assembler chains chunks left-to-right using connection points
-type Assembler struct {
+// maxChunkReuse is the maximum number of times the same chunk ID may appear in one run.
+const maxChunkReuse = 2
+
+// ChunkGenerator chains chunks left-to-right using connection points
+type ChunkGenerator struct {
 	rng *rand.Rand
 }
 
-// NewAssembler creates an assembler with the given random seed
-func NewAssembler(seed int64) *Assembler {
-	return &Assembler{rng: rand.New(rand.NewSource(seed))}
+// NewChunkGenerator creates a chunk generator with the given random seed
+func NewChunkGenerator(seed int64) *ChunkGenerator {
+	return &ChunkGenerator{rng: rand.New(rand.NewSource(seed))}
 }
 
-// Assemble selects and places chunks left-to-right.
+// Generate selects and places chunks left-to-right.
 // It picks a start chunk, middle chunks, and an exit chunk from the pool.
-func (a *Assembler) Assemble(chunks []*Chunk, numMiddle int) (*AssemblyResult, error) {
+func (g *ChunkGenerator) Generate(chunks []*Chunk, numMiddle int) (*GenerationResult, error) {
 	starts := filterByTag(chunks, TagStart)
 	exits := filterByTag(chunks, TagExit)
 	middles := filterMiddle(chunks)
@@ -50,49 +53,49 @@ func (a *Assembler) Assemble(chunks []*Chunk, numMiddle int) (*AssemblyResult, e
 
 	// Build the sequence: start + N middles + exit
 	sequence := make([]*Chunk, 0, numMiddle+2)
-	sequence = append(sequence, starts[a.rng.Intn(len(starts))])
+	sequence = append(sequence, starts[g.rng.Intn(len(starts))])
 
 	for i := 0; i < numMiddle; i++ {
-		sequence = append(sequence, middles[a.rng.Intn(len(middles))])
+		sequence = append(sequence, middles[g.rng.Intn(len(middles))])
 	}
 
-	sequence = append(sequence, exits[a.rng.Intn(len(exits))])
+	sequence = append(sequence, exits[g.rng.Intn(len(exits))])
 
-	return a.placeChunks(sequence)
+	return g.placeChunks(sequence)
 }
 
-// AssembleFromGraph selects chunks matching concept graph node requirements
+// GenerateFromGraph selects chunks matching concept graph node requirements
 // and places them left-to-right. Enforces max 2 reuses of the same chunk ID.
-func (a *Assembler) AssembleFromGraph(chunks []*Chunk, graph *ConceptGraph) (*AssemblyResult, error) {
+func (g *ChunkGenerator) GenerateFromGraph(chunks []*Chunk, graph *ConceptGraph) (*GenerationResult, error) {
 	usageCount := make(map[string]int)
 	sequence := make([]*Chunk, 0, len(graph.Nodes))
 
 	for _, node := range graph.Nodes {
-		candidates := a.matchChunks(chunks, node, usageCount)
+		candidates := g.matchChunks(chunks, node, usageCount)
 		if len(candidates) == 0 {
 			// Fallback: relax biome constraint
-			candidates = a.matchChunksRelaxed(chunks, node, usageCount)
+			candidates = g.matchChunksRelaxed(chunks, node, usageCount)
 		}
 		if len(candidates) == 0 {
 			return nil, fmt.Errorf("no chunk found for node type=%s tag=%s biome=%s", node.Type, node.Tag, node.Biome)
 		}
 
-		selected := candidates[a.rng.Intn(len(candidates))]
+		selected := candidates[g.rng.Intn(len(candidates))]
 		sequence = append(sequence, selected)
 		usageCount[selected.ID]++
 	}
 
-	return a.placeChunks(sequence)
+	return g.placeChunks(sequence)
 }
 
 // matchChunks finds chunks that match a graph node's requirements
-func (a *Assembler) matchChunks(chunks []*Chunk, node GraphNode, usage map[string]int) []*Chunk {
+func (g *ChunkGenerator) matchChunks(chunks []*Chunk, node GraphNode, usage map[string]int) []*Chunk {
 	var result []*Chunk
 	for _, c := range chunks {
 		if !c.HasTag(node.Tag) {
 			continue
 		}
-		if usage[c.ID] >= 2 {
+		if usage[c.ID] >= maxChunkReuse {
 			continue
 		}
 		if node.Biome != "" && c.Biome != node.Biome {
@@ -110,13 +113,13 @@ func (a *Assembler) matchChunks(chunks []*Chunk, node GraphNode, usage map[strin
 }
 
 // matchChunksRelaxed finds chunks matching tag only (ignoring biome)
-func (a *Assembler) matchChunksRelaxed(chunks []*Chunk, node GraphNode, usage map[string]int) []*Chunk {
+func (g *ChunkGenerator) matchChunksRelaxed(chunks []*Chunk, node GraphNode, usage map[string]int) []*Chunk {
 	var result []*Chunk
 	for _, c := range chunks {
 		if !c.HasTag(node.Tag) {
 			continue
 		}
-		if usage[c.ID] >= 2 {
+		if usage[c.ID] >= maxChunkReuse {
 			continue
 		}
 		if node.Tag != TagStart && node.Tag != TagExit {
@@ -130,7 +133,7 @@ func (a *Assembler) matchChunksRelaxed(chunks []*Chunk, node GraphNode, usage ma
 }
 
 // placeChunks positions chunks left-to-right, aligning connection points vertically
-func (a *Assembler) placeChunks(sequence []*Chunk) (*AssemblyResult, error) {
+func (g *ChunkGenerator) placeChunks(sequence []*Chunk) (*GenerationResult, error) {
 	if len(sequence) == 0 {
 		return nil, fmt.Errorf("empty chunk sequence")
 	}
@@ -210,13 +213,13 @@ func (a *Assembler) placeChunks(sequence []*Chunk) (*AssemblyResult, error) {
 	// The camera's minCameraY clamp (screenHeight/2) prevents the
 	// player from going off the top of the screen.
 	screenHeight := float64(config.C.Height)
-	headroom := screenHeight * 0.15
+	headroom := screenHeight * config.Procgen.ChunkHeadroomFactor
 	for i := range placed {
 		placed[i].OffsetY += headroom
 	}
 	maxBottom += headroom
 
-	return &AssemblyResult{
+	return &GenerationResult{
 		PlacedChunks: placed,
 		TotalWidth:   int(maxRight),
 		TotalHeight:  int(maxBottom),

@@ -50,10 +50,10 @@ func NewValidator() *Validator {
 	}
 }
 
-// Validate checks if the assembled level is solvable.
+// Validate checks if the generated level is solvable.
 // Returns a ValidationResult indicating whether every platform is reachable
 // from the start and the exit is reachable.
-func (v *Validator) Validate(result *AssemblyResult) ValidationResult {
+func (v *Validator) Validate(result *GenerationResult) ValidationResult {
 	platforms := v.discoverPlatforms(result)
 
 	if len(platforms) == 0 {
@@ -83,8 +83,8 @@ func (v *Validator) Validate(result *AssemblyResult) ValidationResult {
 	return vr
 }
 
-// discoverPlatforms finds all walkable surfaces from the assembled level
-func (v *Validator) discoverPlatforms(result *AssemblyResult) []Platform {
+// discoverPlatforms finds all walkable surfaces from the generated level
+func (v *Validator) discoverPlatforms(result *GenerationResult) []Platform {
 	var allPlatforms []Platform
 
 	for chunkIdx, pc := range result.PlacedChunks {
@@ -200,7 +200,7 @@ func (v *Validator) canReach(a, b Platform) bool {
 
 // findStartPlatform finds the floor platform in the first chunk
 // (lowest Y value = highest on screen, but we want the floor = highest Y)
-func (v *Validator) findStartPlatform(platforms []Platform, result *AssemblyResult) int {
+func (v *Validator) findStartPlatform(platforms []Platform, result *GenerationResult) int {
 	bestIdx := 0
 	bestY := -1.0
 	for i, p := range platforms {
@@ -213,7 +213,7 @@ func (v *Validator) findStartPlatform(platforms []Platform, result *AssemblyResu
 }
 
 // findExitPlatform finds the floor platform in the last chunk
-func (v *Validator) findExitPlatform(platforms []Platform, result *AssemblyResult) int {
+func (v *Validator) findExitPlatform(platforms []Platform, result *GenerationResult) int {
 	lastChunk := len(result.PlacedChunks) - 1
 	bestIdx := len(platforms) - 1
 	bestY := -1.0
@@ -251,18 +251,18 @@ func (v *Validator) bfsReachability(platforms []Platform, startIdx int) []bool {
 	return reachable
 }
 
-// ValidateAndRemediate validates the level and retries assembly if unsolvable.
-// Returns the final assembly result and any error.
-func ValidateAndRemediate(assembler *Assembler, chunks []*Chunk, graph *ConceptGraph, maxAttempts int) (*AssemblyResult, error) {
+// ValidateAndRemediate validates the level and retries generation if unsolvable.
+// Returns the final generation result and any error.
+func ValidateAndRemediate(generator *ChunkGenerator, chunks []*Chunk, graph *ConceptGraph, maxAttempts int) (*GenerationResult, error) {
 	validator := NewValidator()
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		result, err := assembler.AssembleFromGraph(chunks, graph)
+		result, err := generator.GenerateFromGraph(chunks, graph)
 		if err != nil {
-			// Try simple assembly as fallback
-			result, err = assembler.Assemble(chunks, len(graph.Nodes)-2)
+			// Try simple generation as fallback
+			result, err = generator.Generate(chunks, len(graph.Nodes)-2)
 			if err != nil {
-				return nil, fmt.Errorf("assembly failed on attempt %d: %w", attempt, err)
+				return nil, fmt.Errorf("generation failed on attempt %d: %w", attempt, err)
 			}
 		}
 
@@ -273,7 +273,7 @@ func ValidateAndRemediate(assembler *Assembler, chunks []*Chunk, graph *ConceptG
 	}
 
 	// Last resort: return whatever we get (our chunks are hand-designed to be traversable)
-	result, err := assembler.Assemble(chunks, len(graph.Nodes)-2)
+	result, err := generator.Generate(chunks, len(graph.Nodes)-2)
 	if err != nil {
 		return nil, fmt.Errorf("all remediation attempts failed: %w", err)
 	}

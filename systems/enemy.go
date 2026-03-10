@@ -13,75 +13,75 @@ import (
 	math2 "github.com/yohamta/donburi/features/math"
 )
 
-func UpdateEnemies(ecs *ecs.ECS) {
-	// Get player position for AI decisions
-	playerEntry, _ := components.Player.First(ecs.World)
+func UpdateEnemies(e *ecs.ECS) {
+	playerEntry, _ := components.Player.First(e.World)
 	var playerObject *resolv.Object
 	if playerEntry != nil {
 		playerObject = components.Object.Get(playerEntry).Object
 	}
 
-	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
-		// Skip if enemy is in death sequence
-		if e.HasComponent(components.Death) {
-			if anim := components.Animation.Get(e); anim != nil && anim.CurrentAnimation != nil {
+	// Pre-collect living enemy positions for O(n) separation (avoids O(n²) nested Each).
+	enemyPositions := collectEnemyPositions(e)
+
+	tags.Enemy.Each(e.World, func(entry *donburi.Entry) {
+		if entry.HasComponent(components.Death) {
+			anim := components.Animation.Get(entry)
+			if anim != nil && anim.CurrentAnimation != nil {
 				anim.CurrentAnimation.Update()
 			}
 			return
 		}
 
-		// Skip if invulnerable
-		enemy := components.Enemy.Get(e)
+		enemy := components.Enemy.Get(entry)
 		if enemy.InvulnFrames > 0 {
 			enemy.InvulnFrames--
 		}
 
-		// Update health bar timer
-		if e.HasComponent(components.HealthBar) {
-			healthBar := components.HealthBar.Get(e)
+		if entry.HasComponent(components.HealthBar) {
+			healthBar := components.HealthBar.Get(entry)
 			healthBar.TimeToLive--
 			if healthBar.TimeToLive <= 0 {
-				donburi.Remove[components.HealthBarData](e, components.HealthBar)
+				donburi.Remove[components.HealthBarData](entry, components.HealthBar)
 			}
 		}
 
-		// Update AI behavior
-		updateEnemyAI(ecs, e, playerObject)
-
-		// Update animation state
-		updateEnemyAnimation(enemy, components.Physics.Get(e), components.State.Get(e), components.Animation.Get(e))
+		updateEnemyAI(e, entry, playerObject, enemyPositions)
+		updateEnemyAnimation(enemy, components.Physics.Get(entry), components.State.Get(entry), components.Animation.Get(entry))
 	})
 }
 
-func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object) {
+func updateEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object, enemyPositions []float64) {
 	enemy := components.Enemy.Get(enemyEntry)
 	physics := components.Physics.Get(enemyEntry)
 	enemyObject := components.Object.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
 	state.StateTimer++
 
-	// Update attack cooldown
 	if enemy.AttackCooldown > 0 {
 		enemy.AttackCooldown--
 	}
-
-	// No AI if no player
 	if playerObject == nil {
 		return
 	}
 
-	// Calculate distance to player
 	distanceToPlayer := math.Abs(playerObject.X - enemyObject.X)
 
-	// Use ranged AI for ranged enemies
 	if enemy.TypeConfig != nil && enemy.TypeConfig.IsRanged {
-		updateRangedEnemyAI(ecs, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
-		return
+		updateRangedEnemyAI(e, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
+	} else {
+		updateMeleeEnemyAI(e, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
 	}
 
-	// For melee enemies, skip chase/attack if player is on a different vertical level
+	// Apply separation to any enemy that is actively moving (patrol or chase).
+	// Keyed on SpeedX so attack/hit/throw states — where the enemy must stay put — are unaffected.
+	if physics.SpeedX != 0 {
+		physics.SpeedX += computeSeparationX(enemyObject.X, enemyPositions, cfg.Enemy.SeparationRadius) * cfg.Enemy.SeparationForce
+	}
+}
+
+func updateMeleeEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	verticalDistance := math.Abs(playerObject.Y - enemyObject.Y)
-	if enemy.TypeConfig != nil && verticalDistance > enemy.TypeConfig.MaxVerticalChase && enemy.TypeConfig.MaxVerticalChase > 0 {
+	if enemy.TypeConfig != nil && enemy.TypeConfig.MaxVerticalChase > 0 && verticalDistance > enemy.TypeConfig.MaxVerticalChase {
 		if state.CurrentState == cfg.StateChase || state.CurrentState == cfg.StateAttackingPunch {
 			state.CurrentState = cfg.StatePatrol
 			state.StateTimer = 0
@@ -89,16 +89,14 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 		return
 	}
 
-	// State machine
 	switch state.CurrentState {
 	case cfg.StatePatrol:
-		handlePatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
+		handlePatrolState(e, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
 	case cfg.StateChase:
-		handleChaseState(ecs, enemyEntry, playerObject, distanceToPlayer)
+		handleChaseState(enemyEntry, playerObject, distanceToPlayer)
 	case cfg.StateAttackingPunch:
-		handleAttackState(ecs, enemyEntry)
+		handleAttackState(enemyEntry)
 	case cfg.Hit:
-		// Stunned for a short period
 		if state.StateTimer > enemy.TypeConfig.HitstunDuration {
 			state.CurrentState = cfg.StateChase
 			state.StateTimer = 0
@@ -106,65 +104,43 @@ func updateEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv
 	}
 }
 
-func handlePatrolState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
-	// Check if should start chasing
+func handlePatrolState(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	if distanceToPlayer <= enemy.ChaseRange {
 		state.CurrentState = cfg.StateChase
 		state.StateTimer = 0
 		return
 	}
+	dispatchPatrol(e, enemyEntry, enemy, physics, state, enemyObject)
+}
 
-	// If enemy has a custom patrol path, use it
+// dispatchPatrol routes to the appropriate patrol handler based on whether
+// a custom path is configured. Used by both melee and ranged patrol states.
+func dispatchPatrol(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject *resolv.Object) {
 	if enemy.PatrolPathName != "" {
-		handleCustomPatrol(ecs, enemyEntry, enemy, physics, state, enemyObject)
+		handleCustomPatrol(e, enemyEntry, enemy, physics, state, enemyObject)
 	} else {
-		// Default patrol behavior - move back and forth
-		if enemy.Direction.X > 0 {
-			physics.SpeedX = enemy.PatrolSpeed
-			// Turn around if hit right boundary
-			if enemyObject.X >= enemy.PatrolRight {
-				enemy.Direction.X = -1
-			}
-		} else {
-			physics.SpeedX = -enemy.PatrolSpeed
-			// Turn around if hit left boundary
-			if enemyObject.X <= enemy.PatrolLeft {
-				enemy.Direction.X = 1
-			}
-		}
+		handleDefaultPatrol(enemy, physics, enemyObject)
 	}
 }
 
-func handleCustomPatrol(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject *resolv.Object) {
-	// Get the current level to access patrol paths
-	levelEntry, ok := components.Level.First(ecs.World)
+func handleCustomPatrol(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject *resolv.Object) {
+	levelEntry, ok := components.Level.First(e.World)
 	if !ok {
-		// Fallback to default patrol if no level found
 		handleDefaultPatrol(enemy, physics, enemyObject)
 		return
 	}
 
-	levelData := components.Level.Get(levelEntry)
-	currentLevel := levelData.CurrentLevel
-
-	// Find the patrol path by name
-	patrolPath, exists := currentLevel.PatrolPaths[enemy.PatrolPathName]
+	patrolPath, exists := components.Level.Get(levelEntry).CurrentLevel.PatrolPaths[enemy.PatrolPathName]
 	if !exists || len(patrolPath.Points) < 2 {
-		// Fallback to default patrol if path not found or invalid
 		handleDefaultPatrol(enemy, physics, enemyObject)
 		return
 	}
 
-	// For 2-point polylines, implement back-and-forth patrol between start and end points
-	startPoint := patrolPath.Points[0]
-	endPoint := patrolPath.Points[1]
-
-	// Ensure startPoint is the leftmost point to align with Direction logic
+	startPoint, endPoint := patrolPath.Points[0], patrolPath.Points[1]
 	if startPoint.X > endPoint.X {
 		startPoint, endPoint = endPoint, startPoint
 	}
 
-	// Determine which direction we should be moving based on current position
 	var targetPoint math2.Vec2
 	if enemy.Direction.X > 0 {
 		targetPoint = endPoint
@@ -172,109 +148,73 @@ func handleCustomPatrol(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *componen
 		targetPoint = startPoint
 	}
 
-	// Set the speed directly, bypassing friction for patrol
 	physics.SpeedX = enemy.PatrolSpeed * enemy.Direction.X
 
-	// If we are close to the target, or have overshot it, switch directions
-	// Check distance for proximity flip
+	// Proximity: flip before reaching target
 	if math.Abs(targetPoint.X-enemyObject.X) < enemy.PatrolSpeed {
 		enemy.Direction.X *= -1
 		return
 	}
 
-	// Check for overshoot based on direction
-	if enemy.Direction.X > 0 { // Moving Right towards End
-		if enemyObject.X > targetPoint.X {
-			enemy.Direction.X = -1
-		}
-	} else { // Moving Left towards Start
-		if enemyObject.X < targetPoint.X {
-			enemy.Direction.X = 1
-		}
+	// Overshoot: flip if we've passed the target
+	if enemy.Direction.X > 0 && enemyObject.X > targetPoint.X {
+		enemy.Direction.X = -1
+	} else if enemy.Direction.X < 0 && enemyObject.X < targetPoint.X {
+		enemy.Direction.X = 1
 	}
 }
 
 func handleDefaultPatrol(enemy *components.EnemyData, physics *components.PhysicsData, enemyObject *resolv.Object) {
-	// Default patrol behavior - move back and forth
-	if enemy.Direction.X > 0 {
-		physics.SpeedX = enemy.PatrolSpeed
-		// Turn around if hit right boundary
-		if enemyObject.X >= enemy.PatrolRight {
-			enemy.Direction.X = -1
-		}
-	} else {
-		physics.SpeedX = -enemy.PatrolSpeed
-		// Turn around if hit left boundary
-		if enemyObject.X <= enemy.PatrolLeft {
-			enemy.Direction.X = 1
-		}
+	physics.SpeedX = enemy.PatrolSpeed * enemy.Direction.X
+	if enemy.Direction.X > 0 && enemyObject.X >= enemy.PatrolRight {
+		enemy.Direction.X = -1
+	} else if enemy.Direction.X < 0 && enemyObject.X <= enemy.PatrolLeft {
+		enemy.Direction.X = 1
 	}
 }
 
-func handleChaseState(ecs *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object, distanceToPlayer float64) {
+func handleChaseState(enemyEntry *donburi.Entry, playerObject *resolv.Object, distanceToPlayer float64) {
 	enemy := components.Enemy.Get(enemyEntry)
 	physics := components.Physics.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
 	enemyObject := components.Object.Get(enemyEntry)
-	// Check if should attack
+
 	if distanceToPlayer <= enemy.AttackRange && enemy.AttackCooldown == 0 {
 		state.CurrentState = cfg.StateAttackingPunch
 		state.StateTimer = 0
 		return
 	}
-
-	// Check if should stop chasing (player too far)
-	if distanceToPlayer > enemy.ChaseRange*cfg.Enemy.HysteresisMultiplier { // Hysteresis to prevent flapping
+	if distanceToPlayer > enemy.ChaseRange*cfg.Enemy.HysteresisMultiplier {
 		state.CurrentState = cfg.StatePatrol
 		state.StateTimer = 0
 		return
 	}
 
-	// Face the player
-	if playerObject.X > enemyObject.X {
-		enemy.Direction.X = 1
-	} else {
-		enemy.Direction.X = -1
-	}
-
-	// Move towards player if not within stopping distance
+	enemy.Direction.X = math.Copysign(1, playerObject.X-enemyObject.X)
 	if distanceToPlayer > enemy.StoppingDistance {
-		if playerObject.X > enemyObject.X {
-			physics.SpeedX = enemy.ChaseSpeed
-		} else {
-			physics.SpeedX = -enemy.ChaseSpeed
-		}
+		physics.SpeedX = math.Copysign(enemy.ChaseSpeed, playerObject.X-enemyObject.X)
 	}
 }
 
-func handleAttackState(ecs *ecs.ECS, enemyEntry *donburi.Entry) {
+func handleAttackState(enemyEntry *donburi.Entry) {
 	enemy := components.Enemy.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
-	// Hitbox creation is handled by combat_hitbox.go
-
-	// Attack animation duration (simplified - using timer)
 	if state.StateTimer >= enemy.TypeConfig.AttackDuration {
-		// Attack finished
 		state.CurrentState = cfg.StateChase
 		state.StateTimer = 0
 		enemy.AttackCooldown = enemy.TypeConfig.AttackCooldown
-		return
 	}
-
-	// Don't apply movement input during attack - let friction naturally slow down
+	// Movement during attack is intentionally omitted — friction handles deceleration.
 }
 
-func updateRangedEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+func updateRangedEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	switch state.CurrentState {
 	case cfg.StatePatrol, cfg.Idle:
-		updateRangedPatrolState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
-
+		updateRangedPatrolState(e, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
 	case cfg.StateApproachEdge:
-		handleApproachEdgeState(ecs, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
-
+		handleApproachEdgeState(e, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
 	case cfg.Throw:
-		handleThrowState(ecs, enemyEntry, enemy, state, enemyObject, playerObject)
-
+		handleThrowState(e, enemyEntry, enemy, state, enemyObject, playerObject)
 	case cfg.Hit:
 		if state.StateTimer > enemy.TypeConfig.HitstunDuration {
 			state.CurrentState = cfg.StatePatrol
@@ -284,24 +224,16 @@ func updateRangedEnemyAI(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *compone
 	}
 }
 
-func updateRangedPatrolState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+func updateRangedPatrolState(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
 	if distanceToPlayer > enemy.TypeConfig.ThrowRange || enemy.AttackCooldown > 0 {
-		if enemy.PatrolPathName != "" {
-			handleCustomPatrol(ecs, enemyEntry, enemy, physics, state, enemyObject)
-		} else {
-			handleDefaultPatrol(enemy, physics, enemyObject)
-		}
+		dispatchPatrol(e, enemyEntry, enemy, physics, state, enemyObject)
 		return
 	}
 
-	if playerObject.X > enemyObject.X {
-		enemy.Direction.X = 1
-	} else {
-		enemy.Direction.X = -1
-	}
+	enemy.Direction.X = math.Copysign(1, playerObject.X-enemyObject.X)
 
 	verticalDiff := playerObject.Y - enemyObject.Y
-	if verticalDiff > enemy.TypeConfig.MinVerticalToThrow && enemy.TypeConfig.MinVerticalToThrow > 0 {
+	if enemy.TypeConfig.MinVerticalToThrow > 0 && verticalDiff > enemy.TypeConfig.MinVerticalToThrow {
 		state.CurrentState = cfg.StateApproachEdge
 		state.StateTimer = 0
 		return
@@ -312,18 +244,13 @@ func updateRangedPatrolState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *com
 	physics.SpeedX = 0
 }
 
-// handleThrowState handles the throwing animation and knife creation
-func handleThrowState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, state *components.StateData, enemyObject, playerObject *resolv.Object) {
-	// Throw knife at windup frame
+func handleThrowState(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, state *components.StateData, enemyObject, playerObject *resolv.Object) {
 	if state.StateTimer == enemy.TypeConfig.ThrowWindupTime {
-		// Target player's current position
 		targetX := playerObject.X + playerObject.W/2
 		targetY := playerObject.Y + playerObject.H/2
-		factory.CreateKnife(ecs, enemyEntry, targetX, targetY)
-		PlaySFX(ecs, cfg.SoundBoomerangThrow) // Reuse throw sound for now
+		factory.CreateKnife(e, enemyEntry, targetX, targetY)
+		PlaySFX(e, cfg.SoundBoomerangThrow)
 	}
-
-	// Animation complete (windup + throw animation)
 	if state.StateTimer >= enemy.TypeConfig.ThrowWindupTime+15 {
 		state.CurrentState = cfg.StatePatrol
 		state.StateTimer = 0
@@ -331,12 +258,8 @@ func handleThrowState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components
 	}
 }
 
-func handleApproachEdgeState(ecs *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
-	if playerObject.X > enemyObject.X {
-		enemy.Direction.X = 1
-	} else {
-		enemy.Direction.X = -1
-	}
+func handleApproachEdgeState(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+	enemy.Direction.X = math.Copysign(1, playerObject.X-enemyObject.X)
 
 	verticalDiff := playerObject.Y - enemyObject.Y
 	if distanceToPlayer > enemy.TypeConfig.ThrowRange || verticalDiff <= enemy.TypeConfig.MinVerticalToThrow {
@@ -361,32 +284,54 @@ func isAtPlatformEdge(obj *resolv.Object, direction float64) bool {
 	return obj.Check(8.0*direction, obj.H+4.0, "solid", "platform") == nil
 }
 
-func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
-	// Simple animation state based on movement and AI state
-	var targetState cfg.StateID
+// collectEnemyPositions gathers the X position of every living enemy into a slice.
+// Called once per UpdateEnemies frame so the separation calculation is O(n).
+func collectEnemyPositions(e *ecs.ECS) []float64 {
+	var positions []float64
+	tags.Enemy.Each(e.World, func(entry *donburi.Entry) {
+		if !entry.HasComponent(components.Death) {
+			positions = append(positions, components.Object.Get(entry).X)
+		}
+	})
+	return positions
+}
 
+// computeSeparationX returns a lateral force pushing this enemy away from nearby enemies.
+// Force magnitude is proportional to overlap (strongest when touching, zero at radius).
+func computeSeparationX(selfX float64, enemyPositions []float64, radius float64) float64 {
+	force := 0.0
+	for _, otherX := range enemyPositions {
+		dx := selfX - otherX
+		if dist := math.Abs(dx); dist < radius && dist > 0 {
+			force += math.Copysign(1, dx) * (radius-dist) / radius
+		}
+	}
+	return force
+}
+
+func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
+	var targetState cfg.StateID
 	switch state.CurrentState {
 	case cfg.StateAttackingPunch:
-		targetState = cfg.Punch01 // Use punch animation for attacks
+		targetState = cfg.Punch01
 	case cfg.Throw:
-		targetState = cfg.Throw // Use throw animation for ranged attacks
+		targetState = cfg.Throw
 	case cfg.Hit:
 		targetState = cfg.Hit
 	case cfg.StateApproachEdge:
-		targetState = cfg.Walk // Use walk animation when approaching edge
+		targetState = cfg.Walk
 	default:
-		if physics.OnGround == nil {
+		switch {
+		case physics.OnGround == nil:
 			targetState = cfg.Jump
-		} else if physics.SpeedX != 0 {
+		case physics.SpeedX != 0:
 			targetState = cfg.Running
-		} else {
+		default:
 			targetState = cfg.Idle
 		}
 	}
 
-	// Update animation if changed
 	animData.SetAnimation(targetState)
-
 	if animData.CurrentAnimation != nil {
 		animData.CurrentAnimation.Update()
 	}

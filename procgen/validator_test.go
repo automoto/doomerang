@@ -10,10 +10,10 @@ import (
 func TestValidatorBasicLevel(t *testing.T) {
 	chunks := loadTestChunks(t)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := assembler.Assemble(chunks, 3)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := gen.Generate(chunks, 3)
 	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
+		t.Fatalf("Generate failed: %v", err)
 	}
 
 	validator := procgen.NewValidator()
@@ -32,8 +32,8 @@ func TestValidatorMultipleSeeds(t *testing.T) {
 	validator := procgen.NewValidator()
 
 	for seed := int64(0); seed < 20; seed++ {
-		assembler := procgen.NewAssembler(seed)
-		result, err := assembler.Assemble(chunks, 5)
+		gen := procgen.NewChunkGenerator(seed)
+		result, err := gen.Generate(chunks, 5)
 		if err != nil {
 			continue
 		}
@@ -55,8 +55,8 @@ func TestValidatorGraphLevel(t *testing.T) {
 		graph := procgen.GenerateGraph(rng, 5, []string{"cyberpunk"})
 		procgen.ValidateGraph(graph)
 
-		assembler := procgen.NewAssembler(seed)
-		result, err := assembler.AssembleFromGraph(chunks, graph)
+		gen := procgen.NewChunkGenerator(seed)
+		result, err := gen.GenerateFromGraph(chunks, graph)
 		if err != nil {
 			continue
 		}
@@ -74,8 +74,8 @@ func TestValidateAndRemediate(t *testing.T) {
 	graph := procgen.GenerateGraph(rng, 5, []string{"cyberpunk"})
 	procgen.ValidateGraph(graph)
 
-	assembler := procgen.NewAssembler(42)
-	result, err := procgen.ValidateAndRemediate(assembler, chunks, graph, 5)
+	gen := procgen.NewChunkGenerator(42)
+	result, err := procgen.ValidateAndRemediate(gen, chunks, graph, 5)
 	if err != nil {
 		t.Fatalf("ValidateAndRemediate failed: %v", err)
 	}
@@ -92,11 +92,11 @@ func TestCanReachAdjacentFloors(t *testing.T) {
 	// Two chunks side by side with same floor height should be walkable
 	chunks := loadTestChunks(t)
 
-	assembler := procgen.NewAssembler(42)
+	gen := procgen.NewChunkGenerator(42)
 	// Use just start + exit (minimal level)
-	result, err := assembler.Assemble(chunks, 1)
+	result, err := gen.Generate(chunks, 1)
 	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
+		t.Fatalf("Generate failed: %v", err)
 	}
 
 	validator := procgen.NewValidator()

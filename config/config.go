@@ -93,6 +93,10 @@ type EnemyConfig struct {
 	// AI behavior constants
 	HysteresisMultiplier  float64 // For chase range hysteresis
 	DefaultPatrolDistance float64 // Default patrol range when no custom path
+
+	// Separation steering
+	SeparationRadius float64 // px — repulsion activates within this distance between enemies
+	SeparationForce  float64 // speed units added per frame at full overlap
 }
 
 // CombatConfig contains combat-related configuration values
@@ -274,6 +278,22 @@ type GameOverConfig struct {
 	MenuOptions       []string
 }
 
+// RunSummaryConfig contains run summary screen configuration values
+type RunSummaryConfig struct {
+	BackgroundColor   color.RGBA
+	TitleColor        color.RGBA
+	LabelColor        color.RGBA
+	ValueColor        color.RGBA
+	TextColorNormal   color.RGBA
+	TextColorSelected color.RGBA
+	TitleY            float64
+	StatsStartY       float64
+	StatsRowHeight    float64
+	MenuStartY        float64
+	MenuItemHeight    float64
+	Title             string
+}
+
 // ScreenShakeConfig contains screen shake effect configuration
 type ScreenShakeConfig struct {
 	MeleeIntensity        float64 // pixels - punch, kick, jump kick (all same)
@@ -344,6 +364,7 @@ var Fire FireConfig
 var Pause PauseConfig
 var Menu MenuConfig
 var GameOver GameOverConfig
+var RunSummary RunSummaryConfig
 var ScreenShake ScreenShakeConfig
 var SquashStretch SquashStretchConfig
 var DeathZone DeathZoneConfig
@@ -636,6 +657,8 @@ func init() {
 		},
 		HysteresisMultiplier:  1.5,
 		DefaultPatrolDistance: 32.0,
+		SeparationRadius:      40.0,
+		SeparationForce:       1.5,
 	}
 
 	// Combat Config (Populated with default values matching the previous constants)
@@ -710,6 +733,22 @@ func init() {
 		MenuItemHeight:    30,
 		MenuItemGap:       15,
 		MenuOptions:       []string{"Retry", "Main Menu"},
+	}
+
+	// Run Summary Config
+	RunSummary = RunSummaryConfig{
+		BackgroundColor:   color.RGBA{R: 10, G: 10, B: 30, A: 255},
+		TitleColor:        BrightYellow,
+		LabelColor:        White,
+		ValueColor:        LightBlue,
+		TextColorNormal:   White,
+		TextColorSelected: BrightOrange,
+		TitleY:            80,
+		StatsStartY:       140,
+		StatsRowHeight:    36,
+		MenuStartY:        290,
+		MenuItemHeight:    30,
+		Title:             "RUN COMPLETE",
 	}
 
 	// Screen Shake Config

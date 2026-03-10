@@ -20,7 +20,7 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-// RogueliteScene generates and plays a procedurally assembled level
+// RogueliteScene generates and plays a procedurally generated level
 type RogueliteScene struct {
 	ecs          *ecs.ECS
 	sceneChanger SceneChanger
@@ -69,14 +69,25 @@ func (rs *RogueliteScene) configure() {
 	assets.PreloadAllAnimations()
 
 	// Generate the procedural level
-	level, err := rs.generateLevel()
+	level, result, err := rs.generateLevel()
 	if err != nil {
 		log.Printf("Procgen failed: %v, falling back to campaign", err)
 		rs.sceneChanger.ChangeScene(NewPlatformerScene(rs.sceneChanger))
 		return
 	}
+	// Build room boundaries: right-edge X of each placed chunk
+	roomBoundaries := make([]float64, len(result.PlacedChunks))
+	for i, pc := range result.PlacedChunks {
+		roomBoundaries[i] = pc.OffsetX + float64(pc.Chunk.Width)
+	}
 
 	e := ecs.NewECS(donburi.NewWorld())
+
+	// Closure that snapshots run stats and creates the summary scene
+	createSummaryScene := func() interface{} {
+		snap := systems.SnapshotRunStats(e)
+		return NewRunSummaryScene(rs.sceneChanger, snap)
+	}
 
 	// Same systems as PlatformerScene
 	e.AddSystem(systems.UpdateAudio)
@@ -93,12 +104,13 @@ func (rs *RogueliteScene) configure() {
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateCombat))
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateCombatHitboxes))
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateDeaths))
+	e.AddSystem(systems.WithGameplayChecks(systems.UpdateRunStats))
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateCheckpoints))
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateFire))
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateEffects))
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateMessage))
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateFinishLine))
-	e.AddSystem(systems.UpdateLevelComplete)
+	e.AddSystem(systems.NewUpdateRogueliteFinish(rs.sceneChanger, createSummaryScene))
 	e.AddSystem(systems.UpdateSettings)
 	e.AddSystem(systems.UpdateSettingsMenu)
 	e.AddSystem(systems.WithGameplayChecks(systems.UpdateCamera))
@@ -113,9 +125,17 @@ func (rs *RogueliteScene) configure() {
 	e.AddRenderer(cfg.Default, systems.DrawDebug)
 	e.AddRenderer(cfg.Default, systems.DrawPause)
 	e.AddRenderer(cfg.Default, systems.DrawSettingsMenu)
-	e.AddRenderer(cfg.Default, systems.DrawLevelComplete)
+	e.AddRenderer(cfg.Default, systems.DrawRogueliteFinish)
 
 	rs.ecs = e
+
+	// Create RunStats entity for this run
+	runStatsEntry := e.World.Entry(e.Create(cfg.Default, components.RunStats))
+	components.RunStats.SetValue(runStatsEntry, components.RunStatsData{
+		Seed:           rs.seed,
+		TotalRooms:     len(result.PlacedChunks),
+		RoomBoundaries: roomBoundaries,
+	})
 
 	// Create level entity with procgen level
 	levelEntry := archetypeSpawnLevel(e)
@@ -189,11 +209,11 @@ func (rs *RogueliteScene) configure() {
 	systems.PlayLevelMusic(e, level.Name)
 }
 
-func (rs *RogueliteScene) generateLevel() (*assets.Level, error) {
+func (rs *RogueliteScene) generateLevel() (*assets.Level, *procgen.GenerationResult, error) {
 	loader := procgen.NewChunkLoader()
 	chunks, err := loader.LoadAllChunks("chunks")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	rng := rand.New(rand.NewSource(rs.seed))
@@ -203,11 +223,11 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, error) {
 	graph := procgen.GenerateGraph(rng, cfg.Procgen.DefaultRunLength, biomes)
 	procgen.ValidateGraph(graph)
 
-	// Assemble chunks with solvability validation (retries up to 5 times)
-	assembler := procgen.NewAssembler(rs.seed)
-	result, err := procgen.ValidateAndRemediate(assembler, chunks, graph, 5)
+	// Generate chunks with solvability validation (retries up to 5 times)
+	generator := procgen.NewChunkGenerator(rs.seed)
+	result, err := procgen.ValidateAndRemediate(generator, chunks, graph, 5)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Derive decorative variation (background image + color tint) from seed.
@@ -223,7 +243,7 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, error) {
 	compiler := procgen.NewCompiler()
 	level, err := compiler.Compile(result, &decoration)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Dynamic enemy placement
@@ -262,7 +282,7 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, error) {
 		}
 	}
 
-	return level, nil
+	return level, result, nil
 }
 
 // archetypeSpawnLevel creates a level entity (avoids importing archetypes to prevent cycles)
