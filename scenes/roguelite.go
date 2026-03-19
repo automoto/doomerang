@@ -250,8 +250,11 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, *procgen.GenerationRes
 	enemyPlacer := procgen.NewEnemyPlacer(rng)
 	for i, pc := range result.PlacedChunks {
 		if i < len(graph.Nodes) && (graph.Nodes[i].Type == procgen.NodeCombat || graph.Nodes[i].Type == procgen.NodeArena) {
-			spawns := enemyPlacer.PlaceEnemies(pc, graph.Nodes[i].Difficulty)
+			spawns, patrolPaths := enemyPlacer.PlaceEnemies(pc, graph.Nodes[i].Difficulty)
 			level.EnemySpawns = append(level.EnemySpawns, spawns...)
+			for name, path := range patrolPaths {
+				level.PatrolPaths[name] = path
+			}
 		}
 	}
 

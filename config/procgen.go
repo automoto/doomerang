@@ -52,9 +52,9 @@ func init() {
 		ChunkMinHeight:   10,
 		ChunkMaxHeight:   30,
 
-		EnemyBudgetBase:       10.0,
-		EnemyBudgetMultiplier: 5.0,
-		EnemyMinSpacing:       32.0,
+		EnemyBudgetBase:       4.0,
+		EnemyBudgetMultiplier: 3.0,
+		EnemyMinSpacing:       64.0,
 
 		EnemyCosts: map[string]int{
 			"LightGuard":   2,

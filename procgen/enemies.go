@@ -1,11 +1,14 @@
 package procgen
 
 import (
+	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 
 	"github.com/automoto/doomerang/assets"
 	"github.com/automoto/doomerang/config"
+	dmath "github.com/yohamta/donburi/features/math"
 )
 
 // EnemyPlacer handles dynamic enemy placement within chunks
@@ -19,11 +22,11 @@ func NewEnemyPlacer(rng *rand.Rand) *EnemyPlacer {
 }
 
 // PlaceEnemies generates enemy spawns for a placed chunk based on difficulty.
-// Returns enemy spawns in world-space coordinates.
-func (ep *EnemyPlacer) PlaceEnemies(pc PlacedChunk, difficulty int) []assets.EnemySpawn {
+// Returns enemy spawns in world-space coordinates and patrol paths for each enemy.
+func (ep *EnemyPlacer) PlaceEnemies(pc PlacedChunk, difficulty int) ([]assets.EnemySpawn, map[string]assets.PatrolPath) {
 	chunk := pc.Chunk
 	if chunk.MaxEnemies == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Calculate budget for this room
@@ -32,13 +35,13 @@ func (ep *EnemyPlacer) PlaceEnemies(pc PlacedChunk, difficulty int) []assets.Ene
 	// Determine enemy count within chunk's min/max
 	count := ep.enemyCountFromBudget(budget, chunk.MinEnemies, chunk.MaxEnemies)
 	if count == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Find platforms to place enemies on
 	platforms := discoverPlatforms(chunk)
 	if len(platforms) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Select enemy types based on difficulty
@@ -49,8 +52,17 @@ func (ep *EnemyPlacer) PlaceEnemies(pc PlacedChunk, difficulty int) []assets.Ene
 }
 
 func (ep *EnemyPlacer) enemyCountFromBudget(budget float64, minE, maxE int) int {
-	// Use average cost to estimate count from budget
-	avgCost := 3.0 // Guard cost as baseline
+	// Calculate actual average cost from config
+	costs := config.Procgen.EnemyCosts
+	totalCost := 0
+	for _, c := range costs {
+		totalCost += c
+	}
+	avgCost := float64(totalCost) / float64(len(costs))
+	if avgCost < 1 {
+		avgCost = 3.0
+	}
+
 	count := int(budget / avgCost)
 
 	if count < minE {
@@ -209,40 +221,50 @@ func platformsFromTiles(chunk *Chunk) []platform {
 	return platforms
 }
 
-func (ep *EnemyPlacer) distributeEnemies(types []string, platforms []platform, pc PlacedChunk) []assets.EnemySpawn {
-	var spawns []assets.EnemySpawn
+// spawnRecord tracks a placed enemy and which platform it was assigned to.
+type spawnRecord struct {
+	spawn       assets.EnemySpawn
+	platformIdx int // index into the sorted platforms slice
+}
+
+func (ep *EnemyPlacer) distributeEnemies(types []string, platforms []platform, pc PlacedChunk) ([]assets.EnemySpawn, map[string]assets.PatrolPath) {
 	minSpacing := config.Procgen.EnemyMinSpacing
-	usedPositions := make([]float64, 0) // track X positions for spacing
+	usedPositions := make([]float64, 0)
+
+	// Track how many enemies are assigned to each platform for patrol subdivision
+	platformEnemyCounts := make(map[int]int)
 
 	// Sort platforms by width (largest first) for better distribution
 	sort.Slice(platforms, func(i, j int) bool {
 		return platforms[i].width > platforms[j].width
 	})
 
+	// First pass: place enemies and record platform assignments
+	var records []spawnRecord
 	for _, enemyType := range types {
-		// KnifeThrowers prefer elevated platforms
 		isKnifeThrower := enemyType == "KnifeThrower"
 
 		placed := false
-		for _, p := range platforms {
+		for pi, p := range platforms {
 			if isKnifeThrower && !p.elevated {
 				continue
 			}
 
-			// Try to find a valid position on this platform
 			x := ep.findSpawnX(p, usedPositions, minSpacing)
 			if x < 0 {
 				continue
 			}
 
-			// Enemy collision height is ~40px, spawn above the platform surface
 			spawnY := p.y - 40
-
-			spawns = append(spawns, assets.EnemySpawn{
-				X:         x + pc.OffsetX,
-				Y:         spawnY + pc.OffsetY,
-				EnemyType: enemyType,
+			records = append(records, spawnRecord{
+				spawn: assets.EnemySpawn{
+					X:         x + pc.OffsetX,
+					Y:         spawnY + pc.OffsetY,
+					EnemyType: enemyType,
+				},
+				platformIdx: pi,
 			})
+			platformEnemyCounts[pi]++
 			usedPositions = append(usedPositions, x)
 			placed = true
 			break
@@ -250,24 +272,106 @@ func (ep *EnemyPlacer) distributeEnemies(types []string, platforms []platform, p
 
 		// If KnifeThrower couldn't find elevated platform, place on ground
 		if !placed && isKnifeThrower {
-			for _, p := range platforms {
+			for pi, p := range platforms {
 				x := ep.findSpawnX(p, usedPositions, minSpacing)
 				if x < 0 {
 					continue
 				}
 				spawnY := p.y - 40
-				spawns = append(spawns, assets.EnemySpawn{
-					X:         x + pc.OffsetX,
-					Y:         spawnY + pc.OffsetY,
-					EnemyType: "Guard", // Downgrade to Guard on ground
+				records = append(records, spawnRecord{
+					spawn: assets.EnemySpawn{
+						X:         x + pc.OffsetX,
+						Y:         spawnY + pc.OffsetY,
+						EnemyType: "Guard", // Downgrade to Guard on ground
+					},
+					platformIdx: pi,
 				})
+				platformEnemyCounts[pi]++
 				usedPositions = append(usedPositions, x)
 				break
 			}
 		}
 	}
 
-	return spawns
+	// Second pass: generate subdivided patrol paths now that per-platform counts are known
+	spawns := make([]assets.EnemySpawn, 0, len(records))
+	paths := make(map[string]assets.PatrolPath)
+	platformEnemyIdx := make(map[int]int)
+	for i, rec := range records {
+		pi := rec.platformIdx
+		segIdx := platformEnemyIdx[pi]
+		platformEnemyIdx[pi]++
+		total := platformEnemyCounts[pi]
+
+		if patrolName, path, ok := ep.generateSubdividedPatrolPath(platforms[pi], pc, i, segIdx, total); ok {
+			rec.spawn.PatrolPath = patrolName
+			paths[patrolName] = path
+		}
+		spawns = append(spawns, rec.spawn)
+	}
+
+	return spawns, paths
+}
+
+// patrolMargin accounts for enemy collision width so enemies don't walk off platform edges.
+// Enemy collision width is 16-20px; X is the left edge, so we need collisionWidth + buffer.
+const patrolMargin = 24.0
+
+// minPatrolSegmentWidth is the minimum width for a patrol segment to be worthwhile
+const minPatrolSegmentWidth = 48.0
+
+// generatePatrolPath creates a 2-point patrol path spanning the platform.
+// Used during first pass before we know total enemy count per platform.
+func (ep *EnemyPlacer) generatePatrolPath(p platform, pc PlacedChunk, enemyIndex, segIdx int) (string, assets.PatrolPath, bool) {
+	usableWidth := p.width - patrolMargin*2
+	if usableWidth < minPatrolSegmentWidth {
+		return "", assets.PatrolPath{}, false
+	}
+
+	name := fmt.Sprintf("patrol_%s_%d", pc.Chunk.ID, enemyIndex)
+	patrolY := p.y + pc.OffsetY
+	path := assets.PatrolPath{
+		Name: name,
+		Points: []dmath.Vec2{
+			{X: p.x + patrolMargin + pc.OffsetX, Y: patrolY},
+			{X: p.x + p.width - patrolMargin + pc.OffsetX, Y: patrolY},
+		},
+	}
+	return name, path, true
+}
+
+// generateSubdividedPatrolPath creates a patrol path for one segment of a shared platform.
+// The platform is divided into totalEnemies equal segments so enemies don't overlap.
+func (ep *EnemyPlacer) generateSubdividedPatrolPath(p platform, pc PlacedChunk, enemyIndex, segIdx, totalEnemies int) (string, assets.PatrolPath, bool) {
+	usableWidth := p.width - patrolMargin*2
+	if usableWidth < minPatrolSegmentWidth {
+		return "", assets.PatrolPath{}, false
+	}
+
+	// Single enemy gets the full platform
+	if totalEnemies <= 1 {
+		return ep.generatePatrolPath(p, pc, enemyIndex, segIdx)
+	}
+
+	segWidth := usableWidth / float64(totalEnemies)
+	if segWidth < minPatrolSegmentWidth {
+		// Platform too narrow to subdivide; give full range (enemies will overlap but at least stay on platform)
+		return ep.generatePatrolPath(p, pc, enemyIndex, segIdx)
+	}
+
+	leftX := p.x + patrolMargin + float64(segIdx)*segWidth + pc.OffsetX
+	rightX := leftX + segWidth
+
+	name := fmt.Sprintf("patrol_%s_%d", pc.Chunk.ID, enemyIndex)
+	patrolY := p.y + pc.OffsetY
+	path := assets.PatrolPath{
+		Name: name,
+		Points: []dmath.Vec2{
+			{X: leftX, Y: patrolY},
+			{X: rightX, Y: patrolY},
+		},
+	}
+	return name, path, true
 }
 
 func (ep *EnemyPlacer) findSpawnX(p platform, used []float64, minSpacing float64) float64 {
@@ -283,7 +387,7 @@ func (ep *EnemyPlacer) findSpawnX(p platform, used []float64, minSpacing float64
 
 		valid := true
 		for _, ux := range used {
-			if abs64(x-ux) < minSpacing {
+			if math.Abs(x-ux) < minSpacing {
 				valid = false
 				break
 			}
@@ -295,9 +399,3 @@ func (ep *EnemyPlacer) findSpawnX(p platform, used []float64, minSpacing float64
 	return -1
 }
 
-func abs64(x float64) float64 {
-	if x < 0 {
-		return -x
-	}
-	return x
-}

@@ -95,8 +95,9 @@ type EnemyConfig struct {
 	DefaultPatrolDistance float64 // Default patrol range when no custom path
 
 	// Separation steering
-	SeparationRadius float64 // px — repulsion activates within this distance between enemies
-	SeparationForce  float64 // speed units added per frame at full overlap
+	SeparationRadius     float64 // px — repulsion activates within this distance between enemies
+	SeparationCooldown   int     // frames to wait after a separation flip before allowing another
+	SeparationYThreshold float64 // px — enemies must be within this vertical distance to trigger separation
 }
 
 // CombatConfig contains combat-related configuration values
@@ -658,7 +659,8 @@ func init() {
 		HysteresisMultiplier:  1.5,
 		DefaultPatrolDistance: 32.0,
 		SeparationRadius:      40.0,
-		SeparationForce:       1.5,
+		SeparationCooldown:    30,
+		SeparationYThreshold:  48.0,
 	}
 
 	// Combat Config (Populated with default values matching the previous constants)

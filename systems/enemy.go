@@ -13,6 +13,10 @@ import (
 	math2 "github.com/yohamta/donburi/features/math"
 )
 
+type enemyPos struct{ X, Y float64 }
+
+var enemyPositionsBuf []enemyPos
+
 func UpdateEnemies(e *ecs.ECS) {
 	playerEntry, _ := components.Player.First(e.World)
 	var playerObject *resolv.Object
@@ -50,7 +54,7 @@ func UpdateEnemies(e *ecs.ECS) {
 	})
 }
 
-func updateEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object, enemyPositions []float64) {
+func updateEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.Object, enemyPositions []enemyPos) {
 	enemy := components.Enemy.Get(enemyEntry)
 	physics := components.Physics.Get(enemyEntry)
 	enemyObject := components.Object.Get(enemyEntry)
@@ -69,17 +73,22 @@ func updateEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.O
 	if enemy.TypeConfig != nil && enemy.TypeConfig.IsRanged {
 		updateRangedEnemyAI(e, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
 	} else {
-		updateMeleeEnemyAI(e, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer)
+		updateMeleeEnemyAI(e, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer, enemyPositions)
 	}
 
-	// Apply separation to any enemy that is actively moving (patrol or chase).
-	// Keyed on SpeedX so attack/hit/throw states — where the enemy must stay put — are unaffected.
-	if physics.SpeedX != 0 {
-		physics.SpeedX += computeSeparationX(enemyObject.X, enemyPositions, cfg.Enemy.SeparationRadius) * cfg.Enemy.SeparationForce
+	// Flip patrol direction when another enemy is ahead within separation radius.
+	// Only applies during patrol — chase/attack states should converge on the player.
+	// Cooldown prevents oscillation when a patrol boundary and separation conflict.
+	if enemy.SeparationCooldown > 0 {
+		enemy.SeparationCooldown--
+	} else if state.CurrentState == cfg.StatePatrol && enemyAheadOnSameLevel(enemyObject.X, enemyObject.Y, enemy.Direction.X, enemyPositions, cfg.Enemy.SeparationRadius, cfg.Enemy.SeparationYThreshold) {
+		enemy.Direction.X *= -1
+		physics.SpeedX = enemy.PatrolSpeed * enemy.Direction.X
+		enemy.SeparationCooldown = cfg.Enemy.SeparationCooldown
 	}
 }
 
-func updateMeleeEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64) {
+func updateMeleeEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, enemyObject, playerObject *resolv.Object, distanceToPlayer float64, enemyPositions []enemyPos) {
 	verticalDistance := math.Abs(playerObject.Y - enemyObject.Y)
 	if enemy.TypeConfig != nil && enemy.TypeConfig.MaxVerticalChase > 0 && verticalDistance > enemy.TypeConfig.MaxVerticalChase {
 		if state.CurrentState == cfg.StateChase || state.CurrentState == cfg.StateAttackingPunch {
@@ -93,7 +102,7 @@ func updateMeleeEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components
 	case cfg.StatePatrol:
 		handlePatrolState(e, enemyEntry, enemy, physics, state, enemyObject, playerObject, distanceToPlayer)
 	case cfg.StateChase:
-		handleChaseState(enemyEntry, playerObject, distanceToPlayer)
+		handleChaseState(enemyEntry, playerObject, distanceToPlayer, enemyPositions)
 	case cfg.StateAttackingPunch:
 		handleAttackState(enemyEntry)
 	case cfg.Hit:
@@ -173,7 +182,7 @@ func handleDefaultPatrol(enemy *components.EnemyData, physics *components.Physic
 	}
 }
 
-func handleChaseState(enemyEntry *donburi.Entry, playerObject *resolv.Object, distanceToPlayer float64) {
+func handleChaseState(enemyEntry *donburi.Entry, playerObject *resolv.Object, distanceToPlayer float64, enemyPositions []enemyPos) {
 	enemy := components.Enemy.Get(enemyEntry)
 	physics := components.Physics.Get(enemyEntry)
 	state := components.State.Get(enemyEntry)
@@ -193,6 +202,11 @@ func handleChaseState(enemyEntry *donburi.Entry, playerObject *resolv.Object, di
 	enemy.Direction.X = math.Copysign(1, playerObject.X-enemyObject.X)
 	if distanceToPlayer > enemy.StoppingDistance {
 		physics.SpeedX = math.Copysign(enemy.ChaseSpeed, playerObject.X-enemyObject.X)
+	}
+
+	// Stop rear enemy when another enemy is between it and the player on the same level.
+	if enemyAheadOnSameLevel(enemyObject.X, enemyObject.Y, enemy.Direction.X, enemyPositions, cfg.Enemy.SeparationRadius, cfg.Enemy.SeparationYThreshold) {
+		physics.SpeedX = 0
 	}
 }
 
@@ -284,29 +298,35 @@ func isAtPlatformEdge(obj *resolv.Object, direction float64) bool {
 	return obj.Check(8.0*direction, obj.H+4.0, "solid", "platform") == nil
 }
 
-// collectEnemyPositions gathers the X position of every living enemy into a slice.
+// collectEnemyPositions gathers the position of every living enemy into a reusable buffer.
 // Called once per UpdateEnemies frame so the separation calculation is O(n).
-func collectEnemyPositions(e *ecs.ECS) []float64 {
-	var positions []float64
+func collectEnemyPositions(e *ecs.ECS) []enemyPos {
+	enemyPositionsBuf = enemyPositionsBuf[:0]
 	tags.Enemy.Each(e.World, func(entry *donburi.Entry) {
 		if !entry.HasComponent(components.Death) {
-			positions = append(positions, components.Object.Get(entry).X)
+			obj := components.Object.Get(entry)
+			enemyPositionsBuf = append(enemyPositionsBuf, enemyPos{X: obj.X, Y: obj.Y})
 		}
 	})
-	return positions
+	return enemyPositionsBuf
 }
 
-// computeSeparationX returns a lateral force pushing this enemy away from nearby enemies.
-// Force magnitude is proportional to overlap (strongest when touching, zero at radius).
-func computeSeparationX(selfX float64, enemyPositions []float64, radius float64) float64 {
-	force := 0.0
-	for _, otherX := range enemyPositions {
-		dx := selfX - otherX
-		if dist := math.Abs(dx); dist < radius && dist > 0 {
-			force += math.Copysign(1, dx) * (radius-dist) / radius
+// enemyAheadOnSameLevel returns true if any other enemy is within radius ahead of
+// the current movement direction and within yThreshold vertically,
+// signalling that patrol should reverse or chase should stop.
+// Note: positions includes self, but self-match is harmless because dx == 0
+// fails the dx*directionX > 0 check (strict inequality).
+func enemyAheadOnSameLevel(selfX, selfY, directionX float64, positions []enemyPos, radius, yThreshold float64) bool {
+	for _, other := range positions {
+		if math.Abs(other.Y-selfY) > yThreshold {
+			continue
+		}
+		dx := other.X - selfX
+		if dx*directionX > 0 && math.Abs(dx) < radius {
+			return true
 		}
 	}
-	return force
+	return false
 }
 
 func updateEnemyAnimation(enemy *components.EnemyData, physics *components.PhysicsData, state *components.StateData, animData *components.AnimationData) {
