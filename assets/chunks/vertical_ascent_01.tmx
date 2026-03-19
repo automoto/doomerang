@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="15">
+ <properties>
+  <property name="biome" value="default"/>
+  <property name="chunk_id" value="vertical_ascent_01"/>
+  <property name="difficulty" type="int" value="2"/>
+  <property name="max_enemies" type="int" value="3"/>
+  <property name="min_enemies" type="int" value="1"/>
+  <property name="tags" value="vertical_ascent"/>
+ </properties>
+ <tileset firstgid="1" source="../levels/tilesets/cyberpunk-tiles.tsx"/>
+ <layer id="1" name="wg-tiles" width="20" height="30">
+  <properties>
+   <property name="render" type="bool" value="true"/>
+  </properties>
+  <data encoding="csv">
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,16,16,16,16,16,16,16,16,0,0,0,0,0,17,
+18,0,0,0,0,0,28,28,28,28,28,28,28,28,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,16,16,16,0,0,0,0,0,0,0,0,16,16,16,0,0,17,
+18,0,0,28,28,28,0,0,0,0,0,0,0,0,28,28,28,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,28,16,16,16,16,16,16,16,28,0,0,0,0,0,17,
+18,0,0,0,0,28,28,28,28,28,28,28,28,28,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,
+16,16,16,16,16,16,16,16,0,0,0,16,16,16,16,16,16,16,16,16,
+28,28,28,28,28,28,28,28,0,0,0,28,28,28,28,28,28,28,28,28
+</data>
+ </layer>
+ <objectgroup id="2" name="Connections">
+  <object id="1" name="entry_bottom" x="128" y="480" width="48">
+   <properties>
+    <property name="edge" value="bottom"/>
+    <property name="slot" type="int" value="0"/>
+   </properties>
+  </object>
+  <object id="2" name="exit_top" x="128" y="0" width="48">
+   <properties>
+    <property name="edge" value="top"/>
+    <property name="slot" type="int" value="0"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="3" name="EnemySlots" visible="0">
+  <object id="10" name="rest_plat" x="48" y="192" width="224"/>
+  <object id="11" name="top_plat" x="96" y="32" width="128"/>
+ </objectgroup>
+</map>
