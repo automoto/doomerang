@@ -11,9 +11,12 @@ func TestGraphNodeCount(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 	graph := procgen.GenerateGraph(rng, 10, []string{"cyberpunk"})
 
-	// 10 middle + start + exit = 12
-	if len(graph.Nodes) != 12 {
-		t.Errorf("expected 12 nodes, got %d", len(graph.Nodes))
+	// 10 middle + start + exit = 12, plus vertical section adds +2 = 14
+	if len(graph.Nodes) < 12 {
+		t.Errorf("expected at least 12 nodes, got %d", len(graph.Nodes))
+	}
+	if len(graph.Nodes) > 14 {
+		t.Errorf("expected at most 14 nodes (1 vertical section), got %d", len(graph.Nodes))
 	}
 }
 
@@ -102,6 +105,62 @@ func TestGraphNodeTypes(t *testing.T) {
 	}
 	if typeCount[procgen.NodeCombat]+typeCount[procgen.NodeArena] == 0 {
 		t.Error("expected at least 1 combat/arena node")
+	}
+}
+
+func TestGraphVerticalInsertion(t *testing.T) {
+	for seed := int64(0); seed < 50; seed++ {
+		rng := rand.New(rand.NewSource(seed))
+		graph := procgen.GenerateGraph(rng, 10, []string{"cyberpunk"})
+
+		// Count vertical sections (each is bookended by TransitionHV/VH)
+		vertSections := 0
+		for _, node := range graph.Nodes {
+			if node.Type == procgen.NodeTransitionHV {
+				vertSections++
+			}
+		}
+
+		if vertSections > 1 {
+			t.Errorf("seed %d: expected max 1 vertical section, got %d", seed, vertSections)
+		}
+
+		// Verify vertical section structure: TransitionHV must be followed by vertical node then TransitionVH
+		for i, node := range graph.Nodes {
+			if node.Type != procgen.NodeTransitionHV {
+				continue
+			}
+			if i+2 >= len(graph.Nodes) {
+				t.Errorf("seed %d: TransitionHV at end of graph without room for section", seed)
+				continue
+			}
+			mid := graph.Nodes[i+1].Type
+			if mid != procgen.NodeVerticalAscent && mid != procgen.NodeVerticalDescent && mid != procgen.NodeVerticalCombat {
+				t.Errorf("seed %d: expected vertical node after TransitionHV, got %s", seed, mid)
+			}
+			if graph.Nodes[i+2].Type != procgen.NodeTransitionVH {
+				t.Errorf("seed %d: expected TransitionVH after vertical node, got %s", seed, graph.Nodes[i+2].Type)
+			}
+		}
+	}
+}
+
+func TestDirectorVerticalRules(t *testing.T) {
+	// Build a graph with vertical nodes missing transitions — director should demote them
+	graph := &procgen.ConceptGraph{
+		Nodes: []procgen.GraphNode{
+			{Type: procgen.NodeStart, Tag: procgen.TagStart},
+			{Type: procgen.NodeCombat, Tag: procgen.TagCombat},
+			{Type: procgen.NodeVerticalAscent, Tag: procgen.TagVerticalAscent}, // no transition — should be demoted
+			{Type: procgen.NodeCombat, Tag: procgen.TagCombat},
+			{Type: procgen.NodeExit, Tag: procgen.TagExit},
+		},
+	}
+	procgen.ValidateGraph(graph)
+
+	// The vertical ascent without TransitionHV should be demoted to traversal
+	if graph.Nodes[2].Type != procgen.NodeTraversal {
+		t.Errorf("expected vertical node without transition to be demoted, got %s", graph.Nodes[2].Type)
 	}
 }
 

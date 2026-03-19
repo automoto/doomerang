@@ -24,7 +24,7 @@ type GenerationResult struct {
 // maxChunkReuse is the maximum number of times the same chunk ID may appear in one run.
 const maxChunkReuse = 2
 
-// ChunkGenerator chains chunks left-to-right using connection points
+// ChunkGenerator chains chunks using directional connection matching
 type ChunkGenerator struct {
 	rng *rand.Rand
 }
@@ -88,8 +88,28 @@ func (g *ChunkGenerator) GenerateFromGraph(chunks []*Chunk, graph *ConceptGraph)
 	return g.placeChunks(sequence)
 }
 
+// requiredEdges returns the connection edges a chunk must have for its tag type.
+func requiredEdges(tag ChunkTag) (required []ConnectionEdge) {
+	switch tag {
+	case TagStart:
+		return []ConnectionEdge{EdgeRight}
+	case TagExit:
+		return []ConnectionEdge{EdgeLeft}
+	case TagTransitionHV:
+		return []ConnectionEdge{EdgeLeft, EdgeBottom}
+	case TagTransitionVH:
+		return []ConnectionEdge{EdgeTop, EdgeRight}
+	case TagVerticalAscent, TagVerticalDescent, TagVerticalCombat:
+		return []ConnectionEdge{EdgeTop, EdgeBottom}
+	default:
+		// Standard horizontal chunks
+		return []ConnectionEdge{EdgeLeft, EdgeRight}
+	}
+}
+
 // matchChunks finds chunks that match a graph node's requirements
 func (g *ChunkGenerator) matchChunks(chunks []*Chunk, node GraphNode, usage map[string]int) []*Chunk {
+	edges := requiredEdges(node.Tag)
 	var result []*Chunk
 	for _, c := range chunks {
 		if !c.HasTag(node.Tag) {
@@ -101,11 +121,8 @@ func (g *ChunkGenerator) matchChunks(chunks []*Chunk, node GraphNode, usage map[
 		if node.Biome != "" && c.Biome != node.Biome {
 			continue
 		}
-		// For non-start/exit, require both connections
-		if node.Tag != TagStart && node.Tag != TagExit {
-			if len(c.GetConnections(EdgeLeft)) == 0 || len(c.GetConnections(EdgeRight)) == 0 {
-				continue
-			}
+		if !hasAllEdges(c, edges) {
+			continue
 		}
 		result = append(result, c)
 	}
@@ -114,6 +131,7 @@ func (g *ChunkGenerator) matchChunks(chunks []*Chunk, node GraphNode, usage map[
 
 // matchChunksRelaxed finds chunks matching tag only (ignoring biome)
 func (g *ChunkGenerator) matchChunksRelaxed(chunks []*Chunk, node GraphNode, usage map[string]int) []*Chunk {
+	edges := requiredEdges(node.Tag)
 	var result []*Chunk
 	for _, c := range chunks {
 		if !c.HasTag(node.Tag) {
@@ -122,17 +140,43 @@ func (g *ChunkGenerator) matchChunksRelaxed(chunks []*Chunk, node GraphNode, usa
 		if usage[c.ID] >= maxChunkReuse {
 			continue
 		}
-		if node.Tag != TagStart && node.Tag != TagExit {
-			if len(c.GetConnections(EdgeLeft)) == 0 || len(c.GetConnections(EdgeRight)) == 0 {
-				continue
-			}
+		if !hasAllEdges(c, edges) {
+			continue
 		}
 		result = append(result, c)
 	}
 	return result
 }
 
-// placeChunks positions chunks left-to-right, aligning connection points vertically
+func hasAllEdges(c *Chunk, edges []ConnectionEdge) bool {
+	for _, e := range edges {
+		if len(c.GetConnections(e)) == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// FindMatchingEdges determines which edges to use for connecting two adjacent chunks.
+// It tries Right→Left first (horizontal), then Bottom→Top (downward vertical),
+// then Top→Bottom (upward vertical).
+func FindMatchingEdges(prev, curr *Chunk) (prevEdge, currEdge ConnectionEdge, err error) {
+	// Horizontal: Right → Left
+	if len(prev.GetConnections(EdgeRight)) > 0 && len(curr.GetConnections(EdgeLeft)) > 0 {
+		return EdgeRight, EdgeLeft, nil
+	}
+	// Vertical down: Bottom → Top
+	if len(prev.GetConnections(EdgeBottom)) > 0 && len(curr.GetConnections(EdgeTop)) > 0 {
+		return EdgeBottom, EdgeTop, nil
+	}
+	// Vertical up: Top → Bottom
+	if len(prev.GetConnections(EdgeTop)) > 0 && len(curr.GetConnections(EdgeBottom)) > 0 {
+		return EdgeTop, EdgeBottom, nil
+	}
+	return "", "", fmt.Errorf("no compatible edges between chunk %q and %q", prev.ID, curr.ID)
+}
+
+// placeChunks positions chunks using directional connection matching
 func (g *ChunkGenerator) placeChunks(sequence []*Chunk) (*GenerationResult, error) {
 	if len(sequence) == 0 {
 		return nil, fmt.Errorf("empty chunk sequence")
@@ -151,29 +195,32 @@ func (g *ChunkGenerator) placeChunks(sequence []*Chunk) (*GenerationResult, erro
 		prev := placed[i-1]
 		curr := sequence[i]
 
-		// Find matching connection points
-		rightConns := prev.Chunk.GetConnections(EdgeRight)
-		leftConns := curr.GetConnections(EdgeLeft)
-
-		if len(rightConns) == 0 {
-			return nil, fmt.Errorf("chunk %q has no right connection", prev.Chunk.ID)
-		}
-		if len(leftConns) == 0 {
-			return nil, fmt.Errorf("chunk %q has no left connection", curr.ID)
+		prevEdge, currEdge, err := FindMatchingEdges(prev.Chunk, curr)
+		if err != nil {
+			return nil, err
 		}
 
-		// Use slot 0 connections for alignment
-		prevConn := rightConns[0]
-		currConn := leftConns[0]
+		prevConn := prev.Chunk.GetConnections(prevEdge)[0]
+		currConn := curr.GetConnections(currEdge)[0]
 
-		// X: place immediately after previous chunk
-		offsetX := prev.OffsetX + float64(prev.Chunk.Width)
+		var offsetX, offsetY float64
 
-		// Y: align connection point Y positions
-		// prev connection world Y = prev.OffsetY + prevConn.YOffset
-		// curr connection world Y = offsetY + currConn.YOffset
-		// We want them equal: offsetY = prev.OffsetY + prevConn.YOffset - currConn.YOffset
-		offsetY := prev.OffsetY + prevConn.YOffset - currConn.YOffset
+		switch {
+		case prevEdge == EdgeRight && currEdge == EdgeLeft:
+			// Horizontal: place to the right, align Y via connection YOffset
+			offsetX = prev.OffsetX + float64(prev.Chunk.Width)
+			offsetY = prev.OffsetY + prevConn.YOffset - currConn.YOffset
+
+		case prevEdge == EdgeBottom && currEdge == EdgeTop:
+			// Vertical down: place below, align X via connection XOffset
+			offsetY = prev.OffsetY + float64(prev.Chunk.Height)
+			offsetX = prev.OffsetX + prevConn.XOffset - currConn.XOffset
+
+		case prevEdge == EdgeTop && currEdge == EdgeBottom:
+			// Vertical up: place above, align X via connection XOffset
+			offsetY = prev.OffsetY - float64(curr.Height)
+			offsetX = prev.OffsetX + prevConn.XOffset - currConn.XOffset
+		}
 
 		placed[i] = PlacedChunk{
 			Chunk:   curr,

@@ -44,15 +44,11 @@ func (hp *HazardPlacer) PlaceHazards(pc PlacedChunk, difficulty int) ([]assets.D
 				Width:  slot.Width,
 				Height: slot.Height,
 			})
-		case "fire":
-			fireType := "fire_pulsing"
-			if difficulty >= 3 {
-				fireType = "fire_continuous"
-			}
+		case "fire_pulsing", "fire_continuous":
 			fires = append(fires, assets.FireSpawn{
 				X:         slot.X + ox,
 				Y:         slot.Y + oy,
-				FireType:  fireType,
+				FireType:  slot.SlotType,
 				Direction: "up",
 			})
 		}

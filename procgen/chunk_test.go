@@ -18,8 +18,8 @@ func loadTestChunks(t *testing.T) []*procgen.Chunk {
 
 func TestLoadAllChunks(t *testing.T) {
 	chunks := loadTestChunks(t)
-	if len(chunks) < 15 {
-		t.Errorf("expected at least 15 chunks, got %d", len(chunks))
+	if len(chunks) < 22 {
+		t.Errorf("expected at least 22 chunks, got %d", len(chunks))
 	}
 }
 
@@ -186,9 +186,14 @@ func TestChunkHazardSlots(t *testing.T) {
 		t.Fatalf("LoadChunk failed: %v", err)
 	}
 
-	// traversal_01 uses DeadZones object layer instead of HazardSlots
-	if len(chunk.HazardSlots) != 0 {
-		t.Errorf("traversal_01: expected 0 hazard slots, got %d", len(chunk.HazardSlots))
+	// traversal_01 has both DeadZones and HazardSlots (fire)
+	if len(chunk.HazardSlots) != 2 {
+		t.Errorf("traversal_01: expected 2 hazard slots, got %d", len(chunk.HazardSlots))
+	}
+	for _, slot := range chunk.HazardSlots {
+		if slot.SlotType != "fire_pulsing" {
+			t.Errorf("traversal_01: expected fire_pulsing slot type, got %q", slot.SlotType)
+		}
 	}
 
 	// Verify the DeadZones object group exists in the tiled map

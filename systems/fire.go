@@ -70,17 +70,16 @@ func UpdateFire(ecs *ecs.ECS) {
 			continue // Fire is in inactive phase
 		}
 
-		// Calculate knockback direction (push away from fire center)
-		fireObj := components.Object.Get(fireEntry)
-		knockbackX := calculateFireKnockbackDirection(playerObj.Object, fireObj.Object) * fire.KnockbackForce
-
-		// Always apply knockback to prevent walking through fire
-		physics := components.Physics.Get(playerEntry)
-		physics.SpeedX = knockbackX
-		physics.SpeedY = cfg.Combat.KnockbackUpwardForce
-
-		// Only apply damage if not invulnerable
+		// Only apply damage and knockback if not invulnerable.
+		// During invulnerability the player can move freely to escape the fire.
 		if player.InvulnFrames == 0 {
+			fireObj := components.Object.Get(fireEntry)
+			knockbackX := calculateFireKnockbackDirection(playerObj.Object, fireObj.Object) * fire.KnockbackForce
+
+			physics := components.Physics.Get(playerEntry)
+			physics.SpeedX = knockbackX
+			physics.SpeedY = cfg.Combat.KnockbackUpwardForce
+
 			donburi.Add(playerEntry, components.DamageEvent, &components.DamageEventData{
 				Amount:     fire.Damage,
 				KnockbackX: knockbackX,

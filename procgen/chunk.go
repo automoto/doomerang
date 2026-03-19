@@ -33,13 +33,18 @@ type ConnectionPoint struct {
 type ChunkTag string
 
 const (
-	TagCombat    ChunkTag = "combat"
-	TagTraversal ChunkTag = "traversal"
-	TagBreak     ChunkTag = "break"
-	TagVertical  ChunkTag = "vertical"
-	TagHazard    ChunkTag = "hazard"
-	TagStart     ChunkTag = "start"
-	TagExit      ChunkTag = "exit"
+	TagCombat          ChunkTag = "combat"
+	TagTraversal       ChunkTag = "traversal"
+	TagBreak           ChunkTag = "break"
+	TagVertical        ChunkTag = "vertical"
+	TagHazard          ChunkTag = "hazard"
+	TagStart           ChunkTag = "start"
+	TagExit            ChunkTag = "exit"
+	TagVerticalAscent  ChunkTag = "vertical_ascent"
+	TagVerticalDescent ChunkTag = "vertical_descent"
+	TagVerticalCombat  ChunkTag = "vertical_combat"
+	TagTransitionHV    ChunkTag = "transition_hv"
+	TagTransitionVH    ChunkTag = "transition_vh"
 )
 
 // EnemySlot defines a valid position for enemy placement within a chunk
@@ -291,7 +296,7 @@ func parseHazardSlots(og *tiled.ObjectGroup, c *Chunk) {
 	for _, o := range og.Objects {
 		slotType := o.Properties.GetString("hazard_type")
 		if slotType == "" {
-			slotType = "fire"
+			slotType = "fire_pulsing"
 		}
 		slot := HazardSlot{
 			X:        o.X,
