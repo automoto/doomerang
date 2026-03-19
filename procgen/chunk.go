@@ -3,6 +3,7 @@ package procgen
 import (
 	"embed"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/automoto/doomerang/assets"
@@ -23,7 +24,7 @@ const (
 type ConnectionPoint struct {
 	Edge      ConnectionEdge
 	SlotIndex int     // Identifies which slot on this edge (0, 1, 2...)
-	YOffset   float64 // Y position in pixels from chunk top
+	YOffset   float64 // Bottom Y of connection object in pixels from chunk top
 	XOffset   float64 // X position in pixels from chunk left (for top/bottom edges)
 	Width     float64 // Opening width in pixels
 }
@@ -247,7 +248,7 @@ func parseConnections(og *tiled.ObjectGroup, c *Chunk) {
 		cp := ConnectionPoint{
 			Edge:      edge,
 			SlotIndex: o.Properties.GetInt("slot"),
-			YOffset:   o.Y,
+			YOffset:   math.Round(o.Y + o.Height),
 			XOffset:   o.X,
 			Width:     o.Width,
 		}

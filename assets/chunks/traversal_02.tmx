@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="40" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="15">
  <properties>
-  <property name="chunk_id" value="traversal_02"/>
   <property name="biome" value="cyberpunk"/>
+  <property name="chunk_id" value="traversal_02"/>
   <property name="difficulty" type="int" value="3"/>
-  <property name="tags" value="traversal"/>
-  <property name="min_enemies" type="int" value="0"/>
   <property name="max_enemies" type="int" value="0"/>
+  <property name="min_enemies" type="int" value="0"/>
+  <property name="tags" value="traversal"/>
  </properties>
  <tileset firstgid="1" source="../levels/tilesets/cyberpunk-tiles.tsx"/>
  <layer id="1" name="wg-tiles" width="40" height="20">
@@ -43,15 +43,15 @@
     <property name="slot" type="int" value="0"/>
    </properties>
   </object>
-  <object id="2" name="exit_right" x="592" y="224" width="48" height="48">
+  <object id="2" name="exit_right" x="592" y="0.727832" width="48" height="271.272">
    <properties>
     <property name="edge" value="right"/>
     <property name="slot" type="int" value="0"/>
    </properties>
   </object>
  </objectgroup>
- <objectgroup id="4" name="HazardSlots">
-  <object id="12" name="gap_deadzone" x="160" y="272" width="320" height="48">
+ <objectgroup id="4" name="DeadZones">
+  <object id="12" name="gap_deadzone" x="160" y="303.293" width="320" height="16.7067">
    <properties>
     <property name="hazard_type" value="deadzone"/>
    </properties>

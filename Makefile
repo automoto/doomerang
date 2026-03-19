@@ -2,7 +2,7 @@
 DIST_DIR := dist
 
 # itch.io deployment config (update these)
-ITCH_USER := your-username
+ITCH_USER := gamekaizen
 ITCH_GAME := doomerang
 
 .PHONY: lint run build basic-test \
@@ -13,7 +13,10 @@ ITCH_GAME := doomerang
 lint:
 	golangci-lint run
 
-run:
+vendor:
+	go mod vendor
+
+run: vendor
 	go run main.go
 
 build:
@@ -27,17 +30,17 @@ build-mac:
 	@mkdir -p $(DIST_DIR)/mac
 	CGO_CFLAGS="-w" go build -o $(DIST_DIR)/mac/doomerang .
 
-build-mac-intel:
-	@mkdir -p $(DIST_DIR)/mac-intel
-	CGO_CFLAGS="-w" GOOS=darwin GOARCH=amd64 go build -o $(DIST_DIR)/mac-intel/doomerang .
+# build-mac-intel:
+# 	@mkdir -p $(DIST_DIR)/mac-intel
+# 	CGO_CFLAGS="-w" GOOS=darwin GOARCH=amd64 go build -o $(DIST_DIR)/mac-intel/doomerang .
 
 build-windows:
 	@mkdir -p $(DIST_DIR)/windows
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o $(DIST_DIR)/windows/doomerang.exe .
 
-build-linux:
-	@mkdir -p $(DIST_DIR)/linux
-	docker-compose run --rm build-linux
+# build-linux:
+# 	@mkdir -p $(DIST_DIR)/linux
+# 	docker-compose run --rm build-linux
 
 build-web:
 	@mkdir -p $(DIST_DIR)/web
@@ -46,8 +49,8 @@ build-web:
 	cp assets/web/index.html $(DIST_DIR)/web/
 
 # Build all platforms
-build-all: build-mac build-mac-intel build-windows build-linux build-web
-	@echo "Built for: mac, mac-intel, windows, linux, web"
+build-all: build-mac build-windows build-web
+	@echo "Built for: mac, windows, web"
 
 # Clean dist
 clean-dist:
@@ -56,9 +59,6 @@ clean-dist:
 # itch.io deployment (requires butler installed and logged in)
 deploy-mac:
 	butler push $(DIST_DIR)/mac $(ITCH_USER)/$(ITCH_GAME):mac
-
-deploy-mac-intel:
-	butler push $(DIST_DIR)/mac-intel $(ITCH_USER)/$(ITCH_GAME):mac-intel
 
 deploy-windows:
 	butler push $(DIST_DIR)/windows $(ITCH_USER)/$(ITCH_GAME):windows
@@ -69,5 +69,5 @@ deploy-linux:
 deploy-web:
 	butler push $(DIST_DIR)/web $(ITCH_USER)/$(ITCH_GAME):web
 
-deploy-all: deploy-mac deploy-mac-intel deploy-windows deploy-linux deploy-web
-	@echo "Deployed to itch.io: mac, mac-intel, windows, linux, web"
+deploy-all: deploy-mac deploy-windows deploy-web
+	@echo "Deployed to itch.io: mac, windows, linux, web"

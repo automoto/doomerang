@@ -186,12 +186,20 @@ func TestChunkHazardSlots(t *testing.T) {
 		t.Fatalf("LoadChunk failed: %v", err)
 	}
 
-	if len(chunk.HazardSlots) != 1 {
-		t.Errorf("traversal_01: expected 1 hazard slot, got %d", len(chunk.HazardSlots))
+	// traversal_01 uses DeadZones object layer instead of HazardSlots
+	if len(chunk.HazardSlots) != 0 {
+		t.Errorf("traversal_01: expected 0 hazard slots, got %d", len(chunk.HazardSlots))
 	}
 
-	if len(chunk.HazardSlots) > 0 && chunk.HazardSlots[0].SlotType != "deadzone" {
-		t.Errorf("expected hazard type 'deadzone', got '%s'", chunk.HazardSlots[0].SlotType)
+	// Verify the DeadZones object group exists in the tiled map
+	var deadZoneCount int
+	for _, og := range chunk.TiledMap.ObjectGroups {
+		if og.Name == "DeadZones" {
+			deadZoneCount += len(og.Objects)
+		}
+	}
+	if deadZoneCount == 0 {
+		t.Error("traversal_01: expected DeadZones object group with objects")
 	}
 }
 
