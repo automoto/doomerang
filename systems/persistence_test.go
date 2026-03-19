@@ -8,10 +8,14 @@ import (
 
 // setupPersistence initializes a temporary gdata store for testing.
 // It uses the default app name but tests run in isolation via OS temp dirs.
+// Clears roguelite stats so tests don't depend on state from prior runs.
 func setupPersistence(t *testing.T) {
 	t.Helper()
 	if err := systems.InitPersistence(); err != nil {
 		t.Skipf("persistence not available in this environment: %v", err)
+	}
+	if err := systems.ClearRogueliteStats(); err != nil {
+		t.Fatalf("failed to clear roguelite stats: %v", err)
 	}
 }
 

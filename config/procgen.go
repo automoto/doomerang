@@ -36,6 +36,9 @@ type ProcgenConfig struct {
 
 	// Level layout
 	ChunkHeadroomFactor float64 // Fraction of screen height added above chunks for camera headroom
+
+	// Biomes available for graph generation
+	Biomes []string
 }
 
 // Procgen is the global procgen configuration instance
@@ -73,5 +76,7 @@ func init() {
 		StandardConnectionHeight: 20,  // tiles from top
 		ConnectionOpeningWidth:   3,   // tiles wide
 		ChunkHeadroomFactor:      0.15, // 15% of screen height
+
+		Biomes: []string{"cyberpunk", "industrial", "neon"},
 	}
 }

@@ -36,10 +36,44 @@ func TestDeriveDecorationDifferentSeeds(t *testing.T) {
 	}
 }
 
-func TestTintPresetsAllPositive(t *testing.T) {
-	for i, preset := range tintPresets {
-		if preset[0] <= 0 || preset[1] <= 0 || preset[2] <= 0 {
-			t.Errorf("tintPresets[%d] has non-positive value: %v", i, preset)
+func TestBiomeTintsAllPositive(t *testing.T) {
+	for biome, tints := range biomeTints {
+		for i, preset := range tints {
+			if preset[0] <= 0 || preset[1] <= 0 || preset[2] <= 0 {
+				t.Errorf("biomeTints[%s][%d] has non-positive value: %v", biome, i, preset)
+			}
 		}
+	}
+}
+
+func TestDeriveDecorationDifferentBiomesDifferentTints(t *testing.T) {
+	// Same seed with different biomes should use biome-specific tint palettes
+	cyberpunk := DeriveDecoration(42, "cyberpunk")
+	industrial := DeriveDecoration(42, "industrial")
+	neon := DeriveDecoration(42, "neon")
+
+	// All should have valid positive tints
+	for name, o := range map[string]DecorationOptions{
+		"cyberpunk": cyberpunk, "industrial": industrial, "neon": neon,
+	} {
+		if o.TintR <= 0 || o.TintG <= 0 || o.TintB <= 0 {
+			t.Errorf("%s: invalid tint values (%v,%v,%v)", name, o.TintR, o.TintG, o.TintB)
+		}
+	}
+
+	// At least one pair should differ (tint palettes are distinct)
+	allSame := (cyberpunk.TintR == industrial.TintR && cyberpunk.TintG == industrial.TintG && cyberpunk.TintB == industrial.TintB) &&
+		(cyberpunk.TintR == neon.TintR && cyberpunk.TintG == neon.TintG && cyberpunk.TintB == neon.TintB)
+	if allSame {
+		t.Error("all three biomes produced identical tints — expected at least one difference")
+	}
+}
+
+func TestDefaultTintForUnknownBiome(t *testing.T) {
+	opts := DeriveDecoration(42, "unknown_biome")
+	if opts.TintR != defaultTint[0] || opts.TintG != defaultTint[1] || opts.TintB != defaultTint[2] {
+		t.Errorf("unknown biome should use default tint (%v,%v,%v), got (%v,%v,%v)",
+			defaultTint[0], defaultTint[1], defaultTint[2],
+			opts.TintR, opts.TintG, opts.TintB)
 	}
 }

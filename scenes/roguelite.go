@@ -218,9 +218,14 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, *procgen.GenerationRes
 
 	rng := rand.New(rand.NewSource(rs.seed))
 
+	// Pick a single biome for the entire run based on seed
+	biome := "cyberpunk"
+	if len(cfg.Procgen.Biomes) > 0 {
+		biome = cfg.Procgen.Biomes[rng.Intn(len(cfg.Procgen.Biomes))]
+	}
+
 	// Generate concept graph with pacing rules
-	biomes := []string{"cyberpunk"}
-	graph := procgen.GenerateGraph(rng, cfg.Procgen.DefaultRunLength, biomes)
+	graph := procgen.GenerateGraph(rng, cfg.Procgen.DefaultRunLength, []string{biome})
 	procgen.ValidateGraph(graph)
 
 	// Generate chunks with solvability validation (retries up to 5 times)
@@ -230,9 +235,8 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, *procgen.GenerationRes
 		return nil, nil, err
 	}
 
-	// Derive decorative variation (background image + color tint) from seed.
-	// Use the start node's biome as the source of truth rather than a separate literal.
-	decoration := procgen.DeriveDecoration(rs.seed, graph.Nodes[0].Biome)
+	// Derive decorative variation (background image + color tint) from seed + biome
+	decoration := procgen.DeriveDecoration(rs.seed, biome)
 	defer func() {
 		if decoration.BackgroundImage != nil {
 			decoration.BackgroundImage.Dispose()

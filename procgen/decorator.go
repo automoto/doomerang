@@ -3,6 +3,7 @@ package procgen
 import (
 	"bytes"
 	"image"
+	_ "image/jpeg"
 	_ "image/png"
 	"log"
 	"math/rand"
@@ -24,17 +25,36 @@ var backgroundVariants = map[string][]string{
 		"levels/background/Background-Night.png",
 		"levels/background/Background-Night-Complete-2-Blurred-.png",
 	},
+	"industrial": {
+		"levels/background/cyber-bg-dark.jpg",
+	},
+	"neon": {
+		"levels/background/cyber-bg.jpg",
+	},
 }
 
-// tintPresets are subtle multiplicative RGB scale factors applied to the background image.
+// biomeTints maps each biome to characteristic multiplicative RGB tint presets.
 // Values close to 1.0 keep the tint gentle; asymmetry in RGB channels shifts the hue.
-var tintPresets = [][3]float32{
-	{1.00, 1.00, 1.00}, // neutral
-	{1.00, 0.70, 0.50}, // warm amber
-	{0.50, 0.70, 1.00}, // cool blue
-	{0.70, 0.50, 1.00}, // purple haze
-	{0.50, 1.00, 0.70}, // neon green
+var biomeTints = map[string][][3]float32{
+	"cyberpunk": {
+		{1.00, 1.00, 1.00}, // neutral
+		{0.70, 0.50, 1.00}, // purple haze
+		{0.50, 1.00, 0.70}, // neon green
+	},
+	"industrial": {
+		{1.00, 0.70, 0.50}, // warm amber
+		{1.00, 0.85, 0.65}, // soft gold
+		{0.85, 0.75, 0.65}, // dusty
+	},
+	"neon": {
+		{0.50, 0.70, 1.00}, // cool blue
+		{0.70, 0.50, 1.00}, // purple haze
+		{1.00, 0.50, 0.80}, // magenta
+	},
 }
+
+// defaultTint is used when a biome has no entry in biomeTints.
+var defaultTint = [3]float32{1.00, 1.00, 1.00}
 
 // DecorationOptions carries the visual variation choices for a single run.
 type DecorationOptions struct {
@@ -57,8 +77,12 @@ func DeriveDecoration(seed int64, biome string) DecorationOptions {
 		opts.BackgroundImage = loadBackgroundImage(chosen)
 	}
 
-	tint := tintPresets[rng.Intn(len(tintPresets))]
-	opts.TintR, opts.TintG, opts.TintB = tint[0], tint[1], tint[2]
+	if tints, ok := biomeTints[biome]; ok && len(tints) > 0 {
+		tint := tints[rng.Intn(len(tints))]
+		opts.TintR, opts.TintG, opts.TintB = tint[0], tint[1], tint[2]
+	} else {
+		opts.TintR, opts.TintG, opts.TintB = defaultTint[0], defaultTint[1], defaultTint[2]
+	}
 
 	return opts
 }

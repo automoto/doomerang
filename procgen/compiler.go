@@ -145,9 +145,6 @@ func (c *Compiler) renderDecorativeBackground(dst *ebiten.Image, opts *Decoratio
 	scaleY := float64(totalHeight) / float64(srcH)
 
 	op := &ebiten.DrawImageOptions{}
-	// ColorScale is set once here and intentionally not modified inside the loop —
-	// the tint must remain constant across all tiles. Only GeoM is reset per iteration.
-	// Alpha is reduced so the background doesn't compete with the tile layers above it.
 	op.ColorScale.Scale(opts.TintR, opts.TintG, opts.TintB, 1.0)
 	op.ColorScale.ScaleAlpha(0.5)
 

@@ -297,6 +297,20 @@ func SaveRogueliteLifetimeStats(run FinalRunStats) error {
 	return nil
 }
 
+// ClearRogueliteStats removes any saved roguelite lifetime stats
+func ClearRogueliteStats() error {
+	if !gdataInitialized || gdataManager == nil {
+		return nil
+	}
+
+	if err := gdataManager.SaveItem("roguelite_stats", nil); err != nil {
+		log.Printf("Warning: Could not clear roguelite stats: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 // ClearGameProgress removes any saved game progress
 func ClearGameProgress() error {
 	if !gdataInitialized || gdataManager == nil {
