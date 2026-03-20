@@ -208,28 +208,6 @@ func TestFindMatchingEdges(t *testing.T) {
 			wantCurr: procgen.EdgeLeft,
 		},
 		{
-			name: "vertical bottom-top",
-			prev: &procgen.Chunk{ID: "a", Connections: []procgen.ConnectionPoint{
-				{Edge: procgen.EdgeBottom, XOffset: 128, Width: 48},
-			}},
-			curr: &procgen.Chunk{ID: "b", Connections: []procgen.ConnectionPoint{
-				{Edge: procgen.EdgeTop, XOffset: 128, Width: 48},
-			}},
-			wantPrev: procgen.EdgeBottom,
-			wantCurr: procgen.EdgeTop,
-		},
-		{
-			name: "vertical top-bottom",
-			prev: &procgen.Chunk{ID: "a", Connections: []procgen.ConnectionPoint{
-				{Edge: procgen.EdgeTop, XOffset: 128, Width: 48},
-			}},
-			curr: &procgen.Chunk{ID: "b", Connections: []procgen.ConnectionPoint{
-				{Edge: procgen.EdgeBottom, XOffset: 128, Width: 48},
-			}},
-			wantPrev: procgen.EdgeTop,
-			wantCurr: procgen.EdgeBottom,
-		},
-		{
 			name: "no compatible edges",
 			prev: &procgen.Chunk{ID: "a", Connections: []procgen.ConnectionPoint{
 				{Edge: procgen.EdgeLeft, YOffset: 224, Width: 48},
@@ -260,95 +238,6 @@ func TestFindMatchingEdges(t *testing.T) {
 				t.Errorf("curr edge: got %s, want %s", currEdge, tt.wantCurr)
 			}
 		})
-	}
-}
-
-func TestPlaceChunksVertical(t *testing.T) {
-	chunks := loadTestChunks(t)
-
-	// Find transition and vertical chunks
-	var hvChunk, vChunk, vhChunk *procgen.Chunk
-	for _, c := range chunks {
-		switch {
-		case c.HasTag(procgen.TagTransitionHV) && hvChunk == nil:
-			hvChunk = c
-		case c.HasTag(procgen.TagVerticalAscent) && vChunk == nil:
-			vChunk = c
-		case c.HasTag(procgen.TagTransitionVH) && vhChunk == nil:
-			vhChunk = c
-		}
-	}
-
-	if hvChunk == nil || vChunk == nil || vhChunk == nil {
-		t.Skip("vertical chunks not found in assets")
-	}
-
-	// Verify the chunks have the expected connections
-	if len(hvChunk.GetConnections(procgen.EdgeBottom)) == 0 {
-		t.Fatal("transition_hv chunk missing bottom connection")
-	}
-	if len(vChunk.GetConnections(procgen.EdgeTop)) == 0 {
-		t.Fatal("vertical_ascent chunk missing top connection")
-	}
-	if len(vChunk.GetConnections(procgen.EdgeBottom)) == 0 {
-		t.Fatal("vertical_ascent chunk missing bottom connection")
-	}
-	if len(vhChunk.GetConnections(procgen.EdgeTop)) == 0 {
-		t.Fatal("transition_vh chunk missing top connection")
-	}
-}
-
-func TestPlaceChunksTransition(t *testing.T) {
-	// Test H→V transition: left+bottom chunk followed by bottom→top chunk
-	hvChunk := &procgen.Chunk{
-		ID: "hv", Width: 320, Height: 320,
-		Tags: []procgen.ChunkTag{procgen.TagTransitionHV},
-		Connections: []procgen.ConnectionPoint{
-			{Edge: procgen.EdgeLeft, YOffset: 224, Width: 48},
-			{Edge: procgen.EdgeBottom, XOffset: 128, Width: 48},
-		},
-	}
-	vertChunk := &procgen.Chunk{
-		ID: "vert", Width: 320, Height: 480,
-		Tags: []procgen.ChunkTag{procgen.TagVerticalAscent},
-		Connections: []procgen.ConnectionPoint{
-			{Edge: procgen.EdgeTop, XOffset: 128, Width: 48},
-			{Edge: procgen.EdgeBottom, XOffset: 128, Width: 48},
-		},
-	}
-
-	prevEdge, currEdge, err := procgen.FindMatchingEdges(hvChunk, vertChunk)
-	if err != nil {
-		t.Fatalf("FindMatchingEdges failed: %v", err)
-	}
-	if prevEdge != procgen.EdgeBottom || currEdge != procgen.EdgeTop {
-		t.Errorf("expected Bottom→Top, got %s→%s", prevEdge, currEdge)
-	}
-
-	// Test V→H transition: top+right chunk
-	vhChunk := &procgen.Chunk{
-		ID: "vh", Width: 320, Height: 320,
-		Tags: []procgen.ChunkTag{procgen.TagTransitionVH},
-		Connections: []procgen.ConnectionPoint{
-			{Edge: procgen.EdgeTop, XOffset: 128, Width: 48},
-			{Edge: procgen.EdgeRight, YOffset: 176, Width: 48},
-		},
-	}
-	horizChunk := &procgen.Chunk{
-		ID: "horiz", Width: 640, Height: 320,
-		Tags: []procgen.ChunkTag{procgen.TagCombat},
-		Connections: []procgen.ConnectionPoint{
-			{Edge: procgen.EdgeLeft, YOffset: 224, Width: 48},
-			{Edge: procgen.EdgeRight, YOffset: 224, Width: 48},
-		},
-	}
-
-	prevEdge, currEdge, err = procgen.FindMatchingEdges(vhChunk, horizChunk)
-	if err != nil {
-		t.Fatalf("FindMatchingEdges failed: %v", err)
-	}
-	if prevEdge != procgen.EdgeRight || currEdge != procgen.EdgeLeft {
-		t.Errorf("expected Right→Left, got %s→%s", prevEdge, currEdge)
 	}
 }
 

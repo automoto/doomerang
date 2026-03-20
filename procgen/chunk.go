@@ -14,10 +14,8 @@ import (
 type ConnectionEdge string
 
 const (
-	EdgeLeft   ConnectionEdge = "left"
-	EdgeRight  ConnectionEdge = "right"
-	EdgeTop    ConnectionEdge = "top"
-	EdgeBottom ConnectionEdge = "bottom"
+	EdgeLeft  ConnectionEdge = "left"
+	EdgeRight ConnectionEdge = "right"
 )
 
 // ConnectionPoint defines an entry/exit point on a chunk's edge
@@ -33,18 +31,12 @@ type ConnectionPoint struct {
 type ChunkTag string
 
 const (
-	TagCombat          ChunkTag = "combat"
-	TagTraversal       ChunkTag = "traversal"
-	TagBreak           ChunkTag = "break"
-	TagVertical        ChunkTag = "vertical"
-	TagHazard          ChunkTag = "hazard"
-	TagStart           ChunkTag = "start"
-	TagExit            ChunkTag = "exit"
-	TagVerticalAscent  ChunkTag = "vertical_ascent"
-	TagVerticalDescent ChunkTag = "vertical_descent"
-	TagVerticalCombat  ChunkTag = "vertical_combat"
-	TagTransitionHV    ChunkTag = "transition_hv"
-	TagTransitionVH    ChunkTag = "transition_vh"
+	TagCombat    ChunkTag = "combat"
+	TagTraversal ChunkTag = "traversal"
+	TagBreak     ChunkTag = "break"
+	TagHazard    ChunkTag = "hazard"
+	TagStart     ChunkTag = "start"
+	TagExit      ChunkTag = "exit"
 )
 
 // EnemySlot defines a valid position for enemy placement within a chunk
@@ -247,7 +239,7 @@ func parseConnections(og *tiled.ObjectGroup, c *Chunk) {
 	for _, o := range og.Objects {
 		edge := ConnectionEdge(o.Properties.GetString("edge"))
 		if edge == "" {
-			edge = inferEdge(o.X, o.Y, float64(c.Width), float64(c.Height))
+			edge = inferEdge(o.X, float64(c.Width))
 		}
 
 		cp := ConnectionPoint{
@@ -264,19 +256,10 @@ func parseConnections(og *tiled.ObjectGroup, c *Chunk) {
 	}
 }
 
-func inferEdge(x, y, chunkW, chunkH float64) ConnectionEdge {
+func inferEdge(x, chunkW float64) ConnectionEdge {
 	const threshold = 2.0
-	if x <= threshold {
-		return EdgeLeft
-	}
 	if x >= chunkW-threshold {
 		return EdgeRight
-	}
-	if y <= threshold {
-		return EdgeTop
-	}
-	if y >= chunkH-threshold {
-		return EdgeBottom
 	}
 	return EdgeLeft
 }

@@ -2,25 +2,18 @@ package procgen
 
 import (
 	"math/rand"
-
-	"github.com/automoto/doomerang/config"
 )
 
 // NodeType represents the gameplay purpose of a concept graph node
 type NodeType string
 
 const (
-	NodeStart           NodeType = "start"
-	NodeCombat          NodeType = "combat"
-	NodeTraversal       NodeType = "traversal"
-	NodeBreakRoom       NodeType = "break"
-	NodeArena           NodeType = "arena"
-	NodeExit            NodeType = "exit"
-	NodeVerticalAscent  NodeType = "vertical_ascent"
-	NodeVerticalDescent NodeType = "vertical_descent"
-	NodeVerticalCombat  NodeType = "vertical_combat"
-	NodeTransitionHV    NodeType = "transition_hv"
-	NodeTransitionVH    NodeType = "transition_vh"
+	NodeStart     NodeType = "start"
+	NodeCombat    NodeType = "combat"
+	NodeTraversal NodeType = "traversal"
+	NodeBreakRoom NodeType = "break"
+	NodeArena     NodeType = "arena"
+	NodeExit      NodeType = "exit"
 )
 
 // GraphNode represents a single node in the concept graph
@@ -93,9 +86,7 @@ func GenerateGraph(rng *rand.Rand, length int, biomes []string) *ConceptGraph {
 		Tag:        TagExit,
 	})
 
-	graph := &ConceptGraph{Nodes: nodes}
-	insertVerticalSections(rng, graph)
-	return graph
+	return &ConceptGraph{Nodes: nodes}
 }
 
 func pickNodeType(rng *rand.Rand, position, middleCount, combatStreak, combatsSinceBreak, difficulty int) NodeType {
@@ -150,74 +141,9 @@ func nodeTypeToTag(nt NodeType) ChunkTag {
 		return TagBreak
 	case NodeExit:
 		return TagExit
-	case NodeVerticalAscent:
-		return TagVerticalAscent
-	case NodeVerticalDescent:
-		return TagVerticalDescent
-	case NodeVerticalCombat:
-		return TagVerticalCombat
-	case NodeTransitionHV:
-		return TagTransitionHV
-	case NodeTransitionVH:
-		return TagTransitionVH
 	default:
 		return TagCombat
 	}
-}
-
-// insertVerticalSections adds a vertical section into the graph's middle nodes.
-// It replaces a subsequence with [TransitionHV, VerticalAscent/Combat/Descent, TransitionVH].
-func insertVerticalSections(rng *rand.Rand, graph *ConceptGraph) {
-	cfg := config.Procgen
-	if cfg.MaxVerticalSectionsPerRun <= 0 {
-		return
-	}
-
-	middleLen := len(graph.Nodes) - 2 // exclude start and exit
-	if middleLen < 3 {
-		return // not enough room
-	}
-
-	// Determine insertion window (indices into middle nodes, 1-indexed in graph.Nodes)
-	minIdx := int(float64(middleLen)*cfg.VerticalInsertionMinPosition) + 1 // +1 for start node
-	maxIdx := int(float64(middleLen)*cfg.VerticalInsertionMaxPosition) + 1
-	if maxIdx > len(graph.Nodes)-3 { // leave room for 3-node insertion before exit
-		maxIdx = len(graph.Nodes) - 3
-	}
-	if minIdx > maxIdx {
-		return
-	}
-
-	insertIdx := minIdx + rng.Intn(maxIdx-minIdx+1)
-
-	// Pick vertical node type based on difficulty at that position
-	diff := graph.Nodes[insertIdx].Difficulty
-	vertType := pickVerticalNodeType(rng, diff)
-
-	biome := graph.Nodes[insertIdx].Biome
-
-	vertNodes := []GraphNode{
-		{Type: NodeTransitionHV, Difficulty: diff, Biome: biome, Tag: TagTransitionHV},
-		{Type: vertType, Difficulty: diff, Biome: biome, Tag: nodeTypeToTag(vertType)},
-		{Type: NodeTransitionVH, Difficulty: diff, Biome: biome, Tag: TagTransitionVH},
-	}
-
-	// Replace the node at insertIdx with the vertical section (net +2 nodes)
-	newNodes := make([]GraphNode, 0, len(graph.Nodes)+2)
-	newNodes = append(newNodes, graph.Nodes[:insertIdx]...)
-	newNodes = append(newNodes, vertNodes...)
-	newNodes = append(newNodes, graph.Nodes[insertIdx+1:]...)
-	graph.Nodes = newNodes
-}
-
-func pickVerticalNodeType(rng *rand.Rand, difficulty int) NodeType {
-	if difficulty >= 3 {
-		// At high difficulty, allow vertical combat
-		choices := []NodeType{NodeVerticalAscent, NodeVerticalDescent, NodeVerticalCombat}
-		return choices[rng.Intn(len(choices))]
-	}
-	choices := []NodeType{NodeVerticalAscent, NodeVerticalDescent}
-	return choices[rng.Intn(len(choices))]
 }
 
 func pickBiome(rng *rand.Rand, biomes []string) string {

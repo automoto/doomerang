@@ -37,11 +37,6 @@ type ProcgenConfig struct {
 	// Level layout
 	ChunkHeadroomFactor float64 // Fraction of screen height added above chunks for camera headroom
 
-	// Vertical sections
-	MaxVerticalSectionsPerRun    int     // Maximum vertical sections in a single run
-	VerticalInsertionMinPosition float64 // Earliest position in run (fraction 0.0-1.0)
-	VerticalInsertionMaxPosition float64 // Latest position in run (fraction 0.0-1.0)
-
 	// Biomes available for graph generation
 	Biomes []string
 }
@@ -81,10 +76,6 @@ func init() {
 		StandardConnectionHeight: 20,  // tiles from top
 		ConnectionOpeningWidth:   3,   // tiles wide
 		ChunkHeadroomFactor:      0.15, // 15% of screen height
-
-		MaxVerticalSectionsPerRun:    1,
-		VerticalInsertionMinPosition: 0.3,
-		VerticalInsertionMaxPosition: 0.7,
 
 		Biomes: []string{"cyberpunk", "industrial", "neon"},
 	}

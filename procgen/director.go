@@ -7,7 +7,6 @@ func ValidateGraph(graph *ConceptGraph) {
 	}
 
 	validateCombatPacing(graph)
-	validateVerticalPacing(graph)
 }
 
 func validateCombatPacing(graph *ConceptGraph) {
@@ -46,48 +45,6 @@ func validateCombatPacing(graph *ConceptGraph) {
 
 		default:
 			combatStreak = 0
-		}
-	}
-}
-
-// isVerticalNode returns true if the node is part of a vertical section
-func isVerticalNode(nt NodeType) bool {
-	switch nt {
-	case NodeTransitionHV, NodeTransitionVH, NodeVerticalAscent, NodeVerticalDescent, NodeVerticalCombat:
-		return true
-	}
-	return false
-}
-
-// validateVerticalPacing ensures vertical sections are properly bookended by transitions
-// and that no two vertical sections are adjacent.
-func validateVerticalPacing(graph *ConceptGraph) {
-	middle := graph.Nodes[1 : len(graph.Nodes)-1]
-
-	inVertical := false
-	for i := range middle {
-		node := &middle[i]
-
-		if !isVerticalNode(node.Type) {
-			continue
-		}
-
-		switch node.Type {
-		case NodeTransitionHV:
-			if inVertical {
-				node.Type = NodeTraversal
-				node.Tag = TagTraversal
-			} else {
-				inVertical = true
-			}
-		case NodeTransitionVH:
-			inVertical = false
-		default:
-			// Vertical content node without preceding transition — demote
-			if !inVertical {
-				node.Type = NodeTraversal
-				node.Tag = TagTraversal
-			}
 		}
 	}
 }

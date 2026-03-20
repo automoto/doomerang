@@ -18,8 +18,8 @@ func loadTestChunks(t *testing.T) []*procgen.Chunk {
 
 func TestLoadAllChunks(t *testing.T) {
 	chunks := loadTestChunks(t)
-	if len(chunks) < 22 {
-		t.Errorf("expected at least 22 chunks, got %d", len(chunks))
+	if len(chunks) < 15 {
+		t.Errorf("expected at least 15 chunks, got %d", len(chunks))
 	}
 }
 

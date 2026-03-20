@@ -95,12 +95,6 @@ func requiredEdges(tag ChunkTag) (required []ConnectionEdge) {
 		return []ConnectionEdge{EdgeRight}
 	case TagExit:
 		return []ConnectionEdge{EdgeLeft}
-	case TagTransitionHV:
-		return []ConnectionEdge{EdgeLeft, EdgeBottom}
-	case TagTransitionVH:
-		return []ConnectionEdge{EdgeTop, EdgeRight}
-	case TagVerticalAscent, TagVerticalDescent, TagVerticalCombat:
-		return []ConnectionEdge{EdgeTop, EdgeBottom}
 	default:
 		// Standard horizontal chunks
 		return []ConnectionEdge{EdgeLeft, EdgeRight}
@@ -158,20 +152,10 @@ func hasAllEdges(c *Chunk, edges []ConnectionEdge) bool {
 }
 
 // FindMatchingEdges determines which edges to use for connecting two adjacent chunks.
-// It tries Right→Left first (horizontal), then Bottom→Top (downward vertical),
-// then Top→Bottom (upward vertical).
+// All chunks connect horizontally: Right→Left.
 func FindMatchingEdges(prev, curr *Chunk) (prevEdge, currEdge ConnectionEdge, err error) {
-	// Horizontal: Right → Left
 	if len(prev.GetConnections(EdgeRight)) > 0 && len(curr.GetConnections(EdgeLeft)) > 0 {
 		return EdgeRight, EdgeLeft, nil
-	}
-	// Vertical down: Bottom → Top
-	if len(prev.GetConnections(EdgeBottom)) > 0 && len(curr.GetConnections(EdgeTop)) > 0 {
-		return EdgeBottom, EdgeTop, nil
-	}
-	// Vertical up: Top → Bottom
-	if len(prev.GetConnections(EdgeTop)) > 0 && len(curr.GetConnections(EdgeBottom)) > 0 {
-		return EdgeTop, EdgeBottom, nil
 	}
 	return "", "", fmt.Errorf("no compatible edges between chunk %q and %q", prev.ID, curr.ID)
 }
@@ -203,24 +187,9 @@ func (g *ChunkGenerator) placeChunks(sequence []*Chunk) (*GenerationResult, erro
 		prevConn := prev.Chunk.GetConnections(prevEdge)[0]
 		currConn := curr.GetConnections(currEdge)[0]
 
-		var offsetX, offsetY float64
-
-		switch {
-		case prevEdge == EdgeRight && currEdge == EdgeLeft:
-			// Horizontal: place to the right, align Y via connection YOffset
-			offsetX = prev.OffsetX + float64(prev.Chunk.Width)
-			offsetY = prev.OffsetY + prevConn.YOffset - currConn.YOffset
-
-		case prevEdge == EdgeBottom && currEdge == EdgeTop:
-			// Vertical down: place below, align X via connection XOffset
-			offsetY = prev.OffsetY + float64(prev.Chunk.Height)
-			offsetX = prev.OffsetX + prevConn.XOffset - currConn.XOffset
-
-		case prevEdge == EdgeTop && currEdge == EdgeBottom:
-			// Vertical up: place above, align X via connection XOffset
-			offsetY = prev.OffsetY - float64(curr.Height)
-			offsetX = prev.OffsetX + prevConn.XOffset - currConn.XOffset
-		}
+		// Horizontal: place to the right, align Y via connection YOffset
+		offsetX := prev.OffsetX + float64(prev.Chunk.Width)
+		offsetY := prev.OffsetY + prevConn.YOffset - currConn.YOffset
 
 		placed[i] = PlacedChunk{
 			Chunk:   curr,
