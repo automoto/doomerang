@@ -76,6 +76,10 @@ func updateEnemyAI(e *ecs.ECS, enemyEntry *donburi.Entry, playerObject *resolv.O
 		updateMeleeEnemyAI(e, enemyEntry, enemy, physics, state, enemyObject.Object, playerObject, distanceToPlayer, enemyPositions)
 	}
 
+	if enemy.LedgeCooldown > 0 {
+		enemy.LedgeCooldown--
+	}
+
 	// Flip patrol direction when another enemy is ahead within separation radius.
 	// Only applies during patrol — chase/attack states should converge on the player.
 	// Cooldown prevents oscillation when a patrol boundary and separation conflict.
@@ -171,6 +175,11 @@ func handleCustomPatrol(e *ecs.ECS, enemyEntry *donburi.Entry, enemy *components
 	} else if enemy.Direction.X < 0 && enemyObject.X < targetPoint.X {
 		enemy.Direction.X = 1
 	}
+	if enemy.LedgeCooldown == 0 && isAtPlatformEdge(enemyObject, enemy.Direction.X) {
+		enemy.Direction.X *= -1
+		physics.SpeedX = enemy.PatrolSpeed * enemy.Direction.X
+		enemy.LedgeCooldown = cfg.Enemy.LedgeCooldown
+	}
 }
 
 func handleDefaultPatrol(enemy *components.EnemyData, physics *components.PhysicsData, enemyObject *resolv.Object) {
@@ -179,6 +188,11 @@ func handleDefaultPatrol(enemy *components.EnemyData, physics *components.Physic
 		enemy.Direction.X = -1
 	} else if enemy.Direction.X < 0 && enemyObject.X <= enemy.PatrolLeft {
 		enemy.Direction.X = 1
+	}
+	if enemy.LedgeCooldown == 0 && isAtPlatformEdge(enemyObject, enemy.Direction.X) {
+		enemy.Direction.X *= -1
+		physics.SpeedX = enemy.PatrolSpeed * enemy.Direction.X
+		enemy.LedgeCooldown = cfg.Enemy.LedgeCooldown
 	}
 }
 
@@ -204,9 +218,13 @@ func handleChaseState(enemyEntry *donburi.Entry, playerObject *resolv.Object, di
 		physics.SpeedX = math.Copysign(enemy.ChaseSpeed, playerObject.X-enemyObject.X)
 	}
 
-	// Stop rear enemy when another enemy is between it and the player on the same level.
-	if enemyAheadOnSameLevel(enemyObject.X, enemyObject.Y, enemy.Direction.X, enemyPositions, cfg.Enemy.SeparationRadius, cfg.Enemy.SeparationYThreshold) {
+	if isAtPlatformEdge(enemyObject.Object, enemy.Direction.X) {
 		physics.SpeedX = 0
+	}
+
+	// Rear enemy drifts backward instead of freezing when another enemy is ahead.
+	if enemyAheadOnSameLevel(enemyObject.X, enemyObject.Y, enemy.Direction.X, enemyPositions, cfg.Enemy.SeparationRadius, cfg.Enemy.SeparationYThreshold) {
+		physics.SpeedX = -enemy.Direction.X * cfg.Enemy.ChaseBackoffSpeed
 	}
 }
 

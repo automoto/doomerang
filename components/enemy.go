@@ -27,6 +27,7 @@ type EnemyData struct {
 	InvulnFrames       int            // Invincibility frames after being hit
 	ActiveHitbox       *donburi.Entry // Direct reference to the active hitbox
 	SeparationCooldown int            // Frames until separation flip is allowed again
+	LedgeCooldown      int            // Frames until ledge flip is allowed again
 }
 
 var Enemy = donburi.NewComponentType[EnemyData]()

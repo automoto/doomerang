@@ -57,7 +57,7 @@ func init() {
 
 		EnemyBudgetBase:       4.0,
 		EnemyBudgetMultiplier: 3.0,
-		EnemyMinSpacing:       64.0,
+		EnemyMinSpacing:       120.0,
 
 		EnemyCosts: map[string]int{
 			"LightGuard":   2,

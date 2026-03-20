@@ -81,9 +81,7 @@ func UpdateFire(ecs *ecs.ECS) {
 			physics.SpeedY = cfg.Combat.KnockbackUpwardForce
 
 			donburi.Add(playerEntry, components.DamageEvent, &components.DamageEventData{
-				Amount:     fire.Damage,
-				KnockbackX: knockbackX,
-				KnockbackY: cfg.Combat.KnockbackUpwardForce,
+				Amount: fire.Damage,
 			})
 			TriggerDamageFlash(playerEntry)
 			PlaySFX(ecs, cfg.SoundHit)

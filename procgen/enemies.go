@@ -318,7 +318,7 @@ func (ep *EnemyPlacer) distributeEnemies(types []string, platforms []platform, p
 const patrolMargin = 24.0
 
 // minPatrolSegmentWidth is the minimum width for a patrol segment to be worthwhile
-const minPatrolSegmentWidth = 48.0
+const minPatrolSegmentWidth = 80.0
 
 // generatePatrolPath creates a 2-point patrol path spanning the platform.
 // Used during first pass before we know total enemy count per platform.

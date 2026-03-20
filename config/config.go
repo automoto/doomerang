@@ -98,6 +98,12 @@ type EnemyConfig struct {
 	SeparationRadius     float64 // px — repulsion activates within this distance between enemies
 	SeparationCooldown   int     // frames to wait after a separation flip before allowing another
 	SeparationYThreshold float64 // px — enemies must be within this vertical distance to trigger separation
+
+	// Ledge detection
+	LedgeCooldown int // frames to suppress ledge re-checks after a flip
+
+	// Chase behavior
+	ChaseBackoffSpeed float64 // px/frame — rear enemy drifts backward instead of freezing
 }
 
 // CombatConfig contains combat-related configuration values
@@ -544,7 +550,7 @@ func init() {
 		PatrolSpeed:      2.0,
 		ChaseSpeed:       2.5,
 		AttackRange:      36.0,
-		ChaseRange:       80.0,
+		ChaseRange:       104.0,
 		StoppingDistance: 28.0,
 		MaxVerticalChase: 144.0,
 		AttackCooldown:   60,
@@ -570,7 +576,7 @@ func init() {
 		PatrolSpeed:      3.0,
 		ChaseSpeed:       3.5,
 		AttackRange:      32.0,
-		ChaseRange:       100.0,
+		ChaseRange:       130.0,
 		StoppingDistance: 24.0,
 		MaxVerticalChase: 144.0,
 		AttackCooldown:   40,
@@ -596,7 +602,7 @@ func init() {
 		PatrolSpeed:      1.5,
 		ChaseSpeed:       2.0,
 		AttackRange:      40.0,
-		ChaseRange:       60.0,
+		ChaseRange:       78.0,
 		StoppingDistance: 32.0,
 		MaxVerticalChase: 144.0,
 		AttackCooldown:   90,
@@ -657,10 +663,12 @@ func init() {
 			"KnifeThrower": knifeThrowerType,
 		},
 		HysteresisMultiplier:  1.5,
-		DefaultPatrolDistance: 32.0,
-		SeparationRadius:      40.0,
-		SeparationCooldown:    30,
+		DefaultPatrolDistance: 64.0,
+		SeparationRadius:      72.0,
+		SeparationCooldown:    10,
 		SeparationYThreshold:  48.0,
+		LedgeCooldown:         15,
+		ChaseBackoffSpeed:     1.0,
 	}
 
 	// Combat Config (Populated with default values matching the previous constants)

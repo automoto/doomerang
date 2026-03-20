@@ -31,6 +31,15 @@ func UpdateCollisions(ecs *ecs.ECS) {
 		if checkDeadZone(obj.Object) {
 			handleDeadZoneHit(ecs, e)
 		}
+
+		// Safety net: treat falling below the level as a dead zone hit
+		levelEntry, levelOk := components.Level.First(ecs.World)
+		if levelOk {
+			levelData := components.Level.Get(levelEntry)
+			if levelData.CurrentLevel != nil && obj.Y > float64(levelData.CurrentLevel.Height) {
+				handleDeadZoneHit(ecs, e)
+			}
+		}
 	})
 
 	tags.Enemy.Each(ecs.World, func(e *donburi.Entry) {
@@ -97,11 +106,11 @@ func resolveObjectHorizontalCollision(physics *components.PhysicsData, object *r
 		// Gentle push-back instead of a hard stop
 		contact := check.ContactWithObject(characters[0])
 		if contact.X() != 0 { // If there is penetration
-			// Apply a small, fixed pushback
+			// Apply config-driven pushback
 			if dx > 0 {
-				dx = -1
+				dx = -cfg.Physics.CharacterPushback
 			} else {
-				dx = 1
+				dx = cfg.Physics.CharacterPushback
 			}
 		} else {
 			// If just touching, use the contact point to slide along the other character
