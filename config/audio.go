@@ -36,6 +36,7 @@ type AudioConfig struct {
 // SoundConfig maps sound IDs to file paths
 type SoundConfig struct {
 	MenuMusic         string
+	RogueliteMusic    []string
 	SFXPaths          map[SoundID]string
 	VolumeMultipliers map[SoundID]float64
 }
@@ -53,6 +54,17 @@ func init() {
 
 	Sound = SoundConfig{
 		MenuMusic: "audio/music/menu.ogg",
+		RogueliteMusic: []string{
+			"audio/music/interstellar.ogg",
+			"audio/music/plasma-storm.ogg",
+			"audio/music/temple-of-madness.ogg",
+			"audio/music/horsehead-nebula.ogg",
+			"audio/music/forgotten-station.ogg",
+			"audio/music/hope-on-the-horizon.ogg",
+			"audio/music/electric-firework.ogg",
+			"audio/music/synth-kobra.ogg",
+			"audio/music/spiral-of-plasma.ogg",
+		},
 		SFXPaths: map[SoundID]string{
 			SoundPunch:           "audio/sfx/punch.wav",
 			SoundKick:            "audio/sfx/kick.wav",

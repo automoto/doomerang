@@ -206,7 +206,11 @@ func (rs *RogueliteScene) configure() {
 		space.Add(enemyObj.Object)
 	}
 
-	systems.PlayLevelMusic(e, level.Name)
+	if len(cfg.Sound.RogueliteMusic) > 0 {
+		musicRng := rand.New(rand.NewSource(rs.seed))
+		track := cfg.Sound.RogueliteMusic[musicRng.Intn(len(cfg.Sound.RogueliteMusic))]
+		systems.PlayMusic(e, track)
+	}
 }
 
 func (rs *RogueliteScene) generateLevel() (*assets.Level, *procgen.GenerationResult, error) {
