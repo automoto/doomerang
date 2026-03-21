@@ -255,7 +255,11 @@ func (ep *EnemyPlacer) distributeEnemies(types []string, platforms []platform, p
 				continue
 			}
 
-			spawnY := p.y - 40
+			collisionH := 40.0
+			if et, ok := config.Enemy.Types[enemyType]; ok {
+				collisionH = float64(et.CollisionHeight)
+			}
+			spawnY := p.y - collisionH
 			records = append(records, spawnRecord{
 				spawn: assets.EnemySpawn{
 					X:         x + pc.OffsetX,
@@ -277,7 +281,11 @@ func (ep *EnemyPlacer) distributeEnemies(types []string, platforms []platform, p
 				if x < 0 {
 					continue
 				}
-				spawnY := p.y - 40
+				collisionH := 40.0
+				if et, ok := config.Enemy.Types["Guard"]; ok {
+					collisionH = float64(et.CollisionHeight)
+				}
+				spawnY := p.y - collisionH
 				records = append(records, spawnRecord{
 					spawn: assets.EnemySpawn{
 						X:         x + pc.OffsetX,

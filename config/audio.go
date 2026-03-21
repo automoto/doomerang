@@ -36,6 +36,7 @@ type AudioConfig struct {
 // SoundConfig maps sound IDs to file paths
 type SoundConfig struct {
 	MenuMusic         string
+	LevelMusic        map[string]string // level name -> music path
 	RogueliteMusic    []string
 	SFXPaths          map[SoundID]string
 	VolumeMultipliers map[SoundID]float64
@@ -54,6 +55,9 @@ func init() {
 
 	Sound = SoundConfig{
 		MenuMusic: "audio/music/menu.ogg",
+		LevelMusic: map[string]string{
+			"levels/level1.tmx": "audio/music/hope-on-the-horizon.ogg",
+		},
 		RogueliteMusic: []string{
 			"audio/music/interstellar.ogg",
 			"audio/music/plasma-storm.ogg",

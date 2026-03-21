@@ -72,6 +72,7 @@ type EnemyTypeConfig struct {
 	CollisionHeight int
 
 	// Visual
+	SpriteScale    float64    // Visual + collision scale (0.75=weak, 1.0=baseline, 1.4=strong)
 	TintColor      color.RGBA // RGBA color tint for this enemy type
 	SpriteSheetKey string     // e.g., "player", "guard", "slime"
 
@@ -566,6 +567,7 @@ func init() {
 		FrameHeight:      84,
 		CollisionWidth:   16,
 		CollisionHeight:  40,
+		SpriteScale:      1.0,
 		TintColor:        White,
 		SpriteSheetKey:   "player",
 	}
@@ -590,8 +592,9 @@ func init() {
 		MaxSpeed:         7.0,
 		FrameWidth:       96,
 		FrameHeight:      84,
-		CollisionWidth:   14,
-		CollisionHeight:  36,
+		CollisionWidth:   10,
+		CollisionHeight:  24,
+		SpriteScale:      0.75,
 		TintColor:        Yellow,
 		SpriteSheetKey:   "player",
 	}
@@ -616,8 +619,9 @@ func init() {
 		MaxSpeed:         4.0,
 		FrameWidth:       96,
 		FrameHeight:      84,
-		CollisionWidth:   20,
-		CollisionHeight:  44,
+		CollisionWidth:   22,
+		CollisionHeight:  56,
+		SpriteScale:      1.4,
 		TintColor:        Orange,
 		SpriteSheetKey:   "player",
 	}
@@ -641,8 +645,9 @@ func init() {
 		MaxSpeed:         3.0, // Allow movement for patrol
 		FrameWidth:       96,
 		FrameHeight:      84,
-		CollisionWidth:   16,
-		CollisionHeight:  40,
+		CollisionWidth:   10,
+		CollisionHeight:  24,
+		SpriteScale:      0.75,
 		TintColor:        Purple,
 		SpriteSheetKey:   "player",
 		// Ranged specific

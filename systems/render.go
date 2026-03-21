@@ -101,6 +101,15 @@ func DrawAnimated(ecs *ecs.ECS, screen *ebiten.Image) {
 					drawOp.GeoM.Scale(ss.ScaleX, ss.ScaleY)
 				}
 
+				// Apply enemy sprite scale (weak=0.75, strong=1.4)
+				if isEnemy {
+					enemy := components.Enemy.Get(e)
+					if enemy.TypeConfig != nil && enemy.TypeConfig.SpriteScale != 0 {
+						s := enemy.TypeConfig.SpriteScale
+						drawOp.GeoM.Scale(s, s)
+					}
+				}
+
 				// Handle fire direction (sprite faces right by default)
 				// Cache fire pointer for reuse in positioning
 				var fire *components.FireData

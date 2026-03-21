@@ -235,6 +235,8 @@ func (ps *PlatformerScene) configure() {
 		space.Add(enemyObj.Object)
 	}
 
-	// Start level music
-	systems.PlayLevelMusic(ps.ecs, levelData.CurrentLevel.Name)
+	// Start level music from config
+	if track, ok := cfg.Sound.LevelMusic[levelData.CurrentLevel.Name]; ok {
+		systems.PlayMusic(ps.ecs, track)
+	}
 }
