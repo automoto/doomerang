@@ -30,14 +30,14 @@ func DrawHUD(ecs *ecs.ECS, screen *ebiten.Image) {
 	hp := components.Health.Get(playerEntry)
 
 	// Background (dark gray)
-	vector.DrawFilledRect(screen,
+	vector.FillRect(screen,
 		float32(hudMargin), float32(hudMargin),
 		float32(hudBarWidth), float32(hudBarHeight),
 		color.RGBA{40, 40, 40, 255}, false)
 
 	// Current HP (green)
 	ratio := float32(hp.Current) / float32(hp.Max)
-	vector.DrawFilledRect(screen,
+	vector.FillRect(screen,
 		float32(hudMargin), float32(hudMargin),
 		float32(hudBarWidth)*ratio, float32(hudBarHeight),
 		color.RGBA{40, 220, 40, 255}, false)

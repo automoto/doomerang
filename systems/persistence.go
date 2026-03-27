@@ -19,6 +19,7 @@ type SavedSettings struct {
 	Fullscreen      bool    `json:"fullscreen"`
 	ResolutionIndex int     `json:"resolutionIndex"`
 	InputMode       int     `json:"inputMode"`
+	ControlScheme   int     `json:"controlScheme"`
 }
 
 var gdataManager *gdata.Manager
@@ -91,6 +92,7 @@ func SaveCurrentSettings(s *components.SettingsMenuData) {
 		Fullscreen:      s.Fullscreen,
 		ResolutionIndex: s.ResolutionIndex,
 		InputMode:       s.InputMode,
+		ControlScheme:   s.ControlScheme,
 	}
 	_ = SaveSettings(saved)
 }
@@ -120,6 +122,9 @@ func ApplySavedSettings(e *ecs.ECS, saved *SavedSettings) {
 		ebiten.SetWindowSize(res.Width, res.Height)
 	}
 
+	// Apply keyboard control scheme
+	cfg.ApplyControlScheme(cfg.ControlSchemeID(saved.ControlScheme))
+
 	// Update settings menu component if it exists
 	if entry, ok := components.SettingsMenu.First(e.World); ok {
 		settings := components.SettingsMenu.Get(entry)
@@ -129,6 +134,7 @@ func ApplySavedSettings(e *ecs.ECS, saved *SavedSettings) {
 		settings.Fullscreen = saved.Fullscreen
 		settings.ResolutionIndex = saved.ResolutionIndex
 		settings.InputMode = saved.InputMode
+		settings.ControlScheme = saved.ControlScheme
 		if saved.Muted {
 			settings.PreMuteMusicVol = saved.MusicVolume
 			settings.PreMuteSFXVol = saved.SFXVolume
@@ -162,6 +168,9 @@ func ApplySavedSettingsGlobal(saved *SavedSettings) {
 		res := cfg.SettingsMenu.Resolutions[saved.ResolutionIndex]
 		ebiten.SetWindowSize(res.Width, res.Height)
 	}
+
+	// Apply keyboard control scheme
+	cfg.ApplyControlScheme(cfg.ControlSchemeID(saved.ControlScheme))
 }
 
 type SavedGameProgress struct {
@@ -181,7 +190,7 @@ func LoadGameProgress() (*SavedGameProgress, error) {
 		log.Printf("Warning: Could not load game progress: %v", err)
 		return nil, nil
 	}
-	if data == nil || len(data) == 0 {
+	if len(data) == 0 {
 		return nil, nil
 	}
 

@@ -21,6 +21,7 @@ type SettingsMenuConfig struct {
 	DefaultResolutionIndex int
 	VolumeSteps            []float64
 	InputModes             []string
+	ControlSchemes         []string
 }
 
 // SettingsMenu is the global settings menu configuration
@@ -37,5 +38,6 @@ func init() {
 		DefaultResolutionIndex: 0,
 		VolumeSteps:            []float64{0, 0.25, 0.5, 0.75, 1.0},
 		InputModes:             []string{"Keyboard", "Controller"},
+		ControlSchemes:         []string{"WASD", "Arrow Keys"},
 	}
 }

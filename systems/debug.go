@@ -62,10 +62,10 @@ func DrawDebug(ecs *ecs.ECS, screen *ebiten.Image) {
 			}
 
 			// Draw outline
-			vector.DrawFilledRect(screen, float32(x), float32(y), float32(obj.W), 1, c, false)         // Top
-			vector.DrawFilledRect(screen, float32(x), float32(y+obj.H-1), float32(obj.W), 1, c, false) // Bottom
-			vector.DrawFilledRect(screen, float32(x), float32(y), 1, float32(obj.H), c, false)         // Left
-			vector.DrawFilledRect(screen, float32(x+obj.W-1), float32(y), 1, float32(obj.H), c, false) // Right
+			vector.FillRect(screen, float32(x), float32(y), float32(obj.W), 1, c, false)         // Top
+			vector.FillRect(screen, float32(x), float32(y+obj.H-1), float32(obj.W), 1, c, false) // Bottom
+			vector.FillRect(screen, float32(x), float32(y), 1, float32(obj.H), c, false)         // Left
+			vector.FillRect(screen, float32(x+obj.W-1), float32(y), 1, float32(obj.H), c, false) // Right
 		}
 	}
 }

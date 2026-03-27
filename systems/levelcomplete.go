@@ -7,10 +7,8 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
-	"golang.org/x/image/font"
 )
 
 // UpdateLevelComplete handles input when level complete overlay is shown
@@ -40,7 +38,7 @@ func DrawLevelComplete(e *ecs.ECS, screen *ebiten.Image) {
 	height := float64(screen.Bounds().Dy())
 
 	// Draw semi-transparent overlay
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		0, 0,
 		float32(width), float32(height),
@@ -49,30 +47,23 @@ func DrawLevelComplete(e *ecs.ECS, screen *ebiten.Image) {
 	)
 
 	// Draw title
-	titleFont := fonts.ExcelTitle.Get()
+	titleFont := fonts.ExcelTitle.GetV2()
 	title := cfg.LevelComplete.Title
 	titleX := centerTextX(title, titleFont, width)
-	text.Draw(screen, title, titleFont, titleX, int(cfg.LevelComplete.TitleY), cfg.LevelComplete.TitleColor)
+	drawText(screen, title, titleFont, titleX, int(cfg.LevelComplete.TitleY), cfg.LevelComplete.TitleColor)
 
 	// Draw message
-	msgFont := fonts.ExcelBold.Get()
+	msgFont := fonts.ExcelBold.GetV2()
 	msg := cfg.LevelComplete.Message
 	msgX := centerTextX(msg, msgFont, width)
-	text.Draw(screen, msg, msgFont, msgX, int(cfg.LevelComplete.MessageY), cfg.LevelComplete.TextColor)
+	drawText(screen, msg, msgFont, msgX, int(cfg.LevelComplete.MessageY), cfg.LevelComplete.TextColor)
 
 	// Draw continue hint
-	hintFont := fonts.ExcelSmall.Get()
+	hintFont := fonts.ExcelSmall.GetV2()
 	input := getOrCreateInput(e)
 	hint := getLevelCompleteHint(input.LastInputMethod)
 	hintX := centerTextX(hint, hintFont, width)
-	text.Draw(screen, hint, hintFont, hintX, int(cfg.LevelComplete.HintY), cfg.LevelComplete.HintColor)
-}
-
-// centerTextX calculates the X position to center text on screen
-func centerTextX(s string, face font.Face, screenWidth float64) int {
-	bounds := text.BoundString(face, s)
-	textWidth := bounds.Dx()
-	return int((screenWidth - float64(textWidth)) / 2)
+	drawText(screen, hint, hintFont, hintX, int(cfg.LevelComplete.HintY), cfg.LevelComplete.HintColor)
 }
 
 // getLevelCompleteHint returns the appropriate hint for level complete screen

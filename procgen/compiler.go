@@ -124,12 +124,12 @@ func (c *Compiler) renderChunkBackground(bg *ebiten.Image, pc PlacedChunk) error
 
 		opacity := layer.Opacity
 		if opacity <= 0 {
-			layerImage.Dispose()
+			layerImage.Deallocate()
 			continue
 		}
 		op.ColorScale.ScaleAlpha(float32(opacity))
 		bg.DrawImage(layerImage, op)
-		layerImage.Dispose()
+		layerImage.Deallocate()
 	}
 
 	return nil

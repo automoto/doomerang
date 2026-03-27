@@ -383,13 +383,13 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 		opacity := imgLayer.Opacity
 		// Skip fully transparent layers
 		if opacity <= 0 {
-			img.Dispose()
+			img.Deallocate()
 			continue
 		}
 		op.ColorScale.ScaleAlpha(float32(opacity))
 		level.Background.DrawImage(img, op)
 		// Dispose temporary image to free GPU memory
-		img.Dispose()
+		img.Deallocate()
 	}
 
 	// Create a renderer that uses the embedded filesystem
@@ -416,13 +416,13 @@ func (l *LevelLoader) MustLoadLevel(levelPath string) Level {
 			opacity := layer.Opacity
 			// Skip fully transparent layers
 			if opacity <= 0 {
-				layerImage.Dispose()
+				layerImage.Deallocate()
 				continue
 			}
 			op.ColorScale.ScaleAlpha(float32(opacity))
 			level.Background.DrawImage(layerImage, op)
 			// Dispose temporary image to free GPU memory
-			layerImage.Dispose()
+			layerImage.Deallocate()
 		}
 	}
 

@@ -114,7 +114,7 @@ func (v *Validator) discoverPlatforms(result *GenerationResult) []Platform {
 		for pos := range occupied {
 			above := tilePos{pos.col, pos.row - 1}
 			if !occupied[above] {
-				surfaces = append(surfaces, surfaceTile{pos.col, pos.row})
+				surfaces = append(surfaces, surfaceTile(pos))
 			}
 		}
 

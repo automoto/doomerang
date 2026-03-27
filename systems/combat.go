@@ -4,14 +4,11 @@ import (
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/tags"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
 
-// UpdateCombat handles damage events, debug damage input and keeps health
-// values within their valid range.
+// UpdateCombat handles damage events and keeps health values within their valid range.
 func UpdateCombat(ecs *ecs.ECS) {
 	// --------------------------------------------------------------------
 	// 1. Process queued damage events (generic for any entity with Health)
@@ -76,16 +73,7 @@ func UpdateCombat(ecs *ecs.ECS) {
 	}
 
 	// --------------------------------------------------------------------
-	// 2. Debug: press H to hurt the player by 10 HP
-	// --------------------------------------------------------------------
-	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
-		tags.Player.Each(ecs.World, func(e *donburi.Entry) {
-			donburi.Add(e, components.DamageEvent, &components.DamageEventData{Amount: 10})
-		})
-	}
-
-	// --------------------------------------------------------------------
-	// 3. Clamp health ranges (0..Max)
+	// 2. Clamp health ranges (0..Max)
 	// --------------------------------------------------------------------
 	for e := range components.Health.Iter(ecs.World) {
 		hp := components.Health.Get(e)

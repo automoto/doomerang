@@ -1,6 +1,8 @@
 package systems
 
 import (
+	"log"
+
 	"github.com/automoto/doomerang/components"
 	"github.com/automoto/doomerang/tags"
 	"github.com/yohamta/donburi"
@@ -57,5 +59,7 @@ func UpdateCheckpoints(ecs *ecs.ECS) {
 		CheckpointID: checkpoint.CheckpointID,
 	}
 
-	SaveGameProgress(levelData.LevelIndex, levelData.ActiveCheckpoint)
+	if err := SaveGameProgress(levelData.LevelIndex, levelData.ActiveCheckpoint); err != nil {
+		log.Printf("Warning: Could not save game progress: %v", err)
+	}
 }

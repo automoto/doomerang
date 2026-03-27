@@ -7,7 +7,6 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -81,7 +80,7 @@ func DrawPause(ecs *ecs.ECS, screen *ebiten.Image) {
 	height := float64(screen.Bounds().Dy())
 
 	// Draw semi-transparent overlay
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		0, 0,
 		float32(width), float32(height),
@@ -95,7 +94,7 @@ func DrawPause(ecs *ecs.ECS, screen *ebiten.Image) {
 	startY := (height - totalMenuHeight) / 2
 
 	// Get font for text rendering (larger bold font)
-	fontFace := fonts.ExcelBold.Get()
+	fontFace := fonts.ExcelBold.GetV2()
 
 	// Draw menu options
 	for i, option := range menuOptions {
@@ -107,20 +106,17 @@ func DrawPause(ecs *ecs.ECS, screen *ebiten.Image) {
 			textColor = cfg.Pause.TextColorSelected
 		}
 
-		// Center text horizontally (approximate width calculation for 20pt font)
-		textWidth := len(option) * 12
-		x := int((width - float64(textWidth)) / 2)
+		x := centerTextX(option, fontFace, width)
 
-		text.Draw(screen, option, fontFace, x, int(y)+int(cfg.Pause.MenuItemHeight), textColor)
+		drawText(screen, option, fontFace, x, int(y)+int(cfg.Pause.MenuItemHeight), textColor)
 	}
 
 	// Draw navigation hint at bottom based on input method
 	input := getOrCreateInput(ecs)
 	hint := getPauseHint(input.LastInputMethod)
-	hintFont := fonts.ExcelSmall.Get()
-	hintWidth := len(hint) * 7
-	hintX := int((width - float64(hintWidth)) / 2)
-	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
+	hintFont := fonts.ExcelSmall.GetV2()
+	hintX := centerTextX(hint, hintFont, width)
+	drawText(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
 }
 
 // getPauseHint returns the appropriate hint for pause menu

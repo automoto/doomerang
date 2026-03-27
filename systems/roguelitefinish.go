@@ -5,7 +5,6 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -37,7 +36,7 @@ func DrawRogueliteFinish(e *ecs.ECS, screen *ebiten.Image) {
 	width := float64(screen.Bounds().Dx())
 
 	// Semi-transparent overlay
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		0, 0,
 		float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()),
@@ -46,17 +45,17 @@ func DrawRogueliteFinish(e *ecs.ECS, screen *ebiten.Image) {
 	)
 
 	// Title "RUN COMPLETE"
-	titleFont := fonts.ExcelTitle.Get()
+	titleFont := fonts.ExcelTitle.GetV2()
 	title := cfg.RunSummary.Title
 	titleX := centerTextX(title, titleFont, width)
-	text.Draw(screen, title, titleFont, titleX, int(cfg.RunSummary.TitleY), cfg.RunSummary.TitleColor)
+	drawText(screen, title, titleFont, titleX, int(cfg.RunSummary.TitleY), cfg.RunSummary.TitleColor)
 
 	// Input hint
-	hintFont := fonts.ExcelSmall.Get()
+	hintFont := fonts.ExcelSmall.GetV2()
 	input := getOrCreateInput(e)
 	hint := getRunFinishHint(input.LastInputMethod)
 	hintX := centerTextX(hint, hintFont, width)
-	text.Draw(screen, hint, hintFont, hintX, int(cfg.LevelComplete.HintY), cfg.LevelComplete.HintColor)
+	drawText(screen, hint, hintFont, hintX, int(cfg.LevelComplete.HintY), cfg.LevelComplete.HintColor)
 }
 
 func getRunFinishHint(method components.InputMethod) string {

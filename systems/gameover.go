@@ -5,7 +5,6 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -54,7 +53,7 @@ func DrawGameOver(e *ecs.ECS, screen *ebiten.Image) {
 	height := float64(screen.Bounds().Dy())
 
 	// Draw background
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		0, 0,
 		float32(width), float32(height),
@@ -63,14 +62,13 @@ func DrawGameOver(e *ecs.ECS, screen *ebiten.Image) {
 	)
 
 	// Draw "GAME OVER" title
-	titleFont := fonts.ExcelTitle.Get()
+	titleFont := fonts.ExcelTitle.GetV2()
 	title := "YOU DIED"
-	titleWidth := len(title) * 20 // Approximate width for title font
-	titleX := int((width - float64(titleWidth)) / 2)
-	text.Draw(screen, title, titleFont, titleX, int(cfg.GameOver.TitleY), cfg.GameOver.TitleColor)
+	titleX := centerTextX(title, titleFont, width)
+	drawText(screen, title, titleFont, titleX, int(cfg.GameOver.TitleY), cfg.GameOver.TitleColor)
 
 	// Draw menu options
-	menuFont := fonts.ExcelBold.Get()
+	menuFont := fonts.ExcelBold.GetV2()
 	menuOptions := cfg.GameOver.MenuOptions
 
 	for i, option := range menuOptions {
@@ -83,10 +81,9 @@ func DrawGameOver(e *ecs.ECS, screen *ebiten.Image) {
 		}
 
 		// Center text horizontally
-		textWidth := len(option) * 12
-		x := int((width - float64(textWidth)) / 2)
+		x := centerTextX(option, menuFont, width)
 
-		text.Draw(screen, option, menuFont, x, int(y)+int(cfg.GameOver.MenuItemHeight), textColor)
+		drawText(screen, option, menuFont, x, int(y)+int(cfg.GameOver.MenuItemHeight), textColor)
 	}
 }
 

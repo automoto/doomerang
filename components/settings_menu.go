@@ -14,6 +14,7 @@ const (
 	SettingsOptFullscreen
 	SettingsOptResolution
 	SettingsOptInputMode
+	SettingsOptControlScheme
 	SettingsOptControls
 	SettingsOptBack
 )
@@ -32,6 +33,7 @@ type SettingsMenuData struct {
 	Fullscreen      bool
 	ResolutionIndex int
 	InputMode       int // 0 = Keyboard, 1 = Controller
+	ControlScheme   int // 0 = WASD, 1 = Arrow Keys
 
 	// For mute restore
 	PreMuteMusicVol float64

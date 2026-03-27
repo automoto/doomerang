@@ -1,13 +1,13 @@
 package systems
 
 import (
+	"log"
 	"os"
 
 	"github.com/automoto/doomerang/components"
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -81,7 +81,9 @@ func NewUpdateMenu(sceneChanger SceneChanger, createPlatformerScene func() inter
 					menu.ConfirmSelection = 0 // Default to "No"
 				} else {
 					FadeOutMusic(e)
-					ClearGameProgress()
+					if err := ClearGameProgress(); err != nil {
+						log.Printf("Warning: Could not clear game progress: %v", err)
+					}
 					sceneChanger.ChangeScene(createPlatformerScene())
 				}
 			case components.MainMenuContinue:
@@ -128,7 +130,9 @@ func handleConfirmDialog(e *ecs.ECS, menu *components.MenuData, input *component
 		PlaySFX(e, cfg.SoundMenuSelect)
 		if menu.ConfirmSelection == 1 { // Yes
 			FadeOutMusic(e)
-			ClearGameProgress()
+			if err := ClearGameProgress(); err != nil {
+				log.Printf("Warning: Could not clear game progress: %v", err)
+			}
 			sceneChanger.ChangeScene(createPlatformerScene())
 		} else { // No
 			menu.ShowingConfirmDialog = false
@@ -144,7 +148,7 @@ func DrawMenu(e *ecs.ECS, screen *ebiten.Image) {
 	height := float64(screen.Bounds().Dy())
 
 	// Draw background
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		0, 0,
 		float32(width), float32(height),
@@ -153,14 +157,13 @@ func DrawMenu(e *ecs.ECS, screen *ebiten.Image) {
 	)
 
 	// Draw title
-	titleFont := fonts.ExcelTitle.Get()
+	titleFont := fonts.ExcelTitle.GetV2()
 	title := "DOOMERANG"
-	titleWidth := len(title) * 20 // Approximate width for 32pt font
-	titleX := int((width - float64(titleWidth)) / 2)
-	text.Draw(screen, title, titleFont, titleX, int(cfg.Menu.TitleY), cfg.Menu.TitleColor)
+	titleX := centerTextX(title, titleFont, width)
+	drawText(screen, title, titleFont, titleX, int(cfg.Menu.TitleY), cfg.Menu.TitleColor)
 
 	// Draw menu options
-	menuFont := fonts.ExcelBold.Get()
+	menuFont := fonts.ExcelBold.GetV2()
 
 	for i, option := range menu.VisibleOptions {
 		y := cfg.Menu.MenuStartY + float64(i)*(cfg.Menu.MenuItemHeight+cfg.Menu.MenuItemGap)
@@ -173,10 +176,9 @@ func DrawMenu(e *ecs.ECS, screen *ebiten.Image) {
 
 		// Get option label
 		label := getOptionLabel(option)
-		textWidth := len(label) * 12
-		x := int((width - float64(textWidth)) / 2)
+		x := centerTextX(label, menuFont, width)
 
-		text.Draw(screen, label, menuFont, x, int(y)+int(cfg.Menu.MenuItemHeight), textColor)
+		drawText(screen, label, menuFont, x, int(y)+int(cfg.Menu.MenuItemHeight), textColor)
 	}
 
 	// Draw confirmation dialog if showing
@@ -187,10 +189,9 @@ func DrawMenu(e *ecs.ECS, screen *ebiten.Image) {
 	// Draw navigation hint at bottom based on input method
 	input := getOrCreateInput(e)
 	hint := getMenuHint(input.LastInputMethod)
-	hintFont := fonts.ExcelSmall.Get()
-	hintWidth := len(hint) * 7
-	hintX := int((width - float64(hintWidth)) / 2)
-	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Menu.TextColorNormal)
+	hintFont := fonts.ExcelSmall.GetV2()
+	hintX := centerTextX(hint, hintFont, width)
+	drawText(screen, hint, hintFont, hintX, int(height)-12, cfg.Menu.TextColorNormal)
 }
 
 // getMenuHint returns the appropriate hint for menu navigation
@@ -213,7 +214,7 @@ func drawConfirmDialog(screen *ebiten.Image, menu *components.MenuData, width, h
 	dialogY := (height - dialogHeight) / 2
 
 	// Draw dialog background
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		float32(dialogX), float32(dialogY),
 		float32(dialogWidth), float32(dialogHeight),
@@ -231,14 +232,13 @@ func drawConfirmDialog(screen *ebiten.Image, menu *components.MenuData, width, h
 		false,
 	)
 
-	menuFont := fonts.ExcelBold.Get()
+	menuFont := fonts.ExcelBold.GetV2()
 
 	// Draw message centered in dialog
 	message := cfg.Menu.ConfirmDialogMessage
-	msgWidth := len(message) * 12
-	msgX := int((width - float64(msgWidth)) / 2)
+	msgX := centerTextX(message, menuFont, width)
 	msgY := int(dialogY) + 35
-	text.Draw(screen, message, menuFont, msgX, msgY, cfg.Menu.TextColorNormal)
+	drawText(screen, message, menuFont, msgX, msgY, cfg.Menu.TextColorNormal)
 
 	// Draw Yes/No options
 	noLabel := cfg.Menu.ConfirmDialogNo
@@ -247,8 +247,10 @@ func drawConfirmDialog(screen *ebiten.Image, menu *components.MenuData, width, h
 	// Calculate positions for centered buttons
 	buttonGap := 60.0
 	centerX := width / 2
-	noX := int(centerX - buttonGap - float64(len(noLabel)*12)/2)
-	yesX := int(centerX + buttonGap - float64(len(yesLabel)*12)/2)
+	noW := measureTextWidth(noLabel, menuFont)
+	yesW := measureTextWidth(yesLabel, menuFont)
+	noX := int(centerX - buttonGap - float64(noW)/2)
+	yesX := int(centerX + buttonGap - float64(yesW)/2)
 	buttonY := int(dialogY) + 70
 
 	// Draw No option
@@ -256,14 +258,14 @@ func drawConfirmDialog(screen *ebiten.Image, menu *components.MenuData, width, h
 	if menu.ConfirmSelection == 0 {
 		noColor = cfg.Menu.TextColorSelected
 	}
-	text.Draw(screen, noLabel, menuFont, noX, buttonY, noColor)
+	drawText(screen, noLabel, menuFont, noX, buttonY, noColor)
 
 	// Draw Yes option
 	yesColor := cfg.Menu.TextColorNormal
 	if menu.ConfirmSelection == 1 {
 		yesColor = cfg.Menu.TextColorSelected
 	}
-	text.Draw(screen, yesLabel, menuFont, yesX, buttonY, yesColor)
+	drawText(screen, yesLabel, menuFont, yesX, buttonY, yesColor)
 }
 
 // getOptionLabel returns the display text for a menu option

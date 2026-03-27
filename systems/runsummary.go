@@ -7,7 +7,6 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -92,7 +91,7 @@ func DrawRunSummary(stats FinalRunStats) func(e *ecs.ECS, screen *ebiten.Image) 
 		width := float64(screen.Bounds().Dx())
 
 		// Full-screen dark background
-		vector.DrawFilledRect(
+		vector.FillRect(
 			screen,
 			0, 0,
 			float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()),
@@ -101,26 +100,24 @@ func DrawRunSummary(stats FinalRunStats) func(e *ecs.ECS, screen *ebiten.Image) 
 		)
 
 		// Title
-		titleFont := fonts.ExcelTitle.Get()
+		titleFont := fonts.ExcelTitle.GetV2()
 		titleX := centerTextX(cfg.RunSummary.Title, titleFont, width)
-		text.Draw(screen, cfg.RunSummary.Title, titleFont, titleX, int(cfg.RunSummary.TitleY), cfg.RunSummary.TitleColor)
+		drawText(screen, cfg.RunSummary.Title, titleFont, titleX, int(cfg.RunSummary.TitleY), cfg.RunSummary.TitleColor)
 
 		// Stat rows — centered as a unit with a fixed pixel gap between label and value.
-		// BoundString trailing-space width is unreliable for pixel fonts, so we measure
-		// "label:" and value separately, sum them with an explicit gap, then center.
 		const labelValueGap = 10
-		statsFont := fonts.ExcelBold.Get()
+		statsFont := fonts.ExcelBold.GetV2()
 		for i, row := range rows {
 			y := int(cfg.RunSummary.StatsStartY) + i*int(cfg.RunSummary.StatsRowHeight)
 
 			labelPart := row.label + ":"
-			labelW := text.BoundString(statsFont, labelPart).Dx()
-			valueW := text.BoundString(statsFont, row.value).Dx()
+			labelW := measureTextWidth(labelPart, statsFont)
+			valueW := measureTextWidth(row.value, statsFont)
 			totalW := float64(labelW + labelValueGap + valueW)
 			startX := int((width - totalW) / 2)
 
-			text.Draw(screen, labelPart, statsFont, startX, y, cfg.RunSummary.LabelColor)
-			text.Draw(screen, row.value, statsFont, startX+labelW+labelValueGap, y, cfg.RunSummary.ValueColor)
+			drawText(screen, labelPart, statsFont, startX, y, cfg.RunSummary.LabelColor)
+			drawText(screen, row.value, statsFont, startX+labelW+labelValueGap, y, cfg.RunSummary.ValueColor)
 		}
 
 		// Menu options (reuse statsFont — same ExcelBold face)
@@ -131,7 +128,7 @@ func DrawRunSummary(stats FinalRunStats) func(e *ecs.ECS, screen *ebiten.Image) 
 				color = cfg.RunSummary.TextColorSelected
 			}
 			x := centerTextX(option, statsFont, width)
-			text.Draw(screen, option, statsFont, x, y+int(cfg.RunSummary.MenuItemHeight), color)
+			drawText(screen, option, statsFont, x, y+int(cfg.RunSummary.MenuItemHeight), color)
 		}
 	}
 }

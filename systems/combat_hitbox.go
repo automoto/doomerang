@@ -512,6 +512,6 @@ func DrawHitboxes(ecs *ecs.ECS, screen *ebiten.Image) {
 		screenX := float32(o.X + float64(width)/2 - camera.Position.X)
 		screenY := float32(o.Y + float64(height)/2 - camera.Position.Y)
 
-		vector.DrawFilledRect(screen, screenX, screenY, float32(o.W), float32(o.H), hitboxColor, false)
+		vector.FillRect(screen, screenX, screenY, float32(o.W), float32(o.H), hitboxColor, false)
 	})
 }

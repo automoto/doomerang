@@ -7,7 +7,6 @@ import (
 	cfg "github.com/automoto/doomerang/config"
 	"github.com/automoto/doomerang/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -101,6 +100,10 @@ func isOptionHidden(s *components.SettingsMenuData, opt components.SettingsMenuO
 	if opt == components.SettingsOptResolution && s.Fullscreen {
 		return true
 	}
+	// Hide keyboard control scheme when using a controller
+	if opt == components.SettingsOptControlScheme && s.InputMode == int(cfg.InputModeController) {
+		return true
+	}
 	return false
 }
 
@@ -137,6 +140,12 @@ func adjustValue(e *ecs.ECS, s *components.SettingsMenuData, direction int) {
 	case components.SettingsOptInputMode:
 		numModes := len(cfg.SettingsMenu.InputModes)
 		s.InputMode = (s.InputMode + direction + numModes) % numModes
+		PlaySFX(e, cfg.SoundMenuNavigate)
+
+	case components.SettingsOptControlScheme:
+		numSchemes := len(cfg.SettingsMenu.ControlSchemes)
+		s.ControlScheme = (s.ControlScheme + direction + numSchemes) % numSchemes
+		cfg.ApplyControlScheme(cfg.ControlSchemeID(s.ControlScheme))
 		PlaySFX(e, cfg.SoundMenuNavigate)
 	}
 }
@@ -244,7 +253,7 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 	height := float64(screen.Bounds().Dy())
 
 	// Draw solid background
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		0, 0,
 		float32(width), float32(height),
@@ -259,14 +268,13 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 	}
 
 	// Get font
-	fontFace := fonts.ExcelBold.Get()
-	titleFont := fonts.ExcelTitle.Get()
+	fontFace := fonts.ExcelBold.GetV2()
+	titleFont := fonts.ExcelTitle.GetV2()
 
 	// Draw title centered near top
 	title := "SETTINGS"
-	titleWidth := len(title) * 20
-	titleX := int((width - float64(titleWidth)) / 2)
-	text.Draw(screen, title, titleFont, titleX, 35, cfg.Menu.TitleColor)
+	titleX := centerTextX(title, titleFont, width)
+	drawText(screen, title, titleFont, titleX, 35, cfg.Menu.TitleColor)
 
 	// Count visible options for layout calculation
 	visibleCount := 0
@@ -302,16 +310,16 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 
 		// Draw label on left side (centered layout)
 		labelX := int(width/2) - 120
-		text.Draw(screen, label, fontFace, labelX, int(y)+int(menuItemHeight), textColor)
+		drawText(screen, label, fontFace, labelX, int(y)+int(menuItemHeight), textColor)
 
 		// Draw value on right side (if not Back button)
 		if opt != components.SettingsOptBack && opt != components.SettingsOptControls {
 			valueX := int(width/2) + 40
-			text.Draw(screen, value, fontFace, valueX, int(y)+int(menuItemHeight), textColor)
+			drawText(screen, value, fontFace, valueX, int(y)+int(menuItemHeight), textColor)
 		} else if opt == components.SettingsOptControls {
 			// Draw arrow for Controls option
 			valueX := int(width/2) + 100
-			text.Draw(screen, value, fontFace, valueX, int(y)+int(menuItemHeight), textColor)
+			drawText(screen, value, fontFace, valueX, int(y)+int(menuItemHeight), textColor)
 		}
 
 		optionIndex++
@@ -320,24 +328,22 @@ func DrawSettingsMenu(e *ecs.ECS, screen *ebiten.Image) {
 	// Draw navigation hint at bottom based on input method
 	input := getOrCreateInput(e)
 	hint := getSettingsHint(input.LastInputMethod)
-	hintFont := fonts.ExcelSmall.Get()
-	hintWidth := len(hint) * 7
-	hintX := int((width - float64(hintWidth)) / 2)
-	text.Draw(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
+	hintFont := fonts.ExcelSmall.GetV2()
+	hintX := centerTextX(hint, hintFont, width)
+	drawText(screen, hint, hintFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
 }
 
 // drawControlsScreen renders the controls/button mapping screen
 func drawControlsScreen(e *ecs.ECS, screen *ebiten.Image, width, height float64) {
 	input := getOrCreateInput(e)
-	fontFace := fonts.ExcelBold.Get()
-	titleFont := fonts.ExcelTitle.Get()
-	smallFont := fonts.ExcelSmall.Get()
+	fontFace := fonts.ExcelBold.GetV2()
+	titleFont := fonts.ExcelTitle.GetV2()
+	smallFont := fonts.ExcelSmall.GetV2()
 
 	// Draw title
 	title := "CONTROLS"
-	titleWidth := len(title) * 20
-	titleX := int((width - float64(titleWidth)) / 2)
-	text.Draw(screen, title, titleFont, titleX, 35, cfg.Menu.TitleColor)
+	titleX := centerTextX(title, titleFont, width)
+	drawText(screen, title, titleFont, titleX, 35, cfg.Menu.TitleColor)
 
 	// Get control mappings based on input method
 	mappings := getControlMappings(input.LastInputMethod)
@@ -350,15 +356,14 @@ func drawControlsScreen(e *ecs.ECS, screen *ebiten.Image, width, height float64)
 
 	for i, mapping := range mappings {
 		y := startY + float64(i)*lineHeight
-		text.Draw(screen, mapping.Action, fontFace, labelX, int(y), cfg.Pause.TextColorNormal)
-		text.Draw(screen, mapping.Button, fontFace, valueX, int(y), cfg.Pause.TextColorSelected)
+		drawText(screen, mapping.Action, fontFace, labelX, int(y), cfg.Pause.TextColorNormal)
+		drawText(screen, mapping.Button, fontFace, valueX, int(y), cfg.Pause.TextColorSelected)
 	}
 
 	// Draw hint at bottom
 	hint := getBackHint(input.LastInputMethod)
-	hintWidth := len(hint) * 7
-	hintX := int((width - float64(hintWidth)) / 2)
-	text.Draw(screen, hint, smallFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
+	hintX := centerTextX(hint, smallFont, width)
+	drawText(screen, hint, smallFont, hintX, int(height)-12, cfg.Pause.TextColorNormal)
 }
 
 // controlMapping represents a single control mapping entry
@@ -392,12 +397,24 @@ func getControlMappings(method components.InputMethod) []controlMapping {
 			{"Wall Slide", "Hold toward wall"},
 			{"Pause", "Start"},
 		}
-	default: // Keyboard
+	default: // Keyboard — show keys for active control scheme
+		if cfg.Input.ActiveScheme == cfg.ControlSchemeArrowKeys {
+			return []controlMapping{
+				{"Move", "Arrow Keys"},
+				{"Jump", "Z"},
+				{"Attack", "X"},
+				{"Boomerang", "C"},
+				{"Aim Throw", "Hold direction"},
+				{"Slide", "Run + Down"},
+				{"Wall Slide", "Hold toward wall"},
+				{"Pause", "Esc / P"},
+			}
+		}
 		return []controlMapping{
-			{"Move", "Arrow Keys / WASD"},
-			{"Jump", "X / W"},
-			{"Attack", "Z"},
-			{"Boomerang", "Space"},
+			{"Move", "WASD"},
+			{"Jump", "Space"},
+			{"Attack", "J"},
+			{"Boomerang", "K"},
 			{"Aim Throw", "Hold direction"},
 			{"Slide", "Run + Down"},
 			{"Wall Slide", "Hold toward wall"},
@@ -449,8 +466,13 @@ func getOptionDisplay(s *components.SettingsMenuData, opt components.SettingsMen
 			return "Input", cfg.SettingsMenu.InputModes[s.InputMode]
 		}
 		return "Input", "Unknown"
+	case components.SettingsOptControlScheme:
+		if s.ControlScheme < len(cfg.SettingsMenu.ControlSchemes) {
+			return "Controls", "< " + cfg.SettingsMenu.ControlSchemes[s.ControlScheme] + " >"
+		}
+		return "Controls", "Unknown"
 	case components.SettingsOptControls:
-		return "Controls", ">"
+		return "View Controls", ">"
 	case components.SettingsOptBack:
 		return "< Back", ""
 	default:
@@ -517,6 +539,7 @@ func GetOrCreateSettingsMenu(e *ecs.ECS) *components.SettingsMenuData {
 			Fullscreen:      ebiten.IsFullscreen(),
 			ResolutionIndex: cfg.SettingsMenu.DefaultResolutionIndex,
 			InputMode:       inputMode,
+			ControlScheme:   int(cfg.Input.ActiveScheme),
 			PreMuteMusicVol: musicVol,
 			PreMuteSFXVol:   sfxVol,
 		})

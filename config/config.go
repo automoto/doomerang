@@ -400,9 +400,10 @@ type MessageConfig struct {
 	Messages map[float64]string
 
 	// Input labels for different input methods
-	KeyboardLabels    map[string]string
-	XboxLabels        map[string]string
-	PlayStationLabels map[string]string
+	KeyboardLabelsArrow map[string]string
+	KeyboardLabelsWASD  map[string]string
+	XboxLabels          map[string]string
+	PlayStationLabels   map[string]string
 }
 
 // Shared RGBA color constants
@@ -817,9 +818,13 @@ func init() {
 			1.5: "Hold a direction while throwing to aim",
 		},
 
-		KeyboardLabels: map[string]string{
-			"jump": "X", "attack": "Z", "boomerang": "SPACE",
+		KeyboardLabelsArrow: map[string]string{
+			"jump": "Z", "attack": "X", "boomerang": "C",
 			"move": "Arrow Keys", "up": "UP", "down": "DOWN",
+		},
+		KeyboardLabelsWASD: map[string]string{
+			"jump": "SPACE", "attack": "J", "boomerang": "K",
+			"move": "WASD", "up": "W", "down": "S",
 		},
 		XboxLabels: map[string]string{
 			"jump": "A", "attack": "X", "boomerang": "B",

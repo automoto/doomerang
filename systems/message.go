@@ -9,15 +9,14 @@ import (
 	"github.com/automoto/doomerang/fonts"
 	"github.com/automoto/doomerang/tags"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
+	textv2 "github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
-	"golang.org/x/image/font"
 )
 
 // Cached font face for message rendering (lazy initialized)
-var messageFontFace font.Face
+var messageFontFace *textv2.GoXFace
 
 // UpdateMessage checks player proximity to message points and activates messages
 func UpdateMessage(ecs *ecs.ECS) {
@@ -83,13 +82,11 @@ func DrawMessage(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	// Lazy initialize cached font face
 	if messageFontFace == nil {
-		messageFontFace = fonts.ExcelBold.Get()
+		messageFontFace = fonts.ExcelBold.GetV2()
 	}
 
 	// Measure text
-	bounds := text.BoundString(messageFontFace, resolvedText)
-	textWidth := bounds.Dx()
-	textHeight := bounds.Dy()
+	textWidth, textHeight := measureText(resolvedText, messageFontFace)
 
 	// Calculate box dimensions
 	padding := cfg.Message.BoxPadding
@@ -102,7 +99,7 @@ func DrawMessage(ecs *ecs.ECS, screen *ebiten.Image) {
 	boxY := float32(cfg.Message.TopMargin)
 
 	// Draw semi-transparent background box
-	vector.DrawFilledRect(
+	vector.FillRect(
 		screen,
 		boxX, boxY,
 		boxWidth, boxHeight,
@@ -113,7 +110,7 @@ func DrawMessage(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Draw text centered in box
 	textX := int(boxX + float32(padding))
 	textY := int(boxY + float32(padding) + float32(textHeight))
-	text.Draw(screen, resolvedText, messageFontFace, textX, textY, cfg.Message.TextColor)
+	drawText(screen, resolvedText, messageFontFace, textX, textY, cfg.Message.TextColor)
 }
 
 // resolvePlaceholders replaces {placeholder} tokens with input-specific labels
@@ -126,7 +123,11 @@ func resolvePlaceholders(text string, inputMethod components.InputMethod) string
 	case components.InputXbox:
 		labels = cfg.Message.XboxLabels
 	default:
-		labels = cfg.Message.KeyboardLabels
+		if cfg.Input.ActiveScheme == cfg.ControlSchemeWASD {
+			labels = cfg.Message.KeyboardLabelsWASD
+		} else {
+			labels = cfg.Message.KeyboardLabelsArrow
+		}
 	}
 
 	result := text

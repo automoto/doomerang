@@ -243,7 +243,7 @@ func (rs *RogueliteScene) generateLevel() (*assets.Level, *procgen.GenerationRes
 	decoration := procgen.DeriveDecoration(rs.seed, biome)
 	defer func() {
 		if decoration.BackgroundImage != nil {
-			decoration.BackgroundImage.Dispose()
+			decoration.BackgroundImage.Deallocate()
 		}
 	}()
 
