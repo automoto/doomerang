@@ -5,13 +5,16 @@ DIST_DIR := dist
 ITCH_USER := gamekaizen
 ITCH_GAME := doomerang
 
-.PHONY: lint run build basic-test \
+.PHONY: lint vulncheck run build basic-test \
 	build-mac build-mac-intel build-windows build-linux build-web build-all \
 	deploy-mac deploy-mac-intel deploy-windows deploy-linux deploy-web deploy-all \
 	clean-dist
 
 lint:
 	golangci-lint run
+
+vulncheck:
+	govulncheck ./...
 
 vendor:
 	go mod vendor
