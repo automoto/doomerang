@@ -4,17 +4,78 @@
     <meta charset="utf-8">
     <title>Doomerang</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; }
-        canvas { display: block; margin: 0 auto; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f1932; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: monospace; }
+        canvas { display: block; }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #0f1932;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.4s;
+        }
+        #loader.hidden { opacity: 0; pointer-events: none; }
+        #loader h1 { color: #ff8c00; font-size: 2.5rem; letter-spacing: 0.15em; margin-bottom: 1.5rem; }
+        #bar-bg { width: 280px; height: 4px; background: #283d6e; border-radius: 2px; }
+        #bar { height: 100%; width: 0%; background: #ff8c00; border-radius: 2px; transition: width 0.1s; }
+        #status { color: #888; font-size: 0.7rem; margin-top: 0.8rem; }
     </style>
 </head>
 <body>
+    <div id="loader">
+        <h1>DOOMERANG</h1>
+        <div id="bar-bg"><div id="bar"></div></div>
+        <div id="status">Loading...</div>
+    </div>
     <script src="wasm_exec.js"></script>
     <script>
-        const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("doomerang.wasm"), go.importObject).then(result => {
-            go.run(result.instance);
-        });
+        const bar = document.getElementById('bar');
+        const status = document.getElementById('status');
+        const loader = document.getElementById('loader');
+
+        async function run() {
+            try {
+                const resp = await fetch('doomerang.wasm');
+                const total = parseInt(resp.headers.get('Content-Length') || '0');
+                let received = 0;
+                const chunks = [];
+                const reader = resp.body.getReader();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    received += value.length;
+                    bar.style.width = (total ? Math.min(85, received / total * 85) : 40) + '%';
+                    status.textContent = Math.round(received / 1048576) + ' MB downloaded';
+                }
+
+                status.textContent = 'Starting...';
+                bar.style.width = '95%';
+
+                const bytes = new Uint8Array(received);
+                let offset = 0;
+                for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+
+                const go = new Go();
+                const { instance } = await WebAssembly.instantiate(bytes, go.importObject);
+
+                const obs = new MutationObserver(() => {
+                    if (document.querySelector('canvas')) { obs.disconnect(); loader.classList.add('hidden'); }
+                });
+                obs.observe(document.body, { childList: true, subtree: true });
+
+                go.run(instance);
+            } catch (e) {
+                status.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        run();
     </script>
 </body>
 </html>
